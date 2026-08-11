@@ -15,6 +15,7 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0005 | [flashinfer Blackwell (SM_120) workaround via VLLM_USE_FLASHINFER_SAMPLER=0](ADR-0005-flashinfer-blackwell-workaround.md) | Ratified (reinstated 2026-08-11 02:26 EDT for sampler path) | Phase -1 / Phase 0.1 |
 | 0006 | [flashinfer SM_120 support via flashinfer-jit-cache==0.6.16.post3+cu129](ADR-0006-flashinfer-jit-cache-cu129.md) | Ratified · Amended (attention only; sampler deferred to ADR-0005) | Phase -1 / Phase 0 prereq |
 | 0007 | [Fast-tier task authoring, sampling, and elimination-rubric methodology](ADR-0007-fast-tier-task-methodology.md) | Ratified | Phase 0.1 |
+| 0008 | [Fast tier disables thinking mode for planner (opt-in for coder)](ADR-0008-fast-tier-thinking-disabled.md) | Ratified | Phase 0.1 |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 

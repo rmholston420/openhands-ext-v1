@@ -107,7 +107,12 @@ def probe_planner(
     from jsonschema import Draft202012Validator, ValidationError
 
     validator = Draft202012Validator(task_set["output_schema"])
+    # Task-set-level chat_template_kwargs (e.g. {"enable_thinking": false}).
+    # See ADR-0008: Fast-tier planner disables thinking mode.
+    ctk = task_set.get("chat_template_kwargs") or {}
     result = ProbeResult(role="planner")
+    if ctk:
+        result.notes = f"chat_template_kwargs={json.dumps(ctk)}"
     for t in task_set["tasks"]:
         tr = TaskResult(task_id=t["id"], verdict="fail", verdict_source="verify",
                         wall_seconds=0.0)
@@ -118,6 +123,8 @@ def probe_planner(
             "top_p": 0.95,
             "max_tokens": budget_tokens,
         }
+        if ctk:
+            payload["chat_template_kwargs"] = ctk
         try:
             resp, wall = _http_post(f"{endpoint}/v1/chat/completions", payload, timeout=180)
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
@@ -456,6 +463,12 @@ def _probe_coder_fallback(
     """
     result = ProbeResult(role="coder")
     tools = _tool_schemas_for_task_set(task_set)
+    # Task-set-level chat_template_kwargs (opt-in; e.g. Fast tier may set
+    # {"enable_thinking": false} per ADR-0008 to preserve tool-call budget
+    # on thinking models). Default off preserves current coder behavior.
+    ctk = task_set.get("chat_template_kwargs") or {}
+    if ctk:
+        result.notes = f"chat_template_kwargs={json.dumps(ctk)}"
     for t in task_set["tasks"]:
         tr = TaskResult(task_id=t["id"], verdict="fail",
                         verdict_source="trajectory", wall_seconds=0.0,
@@ -473,6 +486,8 @@ def _probe_coder_fallback(
             "top_p": 0.8,
             "max_tokens": budget_tokens,
         }
+        if ctk:
+            payload["chat_template_kwargs"] = ctk
         try:
             resp, wall = _http_post(f"{endpoint}/v1/chat/completions", payload, timeout=180)
         except (urllib.error.URLError, TimeoutError, OSError) as exc:

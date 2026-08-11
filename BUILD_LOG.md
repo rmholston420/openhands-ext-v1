@@ -325,3 +325,12 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** planner + coder probe surface. Sidecar naming is stable (`.probe.json` next to main result).
 - **PORTING_LEDGER / ADR updated:** none. May justify an ADR-0007 amendment (§diagnostics) if we formalize sidecar as part of the run contract.
 - **Stop-condition status:** in-progress — unblocks R2 diagnosis on next smoke run. Previous run’s outputs (20260811T063101Z) are unrecoverable (vLLM server log carries no response bodies).
+
+## 2026-08-11 02:45 EDT — Fast tier disables thinking mode (ADR-0008)
+
+- **Stage / plugin / port:** Phase 0.1 · Fast-tier task sets · planner + coder probes.
+- **What changed:** Task-set-level `chat_template_kwargs` support in `probe_planner` and `probe_coder`; when present, forwarded verbatim into `/v1/chat/completions` payloads. `bench/tasks/planner-fast.json` sets `{"enable_thinking": false}` as a hard default per ADR-0008. Coder-fast task sets may opt in later. Filed ADR-0008; updated `adrs/README.md`. Resolves the R2 mass-failure observed in `smoke-fast-planner-*-20260811T064211Z.json` (thinking prose starved the 4k budget → truncated/missing JSON on all 3 tasks).
+- **Files touched:** `bench/tasks/planner-fast.json`, `bench/runner/probes.py`, `adrs/ADR-0008-fast-tier-thinking-disabled.md`, `adrs/README.md`.
+- **Ports / adapters affected:** planner + coder probe surface (task-set contract gains one optional field).
+- **PORTING_LEDGER / ADR updated:** ADR-0008 filed.
+- **Stop-condition status:** in-progress — next planner smoke should show `<think>` absent from sidecar `raw_content`, JSON emitted directly, R2 pass expected on tasks 01/02/03.

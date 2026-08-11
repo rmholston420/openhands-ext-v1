@@ -1,10 +1,11 @@
 {
-  "$comment": "Phase 0.1 Fast-tier planner task set. Deterministic structured-plan probes. Pass = valid JSON, matches schema, dependency graph is a DAG, no truncation at 4096 tokens. See ADR-0007 for methodology.",
+  "$comment": "Phase 0.1 Fast-tier planner task set. Deterministic structured-plan probes. Pass = valid JSON, matches schema, dependency graph is a DAG, no truncation at 4096 tokens. Fast tier disables thinking mode per ADR-0008 (CoT prose starves the JSON budget on thinking models; Fast-tier planner is a structural-JSON task, not a reasoning task).",
   "schema_version": "1.0.0",
   "tier": "fast",
   "role": "planner",
   "authored_utc": "2026-08-11T05:51:00Z",
   "budget_tokens": 4096,
+  "chat_template_kwargs": {"enable_thinking": false},
   "output_schema": {
     "type": "object",
     "required": ["steps"],

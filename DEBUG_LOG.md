@@ -180,3 +180,12 @@ Entry format:
 - **Fix applied:** Added `raw_content: Optional[str]` to `TaskResult` (8 KiB cap, `RAW_CONTENT_MAX`). Planner probe captures `choices[0].message.content`; coder probe captures `json.dumps(msg)` to preserve tool_calls structure. Changed `_run_one_cell` to return `tuple[BenchRun, Optional[ProbeResult]]`; runner writes a diagnostic sidecar at `<result>.probe.json` with per-task raw_content. Sidecar is schema-unvalidated (diagnostic-only) and skipped on dry-run / launch failure. Previous run's outputs unrecoverable — next planner smoke will produce a sidecar for diagnosis.
 - **Files changed:** `bench/runner/probes.py`, `bench/runner/main.py`.
 - **Related BUILD_LOG entry:** 2026-08-11 02:38 EDT
+
+## 2026-08-11 02:45 EDT — Planner-fast R2 mass-failure: thinking prose starves JSON budget
+
+- **Symptom:** `smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm-gpu-20260811T064211Z.json` reported `task_outcome.verdict=fail` via R2 with all 3 tasks malformed: task 01 `steps too short` (only 2 parsed), task 02 `'steps' is a required property` (no JSON), task 03 `truncated at max_tokens` (no JSON). Sidecar `.probe.json` revealed model produced correct reasoning inside `<think>` blocks but ran out of `budget_tokens=4096` before closing `</think>` and/or completing the JSON body. Task 01 got the JSON out but truncated its final `desc` mid-sentence, dropping step 3.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast-tier · planner probe · task-set contract.
+- **Root cause:** Fast-tier's structural-JSON evaluation was implicitly assuming non-thinking output; nothing in the probe or task set disabled thinking, and `qwen3-30b-a3b-thinking-2507-awq` defaults to thinking mode. The model's CoT prose consumed the budget that was sized for direct JSON output.
+- **Fix applied:** Task-set-level `chat_template_kwargs` policy (ADR-0008). `planner-fast.json` sets `{"enable_thinking": false}`. `probe_planner` and `probe_coder` (opt-in) forward the kwarg to vLLM. Non-thinking models ignore it. Sidecar `raw_content` will show absence of `<think>` blocks on next run.
+- **Files changed:** `bench/tasks/planner-fast.json`, `bench/runner/probes.py`, `adrs/ADR-0008-fast-tier-thinking-disabled.md`, `adrs/README.md`.
+- **Related BUILD_LOG entry:** 2026-08-11 02:45 EDT
