@@ -1,0 +1,71 @@
+{
+  "$comment": "Phase 0.1 Fast-tier coder task set. Deterministic tool-call probes; each task has an expected tool-invocation sequence. Pass = observed sequence matches expected, order preserved, no forbidden tools called. See ADR-0007 for methodology.",
+  "schema_version": "1.0.0",
+  "tier": "fast",
+  "role": "coder",
+  "authored_utc": "2026-08-11T05:51:00Z",
+  "budget_tokens": 4096,
+  "tasks": [
+    {
+      "id": "coder-fast-01-read-file",
+      "prompt": "Read the file /workspace/probe/greeting.txt and tell me its exact contents. Do not modify the file.",
+      "fixtures": {
+        "/workspace/probe/greeting.txt": "hello from probe 01\n"
+      },
+      "expected_tool_sequence": ["read_file"],
+      "forbidden_tools": ["execute_bash", "write_file", "str_replace_editor"],
+      "expected_output_contains": ["hello from probe 01"],
+      "notes": "Simplest possible read probe. Validates tool selection and file-content propagation."
+    },
+    {
+      "id": "coder-fast-02-str-replace",
+      "prompt": "In /workspace/probe/config.py replace the line 'DEBUG = False' with 'DEBUG = True'. Do not run the file. Do not use bash.",
+      "fixtures": {
+        "/workspace/probe/config.py": "# probe 02\nDEBUG = False\nMAX_RETRIES = 3\n"
+      },
+      "expected_tool_sequence": ["str_replace_editor"],
+      "forbidden_tools": ["execute_bash", "write_file"],
+      "expected_file_state": {
+        "/workspace/probe/config.py": "# probe 02\nDEBUG = True\nMAX_RETRIES = 3\n"
+      },
+      "notes": "Validates str_replace_editor selection over the naive write_file / bash sed fallback."
+    },
+    {
+      "id": "coder-fast-03-execute-bash",
+      "prompt": "Run 'echo probe03' in the workspace and report the exact stdout you observed. Do not create any files.",
+      "fixtures": {},
+      "expected_tool_sequence": ["execute_bash"],
+      "forbidden_tools": ["write_file", "str_replace_editor"],
+      "expected_output_contains": ["probe03"],
+      "notes": "Validates shell tool selection and stdout capture."
+    },
+    {
+      "id": "coder-fast-04-write-file",
+      "prompt": "Create a new file at /workspace/probe/out/note.txt containing exactly the text 'from probe 04' followed by a newline. The directory /workspace/probe/out already exists.",
+      "fixtures": {
+        "/workspace/probe/out/.keep": ""
+      },
+      "expected_tool_sequence": ["write_file"],
+      "forbidden_tools": ["execute_bash", "str_replace_editor"],
+      "expected_file_state": {
+        "/workspace/probe/out/note.txt": "from probe 04\n"
+      },
+      "notes": "Validates write_file selection for brand-new file creation over bash echo redirection."
+    },
+    {
+      "id": "coder-fast-05-multi-step",
+      "prompt": "Read /workspace/probe/manifest.json, then create /workspace/probe/out/summary.txt containing only the value of its 'title' field followed by a newline.",
+      "fixtures": {
+        "/workspace/probe/manifest.json": "{\"title\": \"probe-05-title\", \"version\": 1}\n",
+        "/workspace/probe/out/.keep": ""
+      },
+      "expected_tool_sequence": ["read_file", "write_file"],
+      "expected_tool_sequence_tolerance": "order_preserved_extra_reads_allowed",
+      "forbidden_tools": [],
+      "expected_file_state": {
+        "/workspace/probe/out/summary.txt": "probe-05-title\n"
+      },
+      "notes": "Validates a short read-then-write chain. Extra read_file calls are tolerated (agents may re-read for confirmation); write must appear exactly once after the first read."
+    }
+  ]
+}

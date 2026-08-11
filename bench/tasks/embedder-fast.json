@@ -1,0 +1,58 @@
+{
+  "$comment": "Phase 0.1 Fast-tier embedder task set. 8 fixed queries covering identical-input, orthogonal-input, and realistic Forge-OH-style trajectory snippets. Pass = launches, all 8 vectors non-null, identical-pair cosine >= 0.999, orthogonal-pair cosine <= 0.9. See ADR-0007 for methodology.",
+  "schema_version": "1.0.0",
+  "tier": "fast",
+  "role": "embedder",
+  "authored_utc": "2026-08-11T05:51:00Z",
+  "queries": [
+    {
+      "id": "embedder-fast-01-identical-a",
+      "text": "The agent read the file server.py and identified an off-by-one bug in the pagination loop.",
+      "role_in_probe": "identical_pair_member",
+      "pair_id": "identical-pair-1"
+    },
+    {
+      "id": "embedder-fast-02-identical-b",
+      "text": "The agent read the file server.py and identified an off-by-one bug in the pagination loop.",
+      "role_in_probe": "identical_pair_member",
+      "pair_id": "identical-pair-1"
+    },
+    {
+      "id": "embedder-fast-03-orthogonal-a",
+      "text": "Cosine similarity between two orthogonal vectors is zero by definition.",
+      "role_in_probe": "orthogonal_pair_member",
+      "pair_id": "orthogonal-pair-1"
+    },
+    {
+      "id": "embedder-fast-04-orthogonal-b",
+      "text": "The apricot jam was left on the kitchen counter next to a small blue teapot.",
+      "role_in_probe": "orthogonal_pair_member",
+      "pair_id": "orthogonal-pair-1"
+    },
+    {
+      "id": "embedder-fast-05-trajectory-1",
+      "text": "ActionEvent(tool='str_replace_editor', args={'path': '/workspace/config.py', 'old_str': 'DEBUG = False', 'new_str': 'DEBUG = True'})",
+      "role_in_probe": "realistic_snippet"
+    },
+    {
+      "id": "embedder-fast-06-trajectory-2",
+      "text": "ObservationEvent(tool='execute_bash', stdout='FAILED tests/test_pagination.py::test_last_page - assert 9 == 10', exit_code=1)",
+      "role_in_probe": "realistic_snippet"
+    },
+    {
+      "id": "embedder-fast-07-trajectory-3",
+      "text": "Plan step s3 depends on s2: after the AgentRun model is created, generate an alembic migration to add the table.",
+      "role_in_probe": "realistic_snippet"
+    },
+    {
+      "id": "embedder-fast-08-trajectory-4",
+      "text": "MCP server 'filesystem' returned an error: EACCES /etc/passwd read denied by the DockerWorkspace mount policy.",
+      "role_in_probe": "realistic_snippet"
+    }
+  ],
+  "probes": {
+    "identical_pair_min_cosine": 0.999,
+    "orthogonal_pair_max_cosine": 0.9,
+    "vector_min_norm": 1e-6
+  }
+}

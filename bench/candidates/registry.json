@@ -30,8 +30,8 @@
         "format": "safetensors",
         "runtime": "vllm",
         "role_pool": ["coder", "planner"],
-        "approx_size_gib": 15,
-        "notes": "Intel official W4A16 AutoRound, group_size 128, symmetric. vLLM-servable."
+        "approx_size_gib": 19,
+        "notes": "Intel official W4A16 AutoRound, group_size 128, symmetric. vLLM-servable. Size calibrated from manifest 2026-08-11."
       },
       {
         "slug": "qwen3_6-35b-a3b-q4kxl-gguf",
@@ -40,8 +40,8 @@
         "format": "gguf",
         "runtime": "llama.cpp",
         "role_pool": ["coder", "planner"],
-        "approx_size_gib": 20,
-        "notes": "MoE 35B / 3B-active, Unsloth Dynamic Q4_K_XL. Fits 32 GiB VRAM."
+        "approx_size_gib": 22,
+        "notes": "MoE 35B / 3B-active, Unsloth Dynamic Q4_K_XL. Fits 32 GiB VRAM. Size calibrated from manifest 2026-08-11."
       },
       {
         "slug": "qwen3_6-35b-a3b-awq",
@@ -50,8 +50,8 @@
         "format": "safetensors",
         "runtime": "vllm",
         "role_pool": ["coder", "planner"],
-        "approx_size_gib": 20,
-        "notes": "MoE 35B / 3B-active, AWQ 4-bit. vLLM ≥ 0.19. Data-free calibration."
+        "approx_size_gib": 25,
+        "notes": "MoE 35B / 3B-active, AWQ 4-bit. vLLM ≥ 0.19. Data-free calibration. Size calibrated from manifest 2026-08-11."
       }
     ],
     "planner": [
@@ -62,8 +62,8 @@
         "format": "safetensors",
         "runtime": "vllm",
         "role_pool": ["planner"],
-        "approx_size_gib": 20,
-        "notes": "30B-A3B MoE thinking model, AWQ-4bit by cpatonn. The 235B thinking variant does NOT fit 32 GiB VRAM."
+        "approx_size_gib": 18,
+        "notes": "30B-A3B MoE thinking model, AWQ-4bit by cpatonn. The 235B thinking variant does NOT fit 32 GiB VRAM. Size calibrated from manifest 2026-08-11."
       }
     ],
     "embedder": [

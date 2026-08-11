@@ -26,6 +26,12 @@ Guards enforced here, at scaffold-level:
 7. §0.1 Runtime-version regression flag: launch failures under the pinned
    runtime version are tagged `runtime_version_regression=true` in the
    pruning log, not silently attributed to the model.
+8. Progress visibility (user preference, 2026-08-11): the real serving loop
+   MUST emit line-buffered timestamped progress at every meaningful step
+   — cell start, launch phase, per-task probe, cell teardown — with an
+   elapsed-seconds ticker on any phase longer than ~15s. No silent
+   multi-minute phases. No `capture_output=True` without tee'ing to
+   stderr/stdout in real time.
 
 Usage (design; not yet executable end-to-end — task/candidate loaders TODO):
 

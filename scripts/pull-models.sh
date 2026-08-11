@@ -145,13 +145,18 @@ PY
   # 4. Download each candidate.
   echo ""
   echo "--- downloads ---"
+  TOTAL_N="$(printf '%s\n' "$PLAN" | grep -c .)"
+  IDX=0
+  BATCH_START="$(date +%s)"
   while IFS='|' read -r SLUG HF_REPO FORMAT RUNTIME POOL APPROX FILES; do
     [ -z "$SLUG" ] && continue
+    IDX=$((IDX+1))
+    CAND_START="$(date +%s)"
     DEST="$REPO_ROOT/models/$SLUG"
     mkdir -p "$DEST"
 
     echo ""
-    echo "==> $SLUG   $HF_REPO   [$FORMAT/$RUNTIME]"
+    echo "==> [$IDX/$TOTAL_N] $(date '+%Y-%m-%d %H:%M:%S %Z')  $SLUG  $HF_REPO  [$FORMAT/$RUNTIME]  ~${APPROX}GiB"
 
     # 4a. Idempotency guard.
     if [ -n "$FILES" ]; then
@@ -263,11 +268,14 @@ data.append(entry)
 with open(manifest_path, "w") as f:
     json.dump(data, f, indent=2)
 PY
+    CAND_ELAPSED=$(( $(date +%s) - CAND_START ))
     echo "    manifest: appended $SLUG (rev=${RESOLVED_REV:0:12}, ${SIZE_BYTES}B, sha=${ROLLUP:0:12})"
+    echo "    done [$IDX/$TOTAL_N] $SLUG in ${CAND_ELAPSED}s (cumulative $(( $(date +%s) - BATCH_START ))s)"
 
   done <<< "$PLAN"
 
+  BATCH_ELAPSED=$(( $(date +%s) - BATCH_START ))
   echo ""
-  echo "===== pull-models done — $(date -Iseconds) ====="
+  echo "===== pull-models done — $(date -Iseconds) — total ${BATCH_ELAPSED}s over ${TOTAL_N} candidate(s) ====="
   echo "manifest: $MANIFEST"
 } 2>&1 | tee "$LOG"

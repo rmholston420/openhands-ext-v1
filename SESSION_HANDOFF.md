@@ -1,42 +1,39 @@
-# OpenHands-Ext v1 — Session Handoff — 2026-08-11 00:57 EDT
+# Kosmos Session Handoff — 2026-08-11 01:52 EDT
 
 ## Current build-sequencing position
 
-- **Stage / phase:** Phase 0 — pre-tier scaffolding in place. Phase -1 §-1 closed.
-- **Plugin / kernel component:** none (harness scaffolding).
-- **Port(s) in progress:** none.
+- **Stage / phase:** Phase 0.1 (Fast tier) — pre-execution methodology lock-in complete.
+- **Plugin / kernel component:** Bench harness (`scripts/benchmark-tier-runner.py`), Fast-tier task files, elimination rubric.
+- **Port(s) in progress:** None (Phase 0 pre-tier work is authored code, not vendored ports).
 
-## Completed this session (cumulative, since last handoff)
+## Completed this session
 
-- **flashinfer SM_120 workaround retired.** ADR-0005 amended · superseded by ADR-0006 (cu129 JIT cache). `scripts/smoke-test-vllm.sh` unconditional `VLLM_USE_FLASHINFER_SAMPLER=0` export removed. `scripts/install-vllm.sh` gained step 2b that installs `flashinfer-jit-cache==<flashinfer-python-version>+cu129` from `https://flashinfer.ai/whl/cu129/`. Verification smoke: `bench/results/phase-neg-1-smoke-vllm-20260811T044948Z.json` (pass, no workaround).
-- **7-category schema (v16 §0.0c) landed.** `bench/schema/run.schema.json`, `bench/schema/run.py`, `bench/schema/__init__.py`, `bench/schema/README.md`. Nullable fields corrected (rubric/notes/optional latency) — all 7 schema tests pass on Colossus.
-- **Tier runner scaffold landed.** `scripts/benchmark-tier-runner.py` enforces §0.0a rubric-lock, latency-must-be-measured, denominator-exclusion; §0.0b open-pool; §0.1/0.3 tier-scope for category 6. Dry-run emits a schema-valid record on Colossus.
-- **Phase 0 candidate registry authored.** `bench/candidates/registry.json` lists 9 candidates across coder/planner/embedder pools with canonical HF repo IDs.
-- **`scripts/pull-models.sh` rewritten.** Table-driven from the registry, `--role coder|planner|embedder|all`, `--dry-run`, disk preflight, idempotent, live HF-revision pinning, `models/manifest.json` append-only.
-- **Old `pull-models.sh` renamed** to `scripts/pull-smoke-model.sh` (unchanged, Phase -1 smoke fetch preserved).
-- Latest commit: `47bba16` on `main` (schema null-fix + ADR-0006). This session's pending commit adds the candidate registry + rewritten pull-models.sh.
+- Coder pool (5 candidates, 25m41s) and planner pool (1 new candidate, 3m14s) downloaded to Colossus with pinned HF revisions in `models/manifest.json`.
+- `bench/candidates/registry.json` `approx_size_gib` values calibrated from measured manifest sizes (deltas: int4-autoround +4, 35B-A3B-Q4KXL +2, 35B-A3B-AWQ +5, thinking-2507-AWQ −2).
+- Filed **ADR-0007** — Fast-tier task authoring, sampling, and elimination-rubric methodology (Ratified). Resolves skill/spec sampling and scoring conflicts; ratifies a project-wide progress-visibility discipline for all harness scripts.
+- Wrote `bench/tasks/coder-fast.json` (5 tool-call probes), `bench/tasks/planner-fast.json` (3 structured-plan prompts with JSON schema), `bench/tasks/embedder-fast.json` (8 fixed queries).
+- Wrote `bench/rubrics/fast-elimination.json` (timestamped, `scoring.enabled=false`).
+- Added `[i/N]` counter, per-candidate elapsed, and cumulative batch elapsed to `scripts/pull-models.sh`.
+- Added progress-visibility guard clause (#8) to `scripts/benchmark-tier-runner.py` docstring so the constraint travels with the file.
+- Appended three BUILD_LOG entries (coder+planner pull, registry calibration, ADR-0007 + task/rubric authoring).
 
-## Remaining before current Definition of Done (Phase 0 §0.1 Fast tier readiness)
+## Remaining before current Definition of Done
 
-1. Push the pending candidate-registry + pull-models.sh commit.
-2. On Colossus: `git pull`, then run `scripts/pull-models.sh --role embedder --dry-run` to verify the plan, then `--role all` for real (~165 GiB, wall-clock long).
-3. Author `bench/tasks/coder-fast.json`, `bench/tasks/planner-fast.json`, `bench/tasks/embedder-fast.json` (§0.1).
-4. Author `bench/rubrics/planner-fast.json` with `locked_at_utc`.
-5. Implement real serving+scoring in `benchmark-tier-runner.py` (replace `build_dry_run_record`) — this is the big Phase 0 build item.
-6. First Fast-tier real run on the embedder pool (smallest, fastest smoke of the full pipeline).
+Phase 0.1 pre-execution scaffolding is complete. To actually run the Fast tier we still need:
+
+1. Real serving implementation in `scripts/benchmark-tier-runner.py` — replace `build_dry_run_record` placeholder with:
+   - vLLM launcher: `docker rm -f vllm-bench`, `docker run` per candidate, wait for `/v1/models` (per `local-llm-bench` vLLM launcher pattern).
+   - llama.cpp launcher: `./llama.cpp/llama-server -m <path> --host 127.0.0.1 --port 8082 -ngl 999 -c 32768 -fa on --cache-type-k q8_0 --cache-type-v q8_0 --jinja --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0` (spec §0.1 uniform sampling).
+   - Task loader consuming `bench/tasks/{coder,planner,embedder}-fast.json`.
+   - Elimination-rubric enforcement per `bench/rubrics/fast-elimination.json` rules R1–R4.
+   - Progress-visibility per ADR-0007 §7 and runner-docstring Guard #8: line-buffered timestamped output, `[i/N]` counters, per-phase bookends, elapsed heartbeat on any phase > ~15 s.
+2. NVML sampler wiring for Category 3 (GPU envelope) and Category 4 (CPU envelope for embedder CPU cells) — must exist before any Fast-tier scored/eliminated run per spec §0.0c category 3.
+3. AVX-512 detection for embedder CPU-vLLM cell (spec §0.0b known-constraint gate).
 
 ## Open questions / awaiting user answer
 
-- None. Both close-call choices (Intel over Lorbus for the AutoRound-27B; 30B-A3B over 235B for the thinking model) were resolved on the "make optimal choice" rule.
+None. User approved all clarifying-question answers and (A)/(A) task-material choices; user also requested the project-wide progress-visibility preference which is now saved to memory and ratified in ADR-0007 §7.
 
 ## Exact next action
 
-Confirm and push the pending commit (candidate registry + rewritten pull-models.sh). Then on Colossus:
-
-```bash
-cd ~/dev/openhands-ext-v1
-git pull origin main
-bash scripts/pull-models.sh --role embedder --dry-run
-```
-
-Paste the dry-run output before running the real download so we can eyeball the disk preflight and plan.
+`git add -A && git status` at `/tmp/oh-ext`, then confirm the push with the user, then push to `origin/main` via `api_credentials=["github"]`. Contents of this commit: ADR-0007, ADR index update, registry calibration, three task JSONs, one rubric JSON, pull-models.sh progress ticker, benchmark-tier-runner.py docstring update, three BUILD_LOG appends, and this SESSION_HANDOFF overwrite.

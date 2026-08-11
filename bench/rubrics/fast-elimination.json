@@ -1,0 +1,58 @@
+{
+  "$comment": "Phase 0.1 Fast-tier elimination rubric. Timestamped at commit; no post-hoc edits per spec v16 §0.0a. Elimination-only: no scored ranking at this tier. See ADR-0007 for methodology.",
+  "schema_version": "1.0.0",
+  "tier": "fast",
+  "authored_utc": "2026-08-11T05:51:00Z",
+  "spec_anchor": "docs/specs/integration-execution-plan-v16.md#01-fast-tier-30-minutes-triage-and-infeasibility-elimination",
+  "applies_to": ["coder", "planner", "embedder"],
+  "rules": [
+    {
+      "id": "R1-launch-failure",
+      "trigger": "runtime fails to bring up model on target device",
+      "action": {
+        "coder": "eliminate candidate",
+        "planner": "eliminate candidate",
+        "embedder": "eliminate that (device, runtime) matrix cell only; other cells for the same model survive"
+      },
+      "spec_anchor": "§0.1 elimination criteria; §0.1 v16-addition (runtime-version regression)",
+      "schema_field": "category_7.launch_status"
+    },
+    {
+      "id": "R2-malformed-output",
+      "trigger": "more than 1 task returns malformed output for the candidate",
+      "malformed_definition": {
+        "coder": "expected_tool_sequence not satisfied OR forbidden_tools invoked OR expected_output_contains missing OR expected_file_state divergent",
+        "planner": "output does not match tasks/planner-fast.json#/output_schema OR dependency graph is not a DAG OR truncated before valid JSON close",
+        "embedder": "any vector is null OR vector_min_norm violated OR identical_pair_min_cosine violated OR orthogonal_pair_max_cosine violated"
+      },
+      "action": "eliminate candidate",
+      "denominator_rule": "malformed tasks stay in denominator; do not drop from rate metrics",
+      "spec_anchor": "§0.0a bullet 1 (denominator exclusion bug); §0.1 elimination criteria",
+      "schema_field": "category_1.malformed_call_rate for coder/planner; category_2 for planner rubric-score/verdict"
+    },
+    {
+      "id": "R3-latency-outlier",
+      "trigger": "candidate wall-time or per-call warm latency exceeds 5x the fastest candidate on the same task",
+      "action": "flag for Medium-tier confirmation; do NOT eliminate at Fast tier unless R1 or R2 also fires",
+      "offsetting_signal_exception": "if the slow candidate produces materially better output on any Medium-tier-visible dimension, the flag stands but is annotated 'quality-offsets-latency'",
+      "spec_anchor": "§0.1 elimination criteria",
+      "schema_field": "category_5.per_call_warm_latency_ms, category_5.task_wall_seconds"
+    },
+    {
+      "id": "R4-runtime-version-regression",
+      "trigger": "R1 fires AND the same model previously launched successfully under an older cached runtime version",
+      "action": "label the elimination 'runtime-version regression' distinct from 'model-candidate failure'; treat as infrastructure work item, not evidence against the model",
+      "spec_anchor": "§0.1 v16 addition; §0.1 verification table row 4",
+      "schema_field": "category_7.notes"
+    }
+  ],
+  "scoring": {
+    "enabled": false,
+    "reason": "Fast tier is elimination-only per spec §0.1. Perplexity-gold-standard scoring first applies at Medium tier (§0.2) and is locked by a future ADR before first Medium-tier scored output."
+  },
+  "post_hoc_edit_policy": {
+    "allowed": false,
+    "spec_anchor": "§0.0a bullet 3 (post-hoc rubric editing prohibition)",
+    "note": "Any change to this file after the first Fast-tier scored/eliminated run requires a superseding ADR."
+  }
+}

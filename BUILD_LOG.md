@@ -227,3 +227,45 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** none.
 - **Stop-condition status:** Embedder-pool half of Phase 0 §0.0b complete. Coder + planner pools pending (~155 GiB).
+
+## 2026-08-11 01:52 EDT — Coder + planner pools downloaded
+
+- **Stage / plugin / port:** Phase 0 · §0.0b candidate pool acquisition (complete)
+- **What changed:** Coder pool pulled (~1541 s wall) and planner pool pulled (~194 s wall). Full 10-candidate pool now resident on Colossus with pinned HF revisions recorded in `models/manifest.json`:
+  - Coder (5): `qwen3_6-27b-q6k-gguf` @ `82d411acf4a0` (22.5 GB), `qwen3_6-27b-bf16` @ `6a9e13bd6fc8` (55.6 GB), `qwen3_6-27b-int4-autoround` @ `abc86de19eb1` (19.0 GB), `qwen3_6-35b-a3b-q4kxl-gguf` @ `a483e9e6cbd5` (22.4 GB), `qwen3_6-35b-a3b-awq` @ `119886a10723` (25.5 GB).
+  - Planner (1 new; the 4 dual-role candidates already downloaded under coder): `qwen3-30b-a3b-thinking-2507-awq` @ `efd3cf20fe71` (18.1 GB).
+- **Files touched:** `models/manifest.json` on Colossus (gitignored; not committed).
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none.
+- **Stop-condition status:** Phase 0 §0.0b candidate-pool acquisition COMPLETE for all three roles.
+
+## 2026-08-11 01:52 EDT — Registry approx_size_gib calibration from measured manifest
+
+- **Stage / plugin / port:** Phase 0 · §0.0b candidate registry maintenance
+- **What changed:** Calibrated `approx_size_gib` in `bench/candidates/registry.json` against measured on-disk sizes recorded in `models/manifest.json`:
+  - `qwen3_6-27b-int4-autoround`: 15 → 19 GiB
+  - `qwen3_6-35b-a3b-q4kxl-gguf`: 20 → 22 GiB
+  - `qwen3_6-35b-a3b-awq`: 20 → 25 GiB
+  - `qwen3-30b-a3b-thinking-2507-awq`: 20 → 18 GiB
+  Others already within ±1 GiB of measured. Notes updated to record the calibration date. This affects only the disk-preflight math in `pull-models.sh` (1.25× buffer); the pull was already successful under the old estimates.
+- **Files touched:** `bench/candidates/registry.json`
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none (registry is authored code, hot-editable per spec §0.0b).
+- **Stop-condition status:** met.
+
+## 2026-08-11 01:52 EDT — ADR-0007 filed; Fast-tier task sets + elimination rubric authored
+
+- **Stage / plugin / port:** Phase 0.1 · Fast-tier methodology lock-in
+- **What changed:**
+  1. Filed **ADR-0007 — Fast-tier task authoring, sampling, and elimination-rubric methodology** (Ratified). Resolves two skill/spec conflicts: (a) llama.cpp cells use spec §0.1's uniform launch-flag sampling (Qwen planner preset); vLLM cells use per-role Qwen presets per-request from `local-llm-bench`. (b) Perplexity-gold-standard scoring is deferred to Medium tier — Fast tier is elimination-only per spec §0.1. Also ratifies a project-wide progress-visibility discipline for harness scripts (per-phase bookends, `[i/N]` prefixes, ≤10 s heartbeats on long phases, `PYTHONUNBUFFERED=1` on child processes).
+  2. Wrote `bench/tasks/coder-fast.json` (5 synthetic tool-call probes: read_file, str_replace_editor, execute_bash, write_file, read→write chain — each with hard-coded expected tool sequence and file-state).
+  3. Wrote `bench/tasks/planner-fast.json` (3 structured-plan prompts with fixed `{steps:[{id,desc,deps}]}` JSON schema; pass = valid JSON + DAG + no truncation at 4096 tokens).
+  4. Wrote `bench/tasks/embedder-fast.json` (8 queries: identical-pair, orthogonal-pair, 6 realistic Forge-OH trajectory snippets; pass = identical cos ≥ 0.999, orthogonal cos ≤ 0.9, no null vectors).
+  5. Wrote `bench/rubrics/fast-elimination.json` — timestamped elimination rubric (launch-failure, malformed-output >1, latency-outlier >5×, runtime-version-regression flag). Explicitly `scoring.enabled=false` with reference back to spec §0.1.
+  6. Added progress-ticker output to `scripts/pull-models.sh` (`[i/N]` counter, per-candidate elapsed, cumulative batch elapsed, batch summary).
+  7. Added progress-visibility clause to `scripts/benchmark-tier-runner.py` scaffold docstring (Guard #8) so the constraint travels with the code.
+  8. Updated `adrs/README.md` index with ADR-0007 row.
+- **Files touched:** `adrs/ADR-0007-fast-tier-task-methodology.md` (new), `adrs/README.md`, `bench/candidates/registry.json`, `bench/tasks/coder-fast.json` (new), `bench/tasks/planner-fast.json` (new), `bench/tasks/embedder-fast.json` (new), `bench/rubrics/fast-elimination.json` (new), `scripts/pull-models.sh`, `scripts/benchmark-tier-runner.py`.
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0007 filed.
+- **Stop-condition status:** Fast-tier task+rubric authoring complete. Next Phase 0.1 work item is implementing real serving in `scripts/benchmark-tier-runner.py` (replacing `build_dry_run_record` with a launcher that consumes the new task files and enforces the elimination rubric).

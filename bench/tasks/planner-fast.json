@@ -1,0 +1,49 @@
+{
+  "$comment": "Phase 0.1 Fast-tier planner task set. Deterministic structured-plan probes. Pass = valid JSON, matches schema, dependency graph is a DAG, no truncation at 4096 tokens. See ADR-0007 for methodology.",
+  "schema_version": "1.0.0",
+  "tier": "fast",
+  "role": "planner",
+  "authored_utc": "2026-08-11T05:51:00Z",
+  "budget_tokens": 4096,
+  "output_schema": {
+    "type": "object",
+    "required": ["steps"],
+    "properties": {
+      "steps": {
+        "type": "array",
+        "minItems": 3,
+        "items": {
+          "type": "object",
+          "required": ["id", "desc", "deps"],
+          "properties": {
+            "id": {"type": "string", "pattern": "^s[0-9]+$"},
+            "desc": {"type": "string", "minLength": 8},
+            "deps": {"type": "array", "items": {"type": "string", "pattern": "^s[0-9]+$"}}
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "additionalProperties": false
+  },
+  "tasks": [
+    {
+      "id": "planner-fast-01-forge-oh-endpoint",
+      "prompt": "You are the planner for a small Forge-OH module. Produce a JSON plan (and nothing else) to add a new GET /health endpoint to the existing FastAPI application at src/forge_oh/api/server.py. The endpoint must return {\"status\": \"ok\"} and be covered by a pytest test. Follow this exact JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 3,
+      "notes": "Realistic FastAPI-endpoint plan. Small, DAG-shaped, easily fits 4096 tokens."
+    },
+    {
+      "id": "planner-fast-02-forge-oh-migration",
+      "prompt": "You are the planner for a small Forge-OH module. Produce a JSON plan (and nothing else) to introduce a new SQLAlchemy model 'AgentRun' with columns (id UUID PK, started_at datetime, agent_name str, status str) and a migration created via alembic. Include a test that inserts and reads back one row. Follow this exact JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 4,
+      "notes": "Migration plan. Non-trivial dependency chain (model before migration before test)."
+    },
+    {
+      "id": "planner-fast-03-forge-oh-refactor",
+      "prompt": "You are the planner for a small Forge-OH module. Produce a JSON plan (and nothing else) to refactor src/forge_oh/tools/registry.py so that tool registration is done via a decorator '@register_tool(name)' instead of manual dict updates, while preserving the existing public function get_tool(name). Include updating one existing caller and a test that confirms both the old and new registration paths still resolve. Follow this exact JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 4,
+      "notes": "Refactor plan with explicit backwards-compat constraint. Tests planner's ability to preserve invariants across steps."
+    }
+  ]
+}
