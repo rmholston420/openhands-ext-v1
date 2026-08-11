@@ -1,0 +1,53 @@
+{
+  "$comment": "Phase 0.2 Medium-tier embedder task set — BEIR/SciDocs subset. Portability arm of the hybrid embedder-medium design (ADR-0016). Configures the harness to load a deterministic subset of the BEIR SciDocs corpus (~25k docs, ~1k queries at source), sample 5000 docs + 100 queries by SHA-256(id) rank, and score retrieval quality against BEIR's published qrels. Complements the domain arm at bench/tasks/embedder-medium-domain-openhands-ext.json. Post-hoc edit prohibited per §0.0a bullet 3 after first Medium-tier scored run.",
+  "schema_version": "1.0.0",
+  "tier": "medium",
+  "role": "embedder",
+  "arm": "portability",
+  "task_id": "embedder-medium-beir-scidocs",
+  "authored_utc": "2026-08-11T09:47:00Z",
+  "adr_anchor": "adrs/ADR-0016-medium-tier-scoring-rubric-hybrid.md",
+  "corpus": {
+    "source": "beir/scidocs",
+    "loader": "beir.datasets.data_loader.GenericDataLoader",
+    "download_url": "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/scidocs.zip",
+    "cache_dir": "~/.cache/beir/scidocs",
+    "expected_docs_full": 25657,
+    "expected_queries_full": 1000,
+    "subset": {
+      "docs": 5000,
+      "queries": 100,
+      "sampling_method": "sha256_hash_rank",
+      "sampling_rationale": "Deterministic subset selection: hash each doc_id and query_id with SHA-256, sort ascending, take first N. Same subset every run; portable across machines; no seed dependency.",
+      "sampling_reference_impl": "hashlib.sha256(id.encode()).hexdigest() sort ascending, take first 5000 / 100",
+      "qrels_filtering": "keep only qrels rows where BOTH query_id is in the sampled queries AND doc_id is in the sampled docs. All other qrels dropped."
+    }
+  },
+  "queries": {
+    "count": 100,
+    "resolution": "loaded from BEIR SciDocs test split, filtered by sampling method above",
+    "average_length_tokens_approx": 12
+  },
+  "qrels": {
+    "source": "BEIR SciDocs test qrels",
+    "resolution": "loaded from BEIR SciDocs test qrels, filtered per corpus.subset.qrels_filtering",
+    "relevance_levels": [0, 1],
+    "relevance_note": "BEIR SciDocs is graded 0/1 (binary) at the test-qrels level. Any doc appearing in qrels with score >= 1 is treated as relevant; all other docs are non-relevant."
+  },
+  "metrics": {
+    "primary": ["recall@10", "mrr", "ndcg@10"],
+    "secondary": ["recall@1", "recall@5"],
+    "aggregation_across_queries": "macro-average (unweighted mean over the 100 queries)",
+    "aggregation_across_arms": "reported per-arm; tier verdict uses macro-average across arms (see medium-scored.json)"
+  },
+  "runtime_expectations": {
+    "corpus_embed_wall_seconds_soft_ceiling": 900,
+    "corpus_embed_wall_seconds_hard_ceiling": 1800,
+    "note": "5000 docs at ~150 tokens avg + 100 queries at ~12 tokens avg. Any embedder cell exceeding hard_ceiling is R3-latency-outlier-flagged per fast-elimination.json (reused via medium-scored.json elimination phase)."
+  },
+  "post_hoc_edit_policy": {
+    "allowed": false,
+    "spec_anchor": "§0.0a bullet 3",
+    "note": "Post-hoc edit prohibited after first Medium-tier scored run. Change requires either superseding ADR or a versioned re-authored task file."
+  }
+}

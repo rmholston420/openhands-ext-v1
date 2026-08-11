@@ -101,3 +101,42 @@ all norms exceed `vector_min_norm`, the identical pair cosine ≥
 4. Add a BUILD_LOG entry per `kosmos-log-maintenance`.
 5. Do NOT edit an already-run task set. Bump `schema_version` in a new
    file if the semantics change.
+
+## Medium-tier embedder task shape (ADR-0016)
+
+Medium-tier embedder task files use a retrieval-scoring shape instead of the
+Fast-tier `probes` (identical/orthogonal cosine) shape. Two arms per ADR-0016
+hybrid design:
+
+- **Portability arm** (`embedder-medium-beir-scidocs.json`, config only) —
+  points to BEIR SciDocs; materialize once via
+  `scripts/materialize-beir-scidocs-subset.py` into
+  `embedder-medium-beir-scidocs-materialized.json` (inline corpus + queries +
+  qrels; deterministic SHA-256 hash-rank subset).
+- **Domain arm** (`embedder-medium-domain-openhands-ext.json`) — inline
+  corpus + queries + qrels for OpenHands-Ext repo self-retrieval; ~42 chunks
+  + 10 queries + hand-labeled 3-level qrels (0/1/2).
+
+Common top-level keys for a materialized/domain Medium-tier embedder task:
+
+| Field | Type | Description |
+|---|---|---|
+| `arm` | `"portability" \| "domain"` | Which arm this file represents |
+| `task_id` | string | Stable ID used in result summaries |
+| `corpus` | list[{doc_id, text}] | Documents to embed and search over |
+| `queries` | list[{query_id, text}] | Queries to score |
+| `qrels` | list[{query_id, doc_id, relevance}] | Ground-truth relevance judgments |
+| `metrics.primary` | list[str] | e.g. `["recall@10", "mrr", "ndcg@10"]` |
+| `metrics.secondary` | list[str] | e.g. `["recall@1", "recall@5"]` |
+
+Pass condition per query: retrieval was scored without a transport or
+malformed-vector error. Numeric metrics are recorded in `ProbeResult.notes`
+as a JSON summary object and written to the probe sidecar. Tier-verdict
+aggregation is macro-average across queries per arm, then macro-average
+across arms per `bench/rubrics/medium-scored.json`.
+
+Dispatch: the runner in `bench/runner/main.py` routes embedder cells to
+`probe_embedder_retrieval` (in `bench/runner/probes_retrieval.py`) whenever
+the task file has both `corpus` and `qrels` top-level keys; otherwise it
+falls back to the Fast-tier `probe_embedder`. The Fast-tier probe file is
+untouched — post-hoc-edit-locked per §0.0a bullet 3.

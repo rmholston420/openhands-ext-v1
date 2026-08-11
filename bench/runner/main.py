@@ -69,6 +69,7 @@ from .probes import (
     summarize_tool_call_behavior,
     verdict_from_probe,
 )
+from .probes_retrieval import probe_embedder_retrieval
 from .progress import Progress, enforce_unbuffered_env
 from .server import (
     BaseServer,
@@ -331,10 +332,19 @@ def _run_one_cell(
                         budget_tokens=task_set_data.get("budget_tokens", 4096),
                     )
                 else:
-                    probe = probe_embedder(
-                        endpoint=endpoint, served_name=served_name,
-                        task_set=task_set_data,
-                    )
+                    # Medium-tier retrieval task sets carry corpus + qrels;
+                    # Fast-tier embedder task sets carry `probes` cosine
+                    # thresholds only. Dispatch by shape (ADR-0016 additive).
+                    if ("corpus" in task_set_data and "qrels" in task_set_data):
+                        probe = probe_embedder_retrieval(
+                            endpoint=endpoint, served_name=served_name,
+                            task_set=task_set_data,
+                        )
+                    else:
+                        probe = probe_embedder(
+                            endpoint=endpoint, served_name=served_name,
+                            task_set=task_set_data,
+                        )
             except Exception as exc:
                 # Probe crashed unexpectedly — treat as launch-adjacent failure.
                 progress.log("PROBE", f"{cell_label} probe crashed: {exc!r}")

@@ -665,3 +665,28 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0016 Ratified.
 - **Stop-condition status:** Medium-tier rubric locked. Next: author `bench/tasks/embedder-medium.json` + qrels. No Medium-tier task-set commits may land before this ADR's HEAD.
+
+## 2026-08-11 05:52 EDT — embedder-medium task set + retrieval probe authored (both arms; harness --score wired)
+
+- **Stage / plugin / port:** Phase 0.2 · Medium tier · embedder task set + retrieval scoring
+- **What changed:**
+  - **Two Medium-tier embedder task files authored** per ADR-0016 hybrid design:
+    - `bench/tasks/embedder-medium-beir-scidocs.json` — portability arm (BEIR SciDocs config; 5000-doc + 100-query subset via SHA-256 hash-rank sampling; deterministic and reproducible).
+    - `bench/tasks/embedder-medium-domain-openhands-ext.json` — domain arm (42 hand-authored corpus chunks from repo ADRs/spec/code/log; 10 natural retrieval queries; 26 inline qrels rows with 3-level relevance 0/1/2; hand-labeled at authoring time).
+  - **`bench/runner/probes_retrieval.py` added** — new module (Fast-tier `probes.py` untouched, preserves post-hoc lock). Implements `probe_embedder_retrieval` with batched /v1/embeddings, cosine-similarity ranking, recall@k / MRR / nDCG@k scoring, macro-average summary. All metrics per ADR-0016 embedder shape.
+  - **`bench/runner/main.py` extended** — additive dispatch: embedder cells route to `probe_embedder_retrieval` when task file has `corpus` + `qrels` keys; otherwise fall back to Fast-tier `probe_embedder`. No breaking change to Fast-tier embedder runs.
+  - **`scripts/materialize-beir-scidocs-subset.py` added** — one-shot preparation script (network-required first run) that downloads BEIR SciDocs, samples the deterministic subset per config, filters qrels, and writes an inline-corpus materialized file. Depends on `pip install beir`. Materialized file is a derived artifact (regenerable), not authored; NOT post-hoc-edit-locked, but content is deterministic given config.
+  - **`bench/tasks/README.md` extended** — new Medium-tier embedder shape section describing the two arms, common keys, pass condition, and dispatch logic.
+  - Qrels integrity verified: all 26 domain-arm qrels rows reference valid corpus doc_ids and query_ids (checked at authoring).
+  - Python syntax OK on all three new modules.
+- **Files touched:**
+  - `bench/tasks/embedder-medium-beir-scidocs.json` (new)
+  - `bench/tasks/embedder-medium-domain-openhands-ext.json` (new)
+  - `bench/runner/probes_retrieval.py` (new)
+  - `bench/runner/main.py` (dispatch extension, additive)
+  - `scripts/materialize-beir-scidocs-subset.py` (new, executable)
+  - `bench/tasks/README.md` (Medium section appended)
+  - `BUILD_LOG.md`, `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none directly; `probe_embedder_retrieval` is a new port-adjacent probe module.
+- **PORTING_LEDGER / ADR updated:** none (materializer is an internal preparation script, not a vendored port; BEIR itself is used as pypi dependency at run time, not vendored).
+- **Stop-condition status:** embedder-medium task authoring **complete**. Ready to run embedder-medium bench on Colossus. Next: install BEIR (`pip install beir`), run `python3 scripts/materialize-beir-scidocs-subset.py` once, then invoke the benchmark tier runner for embedder-medium on the 6-cell Fast-tier embedder pool.

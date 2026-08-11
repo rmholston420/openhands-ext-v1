@@ -1,0 +1,262 @@
+{
+  "$comment": "Phase 0.2 Medium-tier embedder task set — OpenHands-Ext domain-fit arm. Domain-fit arm of the hybrid embedder-medium design (ADR-0016). Small hand-authored corpus (~40 chunks) drawn from this repo's ADRs, spec sections, code excerpts, and BUILD_LOG entries, plus 10 natural retrieval queries a coding agent working in this repo would issue, with hand-labeled inline qrels. Complements the portability arm at bench/tasks/embedder-medium-beir-scidocs.json. Post-hoc edit prohibited per §0.0a bullet 3 after first Medium-tier scored run.",
+  "schema_version": "1.0.0",
+  "tier": "medium",
+  "role": "embedder",
+  "arm": "domain",
+  "task_id": "embedder-medium-domain-openhands-ext",
+  "authored_utc": "2026-08-11T09:47:00Z",
+  "adr_anchor": "adrs/ADR-0016-medium-tier-scoring-rubric-hybrid.md",
+  "corpus_authoring_notes": {
+    "sources_drawn_from": [
+      "adrs/ADR-0007-fast-tier-task-methodology.md",
+      "adrs/ADR-0011-fast-tier-coder-tool-call-parser-hermes.md",
+      "adrs/ADR-0014-coder-fast-pool-reinstate-r2-warning-survivors.md",
+      "adrs/ADR-0015-planner-medium-thinker-budget-probe.md",
+      "adrs/ADR-0016-medium-tier-scoring-rubric-hybrid.md",
+      "bench/rubrics/fast-elimination.json",
+      "bench/rubrics/medium-scored.json",
+      "bench/candidates/coder-fast-pool.json",
+      "bench/candidates/planner-fast-pool.json",
+      "BUILD_LOG.md (recent entries)"
+    ],
+    "chunking_convention": "Each corpus doc is a self-contained ~300-500 token chunk. IDs are prefixed by category (adr/, spec/, code/, log/) and are stable across runs."
+  },
+  "corpus": [
+    {
+      "doc_id": "adr/0011-hermes-default",
+      "text": "ADR-0011: Fast-tier coder cells use --tool-call-parser hermes by default in vLLM launch. Per-cell override is permitted for models that ship an official non-hermes tool-call template (e.g., qwen3_coder_tool_parser for Qwen3-Coder-30B-A3B-Instruct). Amendment 3 (superseded by ADR-0014) previously eliminated two R2-warning cells; ADR-0014 reinstated them after the harness rubric-compliance fix at commit 9d4f6b0."
+    },
+    {
+      "doc_id": "adr/0014-coder-reinstate",
+      "text": "ADR-0014 (Ratified): Coder-fast pool reinstates R2-warning survivors after harness rubric-compliance fix. Prior eliminations at 04:36 and 04:45 EDT were made under a bug (harness treated malformed_call_rate denominator incorrectly); the fix at 9d4f6b0 changed the denominator computation and both survivors now pass R2. Coder-fast pool restored 2→4 cells."
+    },
+    {
+      "doc_id": "adr/0015-thinker-planner-unfit",
+      "text": "ADR-0015 (Ratified · Confirmed 2026-08-11): qwen3-30b-a3b-thinking-2507-awq is unfit for planner Medium-tier pool. Pre-registered budget-hypothesis probe (Probe A at 8k, Probe B at 16k) evaluated the model on planner tasks; both probes returned malformed_count = 2/3. Task 01 was truncated at max_tokens on both budgets (wall time doubled 34s to 74s from 8k to 16k). Task 03 regressed to a schema violation ('steps' is a required property) at 16k. Corrected failure diagnosis: planner-role structural incompatibility, not think-block bloat and not budget-bound. Model retains dual-role marker per ADR-0012 and remains eligible as a coder Medium-tier candidate."
+    },
+    {
+      "doc_id": "adr/0016-medium-rubric",
+      "text": "ADR-0016 (Ratified): Medium-tier scoring rubric is hybrid by role. Embedder-Medium uses programmatic scoring (recall@1, recall@5, recall@10, MRR, nDCG@10) against a labeled qrels file — LLM-as-judge is prohibited for embedder. Planner-Medium and Coder-Medium use Perplexity-gold rubric scoring (0-100 per task) against a Perplexity-Max-generated reference answer, per the local-llm-bench skill canonical protocol. Self-scoring is prohibited for planner/coder. Uniform tiebreak: quality-first; if top two cells are within 3 quality points, faster wall-time-median wins."
+    },
+    {
+      "doc_id": "adr/0016-post-hoc-lock",
+      "text": "The Medium-tier rubric file bench/rubrics/medium-scored.json is post-hoc-edit-locked at the same commit as ADR-0016. All Medium-tier task-set files (embedder, planner, coder) and all reference files under bench/gold/** are similarly locked. Amendment requires either a superseding ADR or a re-authored versioned task-set file. This mirrors the Fast-tier rubric lock at bench/rubrics/fast-elimination.json per §0.0a bullet 3."
+    },
+    {
+      "doc_id": "adr/0007-fast-methodology",
+      "text": "ADR-0007: Fast-tier task authoring, sampling, and elimination-rubric methodology. Fast tier is elimination-only (pass/fail on hard rubric checks); no scored ranking. Coder tasks are tool-call sequences; planner tasks are JSON plan objects with a required 'steps' array; embedder tasks are 8 fixed queries (2 identical, 2 orthogonal, 4 realistic snippets). Elimination rules R1-R4 defined in fast-elimination.json apply to all roles."
+    },
+    {
+      "doc_id": "adr/0009-guided-decoding",
+      "text": "ADR-0009: Fast-tier planner uses guided decoding (response_format=json_schema) for vLLM planner cells. Deterministic schema-locking of planner JSON output; prevents partial-emit failures. llama.cpp planner cells rely on the prompt schema alone. Not applied to the ADR-0015 probe cell, which is a diagnostic on the model's native output distribution."
+    },
+    {
+      "doc_id": "adr/0012-dual-role",
+      "text": "ADR-0012: Registry amendment marks qwen3-30b-a3b-thinking-2507-awq as dual-role coder+planner. The model is eligible for both role pools at each tier gate independently. Fast-tier evidence: 5/5 pass on coder tasks. Fast-tier evidence: excluded from planner pool at the Fast rubric R2 threshold. Medium-tier: excluded from planner Medium pool per ADR-0015; remains a coder Medium-tier candidate."
+    },
+    {
+      "doc_id": "rubric/fast-elim-R1",
+      "text": "Rubric rule R1-launch-failure: fires when the runtime fails to bring up the model on the target device. Coder and planner actions: eliminate candidate. Embedder action: eliminate that (device, runtime) matrix cell only; other cells for the same model survive."
+    },
+    {
+      "doc_id": "rubric/fast-elim-R2",
+      "text": "Rubric rule R2-malformed-output: fires when more than 1 task returns malformed output for the candidate. Malformed for planner: output does not match tasks/planner-fast.json#/output_schema OR dependency graph is not a DAG OR truncated before valid JSON close. Malformed for coder: expected_tool_sequence not satisfied OR forbidden_tools invoked OR expected_output_contains missing OR expected_file_state divergent. Malformed for embedder: any vector is null OR vector_min_norm violated OR identical_pair_min_cosine violated OR orthogonal_pair_max_cosine violated. Malformed tasks stay in the denominator; do not drop from rate metrics."
+    },
+    {
+      "doc_id": "rubric/fast-elim-R3",
+      "text": "Rubric rule R3-latency-outlier: fires when candidate wall-time or per-call warm latency exceeds 5x the fastest candidate on the same task. Action: flag for Medium-tier confirmation; do NOT eliminate at Fast tier unless R1 or R2 also fires. Offsetting-signal exception: if the slow candidate produces materially better output on any Medium-tier-visible dimension, the flag stands but is annotated 'quality-offsets-latency'."
+    },
+    {
+      "doc_id": "rubric/fast-elim-R4",
+      "text": "Rubric rule R4-runtime-version-regression: fires when R1 fires AND the same model previously launched successfully under an older cached runtime version. Action: label the elimination 'runtime-version regression' distinct from 'model-candidate failure'; treat as infrastructure work item, not evidence against the model."
+    },
+    {
+      "doc_id": "rubric/post-hoc-lock",
+      "text": "post_hoc_edit_policy.allowed=false: rubric files (fast-elimination.json, medium-scored.json) cannot be edited after the first scored/eliminated run of the tier they govern. Any change requires a superseding ADR. This is enforced by spec v16 §0.0a bullet 3. The rule also applies to task-set files and reference-gold files at the Medium tier."
+    },
+    {
+      "doc_id": "rubric/medium-tiebreak",
+      "text": "Medium-tier tiebreak convention: quality-first ranking is primary. When the top two cells score within 3 quality points, the secondary sort is wall-time-median across the task set (lower wins). Applies uniformly across embedder, planner, and coder Medium-tier scoring. Reference: local-llm-bench skill principle 1 (quality-first, speed-second)."
+    },
+    {
+      "doc_id": "pool/coder-fast-4cells",
+      "text": "Coder-fast pool locked at 4 cells (per ADR-0014): qwen3-30b-a3b-thinking-2507-awq (vllm, hermes tool parser), qwen3-coder-30b-a3b-instruct-awq-4bit (vllm, qwen3_coder tool parser), qwen3_6-27b-q6k-gguf (llama.cpp/gpu), qwen3_6-35b-a3b-q4kxl-gguf (llama.cpp/gpu). All four survive the Fast-tier R1-R4 rules after the 9d4f6b0 harness fix."
+    },
+    {
+      "doc_id": "pool/planner-fast-2cells",
+      "text": "Planner-fast pool locked at 2 cells: qwen3_6-27b-q6k-gguf (llama.cpp/gpu) and qwen3_6-35b-a3b-q4kxl-gguf (llama.cpp/gpu). Both llama.cpp cells; both survive R1-R2 and produce schema-conforming JSON output without guided decoding. The vLLM candidate thinker-2507-awq was eliminated at Fast tier and excluded from Medium tier per ADR-0015."
+    },
+    {
+      "doc_id": "pool/embedder-fast-6cells",
+      "text": "Embedder-fast pool locked at 6 cells: three 0.6B embedder variants (Qwen3-Embedding-0.6B under Ollama, vLLM, and llama.cpp adapters) and three 4B variants (Qwen3-Embedding-4B under the same three runtimes). Fast tier is elimination-only per ADR-0007; all 6 survive R1-R4. Medium tier will apply the scoring shape from ADR-0016 (programmatic: recall@k, MRR, nDCG@10)."
+    },
+    {
+      "doc_id": "pool/planner-medium-expected",
+      "text": "Planner-Medium pool expected composition (pre-authoring): 2 cells — qwen3_6-27b-q6k-gguf (llama.cpp/gpu) and qwen3_6-35b-a3b-q4kxl-gguf (llama.cpp/gpu). Composition mirrors the Fast-tier planner survivors; thinker-2507-awq is excluded per ADR-0015 (Confirmed). Composition finalizes at Phase 0.2 planner-medium task-set authoring."
+    },
+    {
+      "doc_id": "code/vllm-launch-hermes",
+      "text": "vLLM launch flag for Fast-tier coder cells: --tool-call-parser hermes (default per ADR-0011). Per-cell override via candidate JSON: bench/candidates/coder-fast-pool.json cell entry supplies tool_call_parser=qwen3_coder for the Qwen3-Coder-30B-A3B-Instruct AWQ 4-bit cell. Reasoning parser for thinker-2507-awq is qwen3 (--reasoning-parser qwen3); confirmed working (think_chars=0 on all ADR-0015 probe runs)."
+    },
+    {
+      "doc_id": "code/vllm-blackwell",
+      "text": "vLLM Blackwell (SM_120) launch requires VLLM_USE_FLASHINFER_SAMPLER=0 (ADR-0005) OR flashinfer-jit-cache==0.6.16.post3+cu129 (ADR-0006 for attention path). Sampler path deferred to ADR-0005 workaround. Colossus workstation: RTX 5090, 32GB VRAM, 128GB RAM. Weight budgets are capped at approximately 30GB usable (32 - 2GB overhead) for single-GPU deployment; larger weights require offload or rejection."
+    },
+    {
+      "doc_id": "code/llamacpp-cuda-pin",
+      "text": "llama.cpp CUDA toolchain pin (ADR-0004): CUDA 13.0 + gcc-13 + SM_120 target compilation. Amended for Blackwell SM_120 build compatibility. Both Fast-tier and Medium-tier llama.cpp cells share this toolchain. Runtime version regression under R4 fires if the pinned toolchain fails to launch a cell that succeeded under a prior version."
+    },
+    {
+      "doc_id": "code/harness-runner-main",
+      "text": "bench/runner/main.py: main entry point for the bench harness. Loads a candidate pool JSON and a task JSON, brings up each cell via bench/runner/server.py, runs probes via bench/runner/probes.py, records per-task NVML data via bench/runner/nvml.py, writes result JSON per cell to bench/results/. Supports --smoke flag for bypassing §0.0b pool-guard (diagnostic runs only)."
+    },
+    {
+      "doc_id": "code/harness-runner-server",
+      "text": "bench/runner/server.py: encapsulates model launch logic per runtime. Handles vLLM (docker-based, VRAM sharing with Ollama managed), Ollama (systemctl-based, hot-swap capable), and llama.cpp (llama-server binary launched with --host 0.0.0.0). Enforces the invariant that Ollama is stopped whenever vLLM is serving (both compete for the same 32GB VRAM on Colossus)."
+    },
+    {
+      "doc_id": "code/harness-runner-probes",
+      "text": "bench/runner/probes.py: encapsulates per-task probe execution. For coder role: sends prompt via OpenAI-compatible /v1/chat/completions endpoint with tool definitions, records tool-call trace, verifies against expected_tool_sequence. For planner role: sends prompt with optional response_format=json_schema (ADR-0009), parses JSON output, validates against task file's output_schema. For embedder role: sends batches to /v1/embeddings endpoint, computes cosine similarity matrix for probe pairs."
+    },
+    {
+      "doc_id": "code/harness-runner-nvml",
+      "text": "bench/runner/nvml.py: NVIDIA Management Library integration for per-task VRAM, temperature, and power draw sampling. Sampling interval configurable per candidate; default 500ms. Records min, max, mean, and p95 for each metric per task. Data joins into result JSON under category_5 (throughput and resource metrics)."
+    },
+    {
+      "doc_id": "code/harness-schema-run",
+      "text": "bench/schema/run.py: pydantic v2 schema for the canonical result JSON produced by the harness. Enforces run.category_1 (correctness), category_2 (planner rubric-score), category_3 (coder rubric-score), category_5 (resource metrics), category_6 (embedder retrieval metrics — new for Medium tier), category_7 (launch/runtime status). Schema-version pinned; version bumps require an ADR."
+    },
+    {
+      "doc_id": "code/harness-candidates",
+      "text": "bench/runner/candidates.py: parses candidate pool JSON, resolves each cell's runtime, endpoint, model_id, role override (if any), and extra_body payload (e.g., chat_template_kwargs, reasoning_parser, tool_call_parser). Enforces one runtime family per cell; rejects candidate JSONs with contradictory runtime + endpoint combinations."
+    },
+    {
+      "doc_id": "code/harness-tests",
+      "text": "bench/tests/test_schema.py: pytest suite for the result JSON schema. Runs on every commit that touches bench/schema/**. Validates that authored task files, candidate pool files, and hand-authored fixture result files all round-trip through the schema. Catches accidental schema drift before it lands in production runs."
+    },
+    {
+      "doc_id": "code/scripts-inspect-raw",
+      "text": "scripts/inspect-raw-content.py: read-only inspector for .probe.json sidecar files produced by --smoke runs. Prints per-task raw_chars, <think>-block char count, wall-seconds, truncation flag, and detail message. Used during ADR-0015 to diagnose thinker-2507-awq planner failure mode. Currently has a known-anomaly bug: raw_chars caps at 8230 for two of the three probed tasks; investigation deferred."
+    },
+    {
+      "doc_id": "spec/section-0-0a",
+      "text": "Integration Execution Plan v16 §0.0a: rubric and task-set editing discipline. Bullet 1: malformed tasks stay in the correctness-rate denominator; do not drop them. Bullet 2: elimination decisions require an ADR at the tier gate. Bullet 3: post-hoc rubric editing prohibited — any rubric file change after the first scored/eliminated run of that tier requires a superseding ADR. Bullet 4: task-set files versioning is by re-authored file, not by in-place edit."
+    },
+    {
+      "doc_id": "spec/section-0-0b",
+      "text": "Integration Execution Plan v16 §0.0b: pool-guard invariant. A tier's result JSON files are only admissible as pool-decision evidence if the candidate pool used matched the tier's locked pool. Runs launched via --smoke or diagnostic-only runs are tagged smoke=true and are NOT admissible. This is why ADR-0015 probe runs are labeled smoke=true and cannot re-open the ADR-0014 pool composition decision."
+    },
+    {
+      "doc_id": "spec/section-0-1",
+      "text": "Integration Execution Plan v16 §0.1: Fast tier (30 minutes; triage and infeasibility elimination). Elimination rules R1-R4 defined in bench/rubrics/fast-elimination.json. All three roles participate. Fast tier is elimination-only — no scored ranking at this tier. Verdict table produces the locked pool that flows into Phase 0.2."
+    },
+    {
+      "doc_id": "spec/section-0-2",
+      "text": "Integration Execution Plan v16 §0.2: Medium tier (scored ranking). First scored tier — cells that survive elimination receive numeric scores per task. Scoring shape is defined by ADR-0016 (hybrid): programmatic for embedder, Perplexity-gold for planner and coder. Tiebreak: quality-first, wall-time-median tiebreaker within 3 points. Post-hoc edit rules from §0.0a apply."
+    },
+    {
+      "doc_id": "log/adr-0015-verdict",
+      "text": "BUILD_LOG entry 2026-08-11 05:39 EDT: ADR-0015 amended to Ratified · Confirmed. Pre-registered criterion #1 (malformed_count ≥ 2 on BOTH Probe A and Probe B) unambiguously met. Probe B task 01 wall = 74.2s (up from 34.9s at Probe A — doubling budget doubled wall without improving verdict). thinker-2507-awq excluded from planner Medium-tier pool. Registry entry retains dual-role marker per ADR-0012."
+    },
+    {
+      "doc_id": "log/adr-0016-file",
+      "text": "BUILD_LOG entry 2026-08-11 05:43 EDT: ADR-0016 filed (Ratified). Medium-tier scoring rubric = hybrid. bench/rubrics/medium-scored.json authored and frozen at same commit. Elimination phase reuses Fast-tier R1-R4 rules by reference. Scoring phase defines per-role shape: embedder programmatic, planner/coder Perplexity-gold. Self-scoring prohibited for planner/coder. Phase 0.2 authoring order confirmed by user: embedder → planner → coder."
+    },
+    {
+      "doc_id": "log/coder-pool-reinstate",
+      "text": "BUILD_LOG entry describing the coder-fast pool reinstatement: after harness rubric-compliance fix at commit 9d4f6b0 corrected the malformed_call_rate denominator computation, both prior R2-warning eliminations (from 04:36 and 04:45 EDT) were reversed. Coder-fast pool restored 2→4 cells per ADR-0014. Rubric file bench/rubrics/fast-elimination.json was NOT touched (post-hoc edit prohibited); only the harness code changed."
+    },
+    {
+      "doc_id": "log/session-handoff-shape",
+      "text": "SESSION_HANDOFF.md overwrite convention: reflects current state only, not history. Overwritten at the end of every session (unlike BUILD_LOG.md and DEBUG_LOG.md which are append-only). Content: current build-sequencing position (stage/phase/plugin/port), completed this session, locked pool state, remaining before DoD, open questions, exact next action. Read SESSION_HANDOFF.md at the start of every new session before any other work."
+    },
+    {
+      "doc_id": "log/debug-search-rule",
+      "text": "DEBUG_LOG.md search-first rule: before diagnosing any new bug, grep DEBUG_LOG.md for matching or similar symptom keywords first. If a matching entry exists with a recorded fix, reuse it instead of re-diagnosing from scratch. Enforced by the space skill kosmos-log-maintenance. Never overwrite prior DEBUG_LOG entries; append only. If a fix is superseded by a better one, append a new entry with a Supersedes: pointer."
+    },
+    {
+      "doc_id": "meta/kosmos-log-discipline",
+      "text": "Kosmos log discipline: four operational log files at monorepo root. BUILD_LOG.md is append-only; entries record what was built or changed with timestamp, stage/plugin/port, files touched, ports/adapters affected, and stop-condition status. DEBUG_LOG.md is append-only and search-first. KNOWN_ISSUES.md is editable and lists currently unresolved bugs. SESSION_HANDOFF.md is overwritten each session end and reflects current state only. All timestamps use America/Detroit YYYY-MM-DD HH:MM EDT (or EST in winter)."
+    },
+    {
+      "doc_id": "meta/quality-first-preference",
+      "text": "User's saved preference (binding): quality over speed; ties within 3 points → faster wins. Applies to all bench tier verdicts. Enforced via medium-scored.json#/scoring.tiebreak. Referenced by local-llm-bench skill principle 1 (quality-first, speed-second). Perplexity Max is the gold-standard baseline for local model quality scoring."
+    },
+    {
+      "doc_id": "meta/porting-preference",
+      "text": "Kosmos porting workflow preference: prefer vendoring a verified permissively-licensed OSS component over hand-building anything the spec identifies as already solved upstream. Log every port in PORTING_LEDGER.md with source URL, commit hash, SPDX license, and modification notes. Enforced by the space skill kosmos-port-workflow. License filter: MIT, BSD, Apache-2.0, ISC, MPL-2.0."
+    },
+    {
+      "doc_id": "meta/colossus-hardware",
+      "text": "Colossus workstation hardware profile: 128GB RAM, RTX 5090 (Blackwell, SM_120), 32GB VRAM, Kubuntu Linux. Single-user, local-first — no cloud control planes and no GitHub-native CI dependencies. VRAM budget: 30GB usable after 2GB overhead. Any candidate model exceeding weight footprint of 30GB is rejected before pull unless offload strategy is spec'd."
+    }
+  ],
+  "queries": [
+    {"query_id": "q01", "text": "which cells are in the coder-fast pool", "intent": "list current pool composition"},
+    {"query_id": "q02", "text": "why was thinker-2507-awq excluded from planner Medium", "intent": "understand ADR-0015 verdict"},
+    {"query_id": "q03", "text": "how is the Medium-tier scoring rubric structured for embedders", "intent": "understand ADR-0016 embedder shape"},
+    {"query_id": "q04", "text": "post-hoc rubric editing rules", "intent": "find §0.0a bullet 3 policy"},
+    {"query_id": "q05", "text": "vLLM tool call parser configuration for coder cells", "intent": "find ADR-0011 default and override"},
+    {"query_id": "q06", "text": "what does R2 malformed output rule mean", "intent": "understand R2 elimination trigger"},
+    {"query_id": "q07", "text": "Perplexity gold reference answer scoring protocol", "intent": "find planner/coder Medium scoring shape"},
+    {"query_id": "q08", "text": "how does the harness sample NVML metrics per task", "intent": "find NVML integration code"},
+    {"query_id": "q09", "text": "quality first speed second tiebreak rule", "intent": "find tiebreak convention"},
+    {"query_id": "q10", "text": "Colossus VRAM budget for candidate models", "intent": "find hardware constraint"}
+  ],
+  "qrels": [
+    {"query_id": "q01", "doc_id": "pool/coder-fast-4cells", "relevance": 2},
+    {"query_id": "q01", "doc_id": "adr/0014-coder-reinstate", "relevance": 1},
+    {"query_id": "q01", "doc_id": "adr/0011-hermes-default", "relevance": 1},
+
+    {"query_id": "q02", "doc_id": "adr/0015-thinker-planner-unfit", "relevance": 2},
+    {"query_id": "q02", "doc_id": "log/adr-0015-verdict", "relevance": 2},
+    {"query_id": "q02", "doc_id": "adr/0012-dual-role", "relevance": 1},
+
+    {"query_id": "q03", "doc_id": "adr/0016-medium-rubric", "relevance": 2},
+    {"query_id": "q03", "doc_id": "log/adr-0016-file", "relevance": 1},
+    {"query_id": "q03", "doc_id": "spec/section-0-2", "relevance": 1},
+
+    {"query_id": "q04", "doc_id": "spec/section-0-0a", "relevance": 2},
+    {"query_id": "q04", "doc_id": "rubric/post-hoc-lock", "relevance": 2},
+    {"query_id": "q04", "doc_id": "adr/0016-post-hoc-lock", "relevance": 1},
+
+    {"query_id": "q05", "doc_id": "adr/0011-hermes-default", "relevance": 2},
+    {"query_id": "q05", "doc_id": "code/vllm-launch-hermes", "relevance": 2},
+    {"query_id": "q05", "doc_id": "code/harness-candidates", "relevance": 1},
+
+    {"query_id": "q06", "doc_id": "rubric/fast-elim-R2", "relevance": 2},
+    {"query_id": "q06", "doc_id": "adr/0007-fast-methodology", "relevance": 1},
+
+    {"query_id": "q07", "doc_id": "adr/0016-medium-rubric", "relevance": 2},
+    {"query_id": "q07", "doc_id": "meta/quality-first-preference", "relevance": 1},
+
+    {"query_id": "q08", "doc_id": "code/harness-runner-nvml", "relevance": 2},
+    {"query_id": "q08", "doc_id": "code/harness-runner-main", "relevance": 1},
+
+    {"query_id": "q09", "doc_id": "rubric/medium-tiebreak", "relevance": 2},
+    {"query_id": "q09", "doc_id": "meta/quality-first-preference", "relevance": 2},
+    {"query_id": "q09", "doc_id": "adr/0016-medium-rubric", "relevance": 1},
+
+    {"query_id": "q10", "doc_id": "meta/colossus-hardware", "relevance": 2},
+    {"query_id": "q10", "doc_id": "code/vllm-blackwell", "relevance": 1}
+  ],
+  "qrels_notes": {
+    "relevance_scale": "0 = not relevant, 1 = partially/secondarily relevant, 2 = primary answer",
+    "labeling_convention": "Each query has one 2-relevance primary doc plus 1-2 supporting 1-relevance docs. Any doc not listed is treated as 0-relevance (non-relevant) at scoring time.",
+    "total_qrels_rows": 26,
+    "total_labeled_docs": 22,
+    "labeled_by": "hand-authored during task-set commit; frozen alongside task file per §0.0a bullet 3"
+  },
+  "metrics": {
+    "primary": ["recall@10", "mrr", "ndcg@10"],
+    "secondary": ["recall@1", "recall@5"],
+    "aggregation_across_queries": "macro-average (unweighted mean over the 10 queries)",
+    "note_on_ndcg": "nDCG@10 uses the 0/1/2 relevance scale directly as gains; standard log-2 discount."
+  },
+  "post_hoc_edit_policy": {
+    "allowed": false,
+    "spec_anchor": "§0.0a bullet 3",
+    "note": "Corpus, queries, and qrels are frozen at this commit. Post-hoc edit prohibited after first Medium-tier scored run. Change requires either superseding ADR or a versioned re-authored task file."
+  }
+}
