@@ -1059,3 +1059,16 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** vllm-coder endpoint (:8100).
 - **PORTING_LEDGER / ADR updated:** —
 - **Stop-condition status:** met (endpoint healthy, model registered, VRAM within envelope; standalone-launch reproducibility now guaranteed across shells until CUDA 12.9 upgrade).
+
+## 2026-08-11 09:45 EDT — Phase 0.2 Medium tier coder + planner verdicts
+
+- **Stage / plugin / port:** OpenHands-Ext v1 · Phase 0.2 · Medium-tier scoring (coder + planner).
+- **What changed:** Scored the 5 Medium-tier scoring dumps at `bench/scoring/medium-20260811_0934/` against gold rubrics at `bench/gold/{coder,planner}-medium/*.md` and rubric bands at `bench/rubrics/medium-scored.json`. Produced two verdict JSONs:
+  - **Coder verdict** (`bench/results/verdicts/medium-verdict-coder-20260811T134530Z.json`): 3 cells scored, macro-avg quality range 76.4–80.9. Rank-1: `qwen3_6-35b-a3b-q4kxl-gguf/llama-cpp/gpu` (80.9, 6.2s total). Rank-2 within 3-pt tiebreak band but loses on quality-first: `qwen3-coder-30b-a3b-instruct-awq-4bit/vllm/gpu` (78.9, 3.3s total) — flagged as latency-sensitive recommendation. Rank-3 dominated: `qwen3_6-27b-q6k-gguf/llama-cpp/gpu` (76.4, 16.6s total). Recorded `capture_scope: single_turn_first_tool_call` — bench captures only first tool call, so scoring evaluates tool selection + args + planning content only (not final file state); ceiling capped at 85 accordingly. Multi-turn correctness remains an open item for a future harness upgrade.
+  - **Planner verdict** (`bench/results/verdicts/medium-verdict-planner-20260811T134530Z.json`): 2 cells scored, macro-avg quality 86.7 and 91.0. Rank-1: `qwen3_6-27b-q6k-gguf/llama-cpp/gpu` (91.0, 80.8s total). Rank-2: `qwen3_6-35b-a3b-q4kxl-gguf/llama-cpp/gpu` (86.7, 16.6s total) — 4.3-pt quality gap outside tiebreak band, so ~5x speed advantage does not override; flagged as latency-sensitive recommendation. Rank-2 fails task 02 (zero-downtime migration ordering: deploys application code before executing DB migration) — rubric's explicit 70-89 cap. No capture-scope caveat (planner produces full plan JSON in one turn).
+- **Files touched:**
+  - `bench/results/verdicts/medium-verdict-coder-20260811T134530Z.json` (new)
+  - `bench/results/verdicts/medium-verdict-planner-20260811T134530Z.json` (new)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** — (Phase 0.3 gate-1 router-selection ADR still open; will reference these verdicts)
+- **Stop-condition status:** Phase 0.2 Medium scoring complete for coder + planner. Embedder verdict already locked from 2026-08-11 10:05:41Z run. Open items: (a) coder multi-turn correctness harness upgrade; (b) 35B-a3b-q4kxl migration-ordering weakness needs re-eval on migration-heavy tasks in Phase 0.3; (c) 27B-q6k coder cell dominated on both axes — consider dropping from Phase 0.3 pool.

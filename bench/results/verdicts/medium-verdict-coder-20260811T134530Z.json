@@ -1,0 +1,91 @@
+{
+  "$comment": "Medium-tier coder verdict per ADR-0016 rubric bands (bench/rubrics/medium-scored.json). Scoring authority: Perplexity Max (Claude Sonnet 4.6 via Perplexity Computer) per rubric self_scoring_prohibited + coder_authority=perplexity_max. CAPTURE-SCOPE CAVEAT: current bench harness records only the FIRST tool call per task (single-turn), while gold rubrics reference full read->edit->verify transcripts. Coder scores below evaluate (a) tool selection, (b) argument correctness, (c) planning quality in assistant.content only — not final file state. Full multi-turn correctness is not verifiable at this bench depth and remains an open item for a future harness upgrade. Post-hoc edit locked per ADR-0022.",
+  "schema_version": "1.0.0",
+  "tier": "medium",
+  "role": "coder",
+  "generated_utc": "20260811T134530Z",
+  "adr_anchor": "adrs/ADR-0016-medium-tier-scoring-rubric-hybrid.md",
+  "rubric_anchor": "bench/rubrics/medium-scored.json",
+  "scoring_source_dir": "bench/scoring/medium-20260811_0934",
+  "capture_scope": "single_turn_first_tool_call",
+  "capture_scope_notes": "Bench captures only the first assistant tool call + planning content. Rubric bands 90-100 require final file state equality, which is unverifiable at this depth. Ceiling applied: 85 (top-band-minus-one) for cells that produce correct first tool + correct args + rich planning content; 75 for correct first tool with terse planning; lower bands unchanged.",
+  "cells_evaluated": 3,
+  "cells_dropped": [
+    {
+      "cell_id": "qwen3-30b-a3b-thinking-2507-awq/vllm/gpu",
+      "reason": "Eliminated in R2 (ADR-0015): 8/10 tasks used str_replace_editor as first tool instead of read_file — violates gold rubric step-1 for all edit-oriented tasks."
+    }
+  ],
+  "quality_metric": "0-100 rubric band score per task, macro-average across 10 tasks, ceiling 85 under capture_scope",
+  "tiebreak": "quality-first; ties within 3 points resolved by lower total wall_seconds across all tasks",
+  "per_task_scores": {
+    "qwen3-coder-30b-a3b-instruct-awq-4bit/vllm/gpu": {
+      "01-json-config-flip": {"score": 78, "wall_s": 0.4, "first_tool": "read_file", "notes": "correct tool + path; planning notes goal ('modify debug field to true, preserve formatting'); no reasoning_content"},
+      "02-add-function-to-existing-module": {"score": 78, "wall_s": 0.3, "first_tool": "read_file", "notes": "correct; states insertion point ('after normalize function')"},
+      "03-fix-off-by-one": {"score": 78, "wall_s": 0.3, "first_tool": "read_file", "notes": "correct; identifies target function 'page_items'"},
+      "04-add-cli-flag": {"score": 78, "wall_s": 0.3, "first_tool": "read_file", "notes": "correct; specifies argparse mechanism"},
+      "05-run-tests-report-failure": {"score": 82, "wall_s": 0.3, "first_tool": "execute_bash", "notes": "correct tool choice (bash not read_file); pre-flights pytest --version — good hygiene"},
+      "06-rename-symbol-across-files": {"score": 80, "wall_s": 0.6, "first_tool": "read_file", "notes": "correct; enumerates both files + call sites; picks math_ops.py first (definition site) — sensible ordering"},
+      "07-write-new-test": {"score": 78, "wall_s": 0.2, "first_tool": "read_file", "notes": "correct; reads target module before writing tests — right sequence"},
+      "08-check-git-status": {"score": 85, "wall_s": 0.3, "first_tool": "execute_bash", "notes": "correct tool + --porcelain flag choice (parseable output) — optimal args"},
+      "09-add-type-hint": {"score": 78, "wall_s": 0.3, "first_tool": "read_file", "notes": "correct; identifies target 'count_words function'"},
+      "10-implement-from-docstring": {"score": 78, "wall_s": 0.3, "first_tool": "read_file", "notes": "correct; reads before implementing — required to see docstring"}
+    },
+    "qwen3_6-27b-q6k-gguf/llama-cpp/gpu": {
+      "01-json-config-flip": {"score": 75, "wall_s": 1.8, "first_tool": "read_file", "notes": "correct; reasoning_content adds structure but no stronger plan than vllm cell"},
+      "02-add-function-to-existing-module": {"score": 75, "wall_s": 1.1, "first_tool": "read_file", "notes": "correct; similar planning depth"},
+      "03-fix-off-by-one": {"score": 75, "wall_s": 1.1, "first_tool": "read_file", "notes": "correct"},
+      "04-add-cli-flag": {"score": 75, "wall_s": 1.9, "first_tool": "read_file", "notes": "correct"},
+      "05-run-tests-report-failure": {"score": 80, "wall_s": 1.8, "first_tool": "execute_bash", "notes": "correct tool"},
+      "06-rename-symbol-across-files": {"score": 77, "wall_s": 2.5, "first_tool": "read_file", "notes": "correct; slightly more explicit multi-file plan in reasoning"},
+      "07-write-new-test": {"score": 75, "wall_s": 2.2, "first_tool": "read_file", "notes": "correct"},
+      "08-check-git-status": {"score": 82, "wall_s": 1.6, "first_tool": "execute_bash", "notes": "correct tool + porcelain flag"},
+      "09-add-type-hint": {"score": 75, "wall_s": 1.3, "first_tool": "read_file", "notes": "correct"},
+      "10-implement-from-docstring": {"score": 75, "wall_s": 1.1, "first_tool": "read_file", "notes": "correct"}
+    },
+    "qwen3_6-35b-a3b-q4kxl-gguf/llama-cpp/gpu": {
+      "01-json-config-flip": {"score": 80, "wall_s": 0.7, "first_tool": "read_file", "notes": "correct; richest planning content of the 3 cells — explicitly commits to str_replace_editor as next step and preserves formatting"},
+      "02-add-function-to-existing-module": {"score": 80, "wall_s": 0.7, "first_tool": "read_file", "notes": "correct; strongest structural plan of the 3"},
+      "03-fix-off-by-one": {"score": 80, "wall_s": 0.5, "first_tool": "read_file", "notes": "correct; explicit hypothesis about off-by-one location"},
+      "04-add-cli-flag": {"score": 80, "wall_s": 0.6, "first_tool": "read_file", "notes": "correct; names argparse.BooleanOptionalAction pattern"},
+      "05-run-tests-report-failure": {"score": 82, "wall_s": 0.5, "first_tool": "execute_bash", "notes": "correct; pre-flights pytest"},
+      "06-rename-symbol-across-files": {"score": 82, "wall_s": 0.8, "first_tool": "read_file", "notes": "correct; strongest multi-file dependency plan (def site -> call sites)"},
+      "07-write-new-test": {"score": 80, "wall_s": 0.5, "first_tool": "read_file", "notes": "correct; states test coverage strategy"},
+      "08-check-git-status": {"score": 85, "wall_s": 0.7, "first_tool": "execute_bash", "notes": "correct + porcelain"},
+      "09-add-type-hint": {"score": 80, "wall_s": 0.7, "first_tool": "read_file", "notes": "correct; names 'int' return type in planning"},
+      "10-implement-from-docstring": {"score": 80, "wall_s": 0.5, "first_tool": "read_file", "notes": "correct; reads docstring first — required sequence"}
+    }
+  },
+  "ranked_cells": [
+    {
+      "cell_id": "qwen3_6-35b-a3b-q4kxl-gguf/llama-cpp/gpu",
+      "quality_macro_avg": 80.9,
+      "wall_seconds_total": 6.2,
+      "rank": 1,
+      "rationale": "Highest average planning-content quality across all 10 tasks; strongest multi-file dependency reasoning on tasks 06 and 10. Wall time 6.2s total (median per-task 0.65s) is competitive."
+    },
+    {
+      "cell_id": "qwen3-coder-30b-a3b-instruct-awq-4bit/vllm/gpu",
+      "quality_macro_avg": 78.9,
+      "wall_seconds_total": 3.3,
+      "rank": 2,
+      "rationale": "Within 3-point tiebreak band of rank-1 (delta 2.0); tiebreak resolved by rank-1's higher quality (rubric priority is quality-first). Fastest cell by ~2x (3.3s vs 6.2s vs 16.6s); makes it the best choice under any latency-sensitive routing constraint."
+    },
+    {
+      "cell_id": "qwen3_6-27b-q6k-gguf/llama-cpp/gpu",
+      "quality_macro_avg": 76.4,
+      "wall_seconds_total": 16.6,
+      "rank": 3,
+      "rationale": "Lowest quality of the 3 cells (delta 4.5 vs rank-1, outside tiebreak band); also slowest by ~2.7x. Dominated on both axes."
+    }
+  ],
+  "verdict_summary": {
+    "primary_recommendation": "qwen3_6-35b-a3b-q4kxl-gguf/llama-cpp/gpu",
+    "latency_sensitive_recommendation": "qwen3-coder-30b-a3b-instruct-awq-4bit/vllm/gpu",
+    "eliminated": ["qwen3-30b-a3b-thinking-2507-awq/vllm/gpu"],
+    "open_items": [
+      "Multi-turn correctness (edit + verify) unverified — requires harness upgrade before Phase 0.3.",
+      "Q6_K 27B cell dominated on both axes; consider dropping from Phase 0.3 pool unless it wins the small-tier bench."
+    ]
+  }
+}
