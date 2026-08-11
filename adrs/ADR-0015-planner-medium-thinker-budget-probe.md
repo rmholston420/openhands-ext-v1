@@ -1,6 +1,49 @@
 # ADR-0015 — Planner Medium-tier `thinker-2507-awq` budget-hypothesis probe (pre-registered)
 
-**Status:** Proposed (evidence pending)
+**Status:** Ratified · **Confirmed** (2026-08-11 05:38 EDT). Both probes evaluated against pre-registered criteria; verdict = thinker-2507-awq unfit for planner role.
+
+> **STATUS AMENDMENT (2026-08-11 05:38 EDT) — Verdict: Confirmed.**
+>
+> Pre-registered Confirmed criterion #1 ("malformed_count ≥ 2 on BOTH Probe A and Probe B") is unambiguously met.
+>
+> **Probe A (budget=8192, wall probe phase 56s):**
+>
+> | Task | Verdict | Wall | Truncated | Detail |
+> |---|---|---:|---|---|
+> | 01 endpoint | fail | 34.9s | yes | truncated at max_tokens |
+> | 02 migration | pass | 5.5s | no | steps=3 |
+> | 03 refactor | fail | 16.2s | no | too few steps (3 < 4) |
+>
+> malformed_count = 2/3. Median wall = 16.2s (< 60s SLO).
+>
+> **Probe B (budget=16384, wall probe phase 92s):**
+>
+> | Task | Verdict | Wall | Truncated | Detail |
+> |---|---|---:|---|---|
+> | 01 endpoint | fail | 74.2s | yes | truncated at max_tokens |
+> | 02 migration | pass | 3.9s | no | steps=3 |
+> | 03 refactor | fail | 14.2s | no | **schema violation: 'steps' is a required property** |
+>
+> malformed_count = 2/3. Median wall = 14.2s (< 60s SLO), but task-01 wall = 74.2s exceeds SLO on that task individually.
+>
+> **Key diagnostic findings (not needed to satisfy the criterion, but recorded for future ADRs):**
+>
+> 1. **`--reasoning-parser qwen3` is working correctly:** `think_chars=0` on all 6 task-runs across both probes. The original H0 label ("model cannot honor `enable_thinking=false`") was mis-specified in the Rationale. The correct failure diagnosis is **planner-role structural incompatibility**: the model produces open-ended English planning prose in the visible output channel where it should emit a schema-conforming JSON object.
+> 2. **Task 01 is NOT budget-fixable.** Doubling the budget from 8k to 16k doubled wall time (34s → 74s) but the model still ran to max_tokens with the same head prose. It is not running out of budget — it is running away from the schema.
+> 3. **Task 03 schema conformance degraded with more budget.** At 8k the model emitted a JSON with `steps` but too few (3 vs required 4). At 16k the model emitted a JSON without the `steps` key at all. Higher budget gave the model more room to hallucinate a different output shape, not more room to complete the required shape.
+> 4. **Task 02 (SQLAlchemy migration) passes cleanly on both budgets** — canonical natural DAG (model → migration → test) that appears frequently in training data. This is the exception that proves the rule: the model can produce schema-conforming output when the task itself is a well-known template, but not when the planner needs to genuinely decompose an unfamiliar refactor or infrastructure task.
+> 5. **Guided decoding (ADR-0009) would likely fix (1) and (3)** by forcing the JSON envelope. Not attempted here because the Fast-tier planner survivors (27B Q6_K llama.cpp/gpu, 35B Q4_K_XL llama.cpp/gpu) already produce clean schema-conforming output without guided decoding; adding a needs-guided-decoding cell to the pool creates cross-cell asymmetry with no offsetting quality benefit.
+>
+> **Consequences applied:**
+>
+> - `qwen3-30b-a3b-thinking-2507-awq` **excluded from planner Medium-tier pool** when authored in Phase 0.2.
+> - Registry entry retains its dual-role marker (ADR-0012); it remains a viable **coder** Medium-tier candidate (Fast-tier evidence: 5/5 pass on coder tasks).
+> - No changes to `bench/candidates/planner-fast-pool.json` (already locked at 2 cells; not affected).
+> - Diagnostic evidence recorded for future reference; no re-run of the probe unless a checkpoint variant with non-mandatory reasoning is released (e.g., Qwen3-Instruct-2507 series).
+>
+> **Note on inspector fidelity:** `scripts/inspect-raw-content.py` shows anomalous `raw_chars=8230` for the two failing tasks on both probes. Investigation deferred: appears to be a truncation of the `raw_content` field in the probe sidecar or the inspector's read path. Does not affect the verdict — verdict fields (`verdict`, `wall_seconds`, `truncated`, `detail`) come directly from the harness and are trustworthy. Filed for follow-up.
+
+**Original status (superseded):** Proposed (evidence pending).
 **Lock-in phase:** Phase 0.2 (Medium tier authoring) — no Medium-tier code paths land until this probe resolves.
 **Supersedes:** —
 

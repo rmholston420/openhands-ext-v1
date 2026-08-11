@@ -22,7 +22,7 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0012 | [Registry amendment: 30B thinker is dual-role coder+planner](ADR-0012-registry-dual-role-30b-thinker.md) | Ratified | Phase 0.1 |
 | 0013 | [Registry exclusion: Qwen3.5-VL multimodal not coder-pool](ADR-0013-registry-exclude-qwen3_5-multimodal-from-coder.md) | Ratified | Phase 0.1 |
 | 0014 | [Coder-fast pool reinstates R2-warning survivors after harness rubric-compliance fix](ADR-0014-coder-fast-pool-reinstate-r2-warning-survivors.md) | Ratified | Phase 0.1 |
-| 0015 | [Planner Medium-tier thinker-2507-awq budget-hypothesis probe (pre-registered)](ADR-0015-planner-medium-thinker-budget-probe.md) | Proposed | Phase 0.2 |
+| 0015 | [Planner Medium-tier thinker-2507-awq budget-hypothesis probe (pre-registered)](ADR-0015-planner-medium-thinker-budget-probe.md) | Ratified · Confirmed (2026-08-11) — thinker unfit for planner Medium pool | Phase 0.2 |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 

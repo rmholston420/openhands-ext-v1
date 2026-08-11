@@ -626,3 +626,24 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0015 Proposed. No ledger change.
 - **Stop-condition status:** pending evidence. ADR moves to Ratified with Falsified or Confirmed verdict after probe run(s).
+
+## 2026-08-11 05:39 EDT — ADR-0015 amended to Ratified · Confirmed; thinker-2507-awq excluded from planner Medium-tier pool
+
+- **Stage / plugin / port:** Phase 0.2 · Medium tier · planner pool composition
+- **What changed:**
+  - **ADR-0015 amended: Proposed → Ratified · Confirmed.** Pre-registered criterion #1 ("malformed_count ≥ 2 on BOTH Probe A and Probe B") unambiguously met.
+  - **Probe A (budget=8192):** 2/3 malformed. Task 01 truncated at max_tokens (34.9s wall). Task 02 pass. Task 03 too few steps (3<4).
+  - **Probe B (budget=16384):** 2/3 malformed. Task 01 STILL truncated (74.2s wall — 2× Probe A). Task 02 pass. Task 03 regressed to `schema violation: 'steps' is a required property` (JSON emitted without the required key at all).
+  - **Corrected failure diagnosis:** original H0 label ("cannot honor enable_thinking=false") was wrong — `--reasoning-parser qwen3` is working correctly (`think_chars=0` on all 6 task-runs). The real failure mode is **planner-role structural incompatibility**: model emits English narrative planning prose in the visible channel where it should emit schema-conforming JSON. Doubling budget didn't help task 01 (still truncated, wall doubled) and made task 03 worse (JSON shape hallucination without `steps` key). Not budget-bound; not thinking-block-bound.
+  - **Consequences:**
+    - `qwen3-30b-a3b-thinking-2507-awq` excluded from planner Medium-tier pool when authored in Phase 0.2.
+    - Registry entry retains dual-role marker (ADR-0012) — still viable **coder** Medium-tier candidate (Fast-tier evidence: 5/5 pass).
+    - Planner Medium-tier pool now expected to contain 2 cells (llama.cpp Fast-tier planner survivors: 27B Q6_K gpu, 35B Q4_K_XL gpu). Composition finalized at Phase 0.2 authoring.
+  - **Note on inspector fidelity:** `scripts/inspect-raw-content.py` shows anomalous `raw_chars=8230` for both failing tasks on both probes. Investigation deferred (harness verdict fields untouched — verdict trustworthy).
+- **Files touched:**
+  - `adrs/ADR-0015-planner-medium-thinker-budget-probe.md` (amended: STATUS AMENDMENT prepended, status line = Ratified · Confirmed)
+  - `adrs/README.md` (row updated)
+  - `BUILD_LOG.md`, `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0015 Ratified · Confirmed.
+- **Stop-condition status:** Phase 0.2 authoring **unblocked**. Planner Medium pool = 2 cells (llama.cpp survivors). Awaiting user: Phase 0.2 authoring order (recommended: embedder → planner → coder).

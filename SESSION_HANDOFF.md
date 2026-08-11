@@ -1,45 +1,37 @@
-# Kosmos Session Handoff — 2026-08-11 05:29 EDT
+# OpenHands-Ext v1 Session Handoff — 2026-08-11 05:40 EDT
 
 ## Current build-sequencing position
-- **Stage / phase:** Phase 0.2 · Medium tier · planner budget-hypothesis probe (ADR-0015 Proposed)
-- **Next slice:** run Probe A on Colossus; interpret against pre-registered criteria
-- **Port(s) in progress:** none
+- **Stage / phase:** Phase 0.1 complete, Phase 0.2 (Medium-tier) authoring **unblocked**.
+- **Plugin / kernel component:** bench harness (Medium-tier tasks pending).
+- **Port(s) in progress:** none.
 
-## Fast-tier pools (locked, unchanged this slice)
+## Completed this session
+- ADR-0014 filed (Ratified): Coder-fast pool reinstated 2→4 cells after harness rubric-compliance fix (9d4f6b0) invalidated the two prior eliminations. Rubric file untouched.
+- ADR-0011 amendment 3 partially reversed by ADR-0014; ADR-0011 marked accordingly in index.
+- Pushed 66249e1.
+- ADR-0015 filed (Proposed): Pre-registered budget-hypothesis probe for thinker-2507-awq on planner role. Two probes (8k, 16k) sequential with immutable Falsified/Confirmed criteria.
+- Pushed c5c3a95.
+- Ran Probe A (budget=8192) — malformed 2/3, median wall 16.2s. Did NOT falsify H0; escalated to Probe B per pre-registered ladder.
+- Ran Probe B (budget=16384) — malformed 2/3 again, task 01 wall 74.2s (2× Probe A), task 03 regressed to schema violation.
+- **ADR-0015 amended to Ratified · Confirmed** (2026-08-11 05:38 EDT): thinker-2507-awq unfit for planner Medium-tier pool. Corrected failure diagnosis (planner-role structural incompatibility, not budget-bound, not think-block-bound).
 
-| Role | Cells | Members |
-|---|---:|---|
-| Coder | 4 | thinker-2507-awq (vllm/gpu), coder-30b-a3b-instruct-awq-4bit (vllm/gpu), qwen3_6-27b-q6k-gguf (llama.cpp/gpu), qwen3_6-35b-a3b-q4kxl-gguf (llama.cpp/gpu) |
-| Planner | 2 | qwen3_6-27b-q6k-gguf (llama.cpp/gpu), qwen3_6-35b-a3b-q4kxl-gguf (llama.cpp/gpu) |
-| Embedder | 6 | 0.6B ×3 + 4B ×3 |
+## Locked pool state (Fast tier)
+- **Coder-Fast:** 4 cells — thinker-2507-awq (vllm), coder-30b-a3b-instruct-awq-4bit (vllm), qwen3_6-27b-q6k-gguf (llama.cpp), qwen3_6-35b-a3b-q4kxl-gguf (llama.cpp)
+- **Planner-Fast:** 2 cells — qwen3_6-27b-q6k-gguf (llama.cpp/gpu), qwen3_6-35b-a3b-q4kxl-gguf (llama.cpp/gpu)
+- **Embedder-Fast:** 6 cells — 0.6B ×3 + 4B ×3
 
-## Completed this slice
-- Filed **ADR-0015** (Proposed): planner Medium-tier thinker-2507-awq budget-hypothesis probe. Pre-registered H0/H1 hypotheses, success criteria (malformed ≤ 1 of 3, median wall ≤ 60s, valid schema), sequential run plan (8k first, 16k only if 8k doesn't falsify H0).
-- Authored two task-set files (`planner-medium-thinker-probe-b8k.json`, `-b16k.json`) identical to `planner-fast.json` except `budget_tokens` (8192, 16384).
-- Authored 1-cell candidate file `planner-medium-thinker-probe.json` (thinker-2507-awq, role=planner override, reasoning_parser=qwen3).
-- Added `scripts/inspect-raw-content.py` — read-only diagnostic on `.probe.json` sidecars (raw_chars, `<think>` char count, wall, truncation).
-- Verified harness plumbing: `--smoke` bypasses §0.0b pool guard for a 1-cell diagnostic run; result JSONs are tagged `smoke=true` (not pool-decision evidence).
+## Locked pool state (Medium tier)
+- **Planner-Medium (pre-authoring):** 2 cells expected — llama.cpp Fast-tier planner survivors only. thinker-2507-awq excluded (ADR-0015).
+- **Coder-Medium:** to be authored. thinker-2507-awq retains eligibility here (dual-role per ADR-0012; Fast-tier 5/5 pass on coder).
+- **Embedder-Medium:** to be authored.
 
 ## Remaining before current Definition of Done
-- Human runs Probe A (8k) on Colossus.
-- If Probe A does NOT satisfy the Falsified criterion, human runs Probe B (16k).
-- I read the resulting `.probe.json` sidecar (once pushed back or inspected via output), apply pre-registered criteria, then amend ADR-0015 to Ratified with either Falsified or Confirmed verdict.
+- Author Phase 0.2 Medium-tier task set(s). Order TBD by user.
+- Decide whether Medium-tier gets its own scored-rubric ADR (Medium is first scored tier, not elimination-only) — likely required before first Medium task set lands.
 
 ## Open questions / awaiting user answer
-- None. Optimal calls made per user direction: 60s SLO, sequential 8k → 16k.
+- **Phase 0.2 authoring order.** Recommendation: embedder → planner → coder. Reasons: (1) embedder is the smallest task-surface (single latency+recall benchmark, no rubric); (2) planner Medium pool is already 2 cells so authoring the task set produces immediate scored evidence with no discovery risk; (3) coder Medium pool is largest and will benefit from planner-tier rubric shape landing first.
+- **Scored-rubric ADR timing.** Author before or after first Medium task set? Recommendation: before, because Medium is elimination-plus-scoring (different rubric shape than Fast's elimination-only).
 
 ## Exact next action
-
-```bash
-cd ~/dev/openhands-ext-v1 && git fetch origin && git reset --hard origin/main
-
-# Probe A (8k)
-.venv/bin/python scripts/benchmark-tier-runner.py --tier fast --role planner \
-  --task-set bench/tasks/planner-medium-thinker-probe-b8k.json \
-  --rubric bench/rubrics/fast-elimination.json \
-  --candidate-file bench/candidates/planner-medium-thinker-probe.json --smoke
-
-# After Probe A completes, paste the tail of the run output plus:
-ls -1t bench/results/*thinker*b8k* 2>/dev/null | head -4
-python3 scripts/inspect-raw-content.py bench/results/*thinker*b8k*.probe.json
-```
+- Await user answer on Phase 0.2 authoring order.
