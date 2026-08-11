@@ -679,3 +679,13 @@ Entry format:
 - **Fix applied:** Changed `_LOCAL_API_KEY = SecretStr("EMPTY")` → `SecretStr("local")` in `config/agent.py`. Any non-sentinel placeholder works; vLLM/llama.cpp ignore the value. Added a comment above the constant warning against the "EMPTY" pitfall.
 - **Files changed:** `config/agent.py` (constant + comment).
 - **Related BUILD_LOG entry:** —
+
+## 2026-08-11 18:52 EDT — CoderPlannerRouter fails inside RemoteConversation (child LLMs not serialized)
+
+- **Symptom:** After fixing the `_LOCAL_API_KEY` sentinel and Docker health-URL bugs, the 3.c smoke still fails with `LLMAuthenticationError: ... AuthenticationError: OpenAIException - Incorrect API key provided: local` (after wall ~12 s, at the first LLM call). Container is healthy, task text is in the event stream, but the request is going to `api.openai.com`, not to vLLM `:8100`.
+- **Affected stage / plugin / port:** Phase 3 · Runtime · `LLM` adapter under `RemoteConversation`; `CoderPlannerRouter` / `RouterLLM` serialization.
+- **Root cause:** `openhands.sdk.llm.router.base.RouterLLM(LLM)` inherits from `LLM` but does not add `llms_for_routing` to its Pydantic field surface. When `RemoteConversation` calls `agent.model_dump(mode="json")` to send the agent to the container, the router's child LLMs are dropped. The dumped `agent.llm` contains only base-`LLM` fields plus the router's *placeholder* (`model=openai/coder-planner-router`, `base_url=null`). Inside the container the agent is rebuilt from JSON: it's typed as a `RouterLLM` but with no children, so the routing fallback picks the placeholder itself and litellm dispatches the placeholder model to `api.openai.com`. Evidence: the condenser LLM (a plain `LLM`) DOES round-trip correctly — `.condenser.llm.base_url == "http://127.0.0.1:8100/v1"` in the dump. Only the top-level router fails.
+- **Fix applied:** Bypass the router for 3.c smoke. Build the agent, then replace `agent.llm` with the plain `build_coder_llm(...)` before constructing the `Conversation`. This isolates the DockerWorkspace verification (which is what 3.c tests). The router-under-RemoteConversation problem is out of scope for 3.c and will be tracked as a new Phase 3 sign-off item.
+- **Files changed:** `bench/smoke-phase-3-item-3c/run.sh` (router-bypass block + `agent.llm = build_coder_llm(...)`).
+- **Related BUILD_LOG entry:** —
+- **Followup:** Open a new sign-off item (Phase 3.j) tracking the RouterLLM discriminated-union / serialization fix. Likely requires either (a) extending `RouterLLM` to declare `llms_for_routing` as a Pydantic field with a proper discriminated-union type, or (b) a custom `model_dump`/`model_validate` override — and possibly an ADR since routing is a spec §2.4 concern.

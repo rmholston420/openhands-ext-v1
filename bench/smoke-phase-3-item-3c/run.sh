@@ -65,10 +65,26 @@ OUT_DIR = Path(os.environ["OUT_DIR"])
 IMAGE   = os.environ["IMAGE"]
 TASK    = Path(os.environ["TASK_FILE"]).read_text()
 
-from config.agent import build_agent
+from config.agent import build_agent, build_coder_llm, _load_max_output_tokens
 from openhands.sdk import Conversation, Message, TextContent
 from openhands.workspace.docker.workspace import DockerWorkspace
 from openhands.sdk.workspace import RemoteWorkspace
+
+# ---- Router bypass for 3.c ----
+# CoderPlannerRouter (a RouterLLM subclass) does NOT include
+# `llms_for_routing` in its Pydantic serialization surface. Under
+# LocalConversation the router dispatches in-process to the coder LLM
+# and everything works. Under RemoteConversation the agent is dumped
+# to JSON and rebuilt inside the DockerWorkspace container; the child
+# LLMs are lost and the placeholder `model=openai/coder-planner-router,
+# base_url=null` gets called — which litellm sends to api.openai.com,
+# producing 'Incorrect API key provided: <placeholder>'. Bypass the
+# router for this smoke: it exists to verify the DockerWorkspace
+# mechanism, not the router. RouterLLM-under-RemoteConversation is
+# tracked as a separate sign-off item (Phase 3.j to be opened).
+agent = build_agent()
+mot = _load_max_output_tokens()
+agent.llm = build_coder_llm(mot["coder"])
 
 # Collect events
 events = []
@@ -103,7 +119,6 @@ try:
         verdict["workspace_is_remote"] = isinstance(ws, RemoteWorkspace)
         verdict["workspace_host"] = getattr(ws, "host", None)
 
-        agent = build_agent()
         conv = Conversation(agent=agent, workspace=ws, callbacks=[on_event])
         conv.send_message(Message(role="user",
                                   content=[TextContent(text=TASK)]))
