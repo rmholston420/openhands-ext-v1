@@ -168,3 +168,25 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** none (Phase -1 pre-port scaffolding).
 - **PORTING_LEDGER / ADR updated:** ADR-0005 authored + indexed. PORTING_LEDGER unchanged (no vendored component).
 - **Stop-condition status:** **§-1.5 fully green.** Both smokes (llama.cpp + vLLM) report status: pass. Phase -1 §-1 Verification table is truly green — session-end.sh truth gate will now permit a "green" commit subject.
+
+## 2026-08-11 00:52 EDT — Phase 0 prereq: 7-category schema + tier-runner scaffold + flashinfer JIT-cache adopted (ADR-0006, retires ADR-0005)
+
+- **Stage / plugin / port:** Phase 0 · pre-tier scaffolding + Phase -1 §-1.5 flashinfer resolution
+- **What changed:**
+  1. **7-category JSON schema per v16 spec §0.0c** — `bench/schema/run.schema.json` (Draft 2020-12), `bench/schema/run.py` (dataclasses + enums + validator), `bench/schema/__init__.py`, `bench/schema/README.md`. All seven categories required keys; category-2/3/4/6 nullable; rubric/notes/optional latency fields nullable via `oneOf`.
+  2. **Tier-runner scaffold** — `scripts/benchmark-tier-runner.py` with §0.0a denominator-exclusion helper, §0.0a latency-must-be-measured guard, §0.0a rubric-lock guard, §0.1/0.3 tier-scope guard for category 6, §0.0b open-pool guard, §0.1 runtime-version-regression flag path.
+  3. **Schema smoke tests** — `bench/tests/test_schema.py` (round-trip + validation).
+  4. **flashinfer SM_120 fix** — ADR-0005 retired, ADR-0006 ratified (`flashinfer-jit-cache==0.6.16.post3+cu129`). `scripts/smoke-test-vllm.sh` unconditional workaround export removed. `scripts/install-vllm.sh` extended to install the matching JIT cache.
+- **Files touched:**
+  - `bench/schema/{run.schema.json,run.py,__init__.py,README.md}`
+  - `bench/tests/{__init__.py,test_schema.py}`
+  - `scripts/benchmark-tier-runner.py`
+  - `scripts/smoke-test-vllm.sh` (workaround retired)
+  - `scripts/install-vllm.sh` (JIT-cache install added)
+  - `adrs/ADR-0005-flashinfer-blackwell-workaround.md` (amended · superseded)
+  - `adrs/ADR-0006-flashinfer-jit-cache-cu129.md` (new)
+  - `adrs/README.md` (index updates)
+  - `DEBUG_LOG.md` (retirement entry)
+- **Ports / adapters affected:** none (scaffolding + venv config; no formal ports touched).
+- **PORTING_LEDGER / ADR updated:** ADR-0005 amended; ADR-0006 authored + indexed. PORTING_LEDGER unchanged (no vendored component adopted or replaced).
+- **Stop-condition status:** Phase 0 scaffolding in place; harness/loader/task-set work remains. Phase -1 §-1.5 vLLM smoke re-verified without any workaround (`bench/results/phase-neg-1-smoke-vllm-20260811T044948Z.json`).

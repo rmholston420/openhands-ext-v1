@@ -1,6 +1,8 @@
 # ADR-0005 — flashinfer Blackwell (SM_120) workaround via `VLLM_USE_FLASHINFER_SAMPLER=0`
 
-**Status:** Ratified (Phase -1 workaround; permanent fix deferred to Phase 0)
+> **STATUS AMENDMENT (2026-08-11):** Retired. Superseded by [ADR-0006](ADR-0006-flashinfer-jit-cache-cu129.md), which installs `flashinfer-jit-cache==0.6.16.post3+cu129` and removes the need for the sampler override. The `scripts/smoke-test-vllm.sh` unconditional export has been removed; a comment in that file now points to ADR-0006 with instructions for temporary re-enable if the JIT cache pairing breaks in a future upgrade. Original decision text preserved below for historical record.
+
+**Status:** Amended · superseded by ADR-0006
 **Lock-in phase:** Phase -1 §-1.5
 **Supersedes:** —
 

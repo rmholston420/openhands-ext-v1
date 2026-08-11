@@ -42,6 +42,26 @@ fi
   echo "--- pip install vllm==$VLLM_V ---"
   $VENV_PIP install --upgrade "vllm==$VLLM_V"
 
+  # 2b. Install flashinfer-jit-cache matched to the flashinfer-python that
+  # vllm just pulled. Required for RTX 5090 / SM_120 support without a
+  # CUDA 12.9 runtime install (see ADR-0006).
+  echo ""
+  echo "--- installing flashinfer-jit-cache (SM_120 AOT kernels, cu129) ---"
+  FI_V="$($VENV_PIP show flashinfer-python 2>/dev/null | awk '/^Version:/ {print $2}')"
+  if [ -z "$FI_V" ]; then
+    echo "WARN: flashinfer-python not installed as a vllm dep on this build; skipping JIT cache install."
+    echo "WARN: if RTX 5090 smoke fails on 'sm75 or higher', install flashinfer-jit-cache manually and file an amendment to ADR-0006."
+  else
+    echo "flashinfer-python version detected: $FI_V"
+    $VENV_PIP install --index-url https://flashinfer.ai/whl/cu129 \
+      "flashinfer-jit-cache==${FI_V}+cu129" || {
+      echo "WARN: flashinfer-jit-cache==${FI_V}+cu129 not available at index."
+      echo "WARN: If SM_120 smoke fails, either (a) fall back to VLLM_USE_FLASHINFER_SAMPLER=0"
+      echo "WARN: as a temporary escape hatch, or (b) file an amendment to ADR-0006 with the"
+      echo "WARN: replacement pairing."
+    }
+  fi
+
   # 3. Report installed versions
   echo ""
   echo "--- installed versions ---"

@@ -84,17 +84,22 @@
           "description": "Exact vLLM release tag (e.g. v0.11.0). Null if run did not use vLLM."
         },
         "rubric": {
-          "type": "object",
-          "description": "For roles that use a fixed rubric (planner). Timestamp locks pre-first-scored-output.",
-          "required": ["identity", "version", "locked_at_utc"],
-          "additionalProperties": false,
-          "properties": {
-            "identity": {"type": "string"},
-            "version": {"type": "string"},
-            "locked_at_utc": {"type": "string", "format": "date-time"}
-          }
+          "description": "For roles that use a fixed rubric (planner). Timestamp locks pre-first-scored-output. Null for roles without a rubric.",
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "required": ["identity", "version", "locked_at_utc"],
+              "additionalProperties": false,
+              "properties": {
+                "identity": {"type": "string"},
+                "version": {"type": "string"},
+                "locked_at_utc": {"type": "string", "format": "date-time"}
+              }
+            }
+          ]
         },
-        "notes": {"type": "string"}
+        "notes": {"oneOf": [{"type": "null"}, {"type": "string"}]}
       }
     },
 
@@ -185,7 +190,7 @@
             "vram_usable_mib": {"type": "number", "minimum": 0, "description": "~32607 MiB on RTX 5090."},
             "temp_peak_c": {"type": "number"},
             "temp_avg_c": {"type": "number"},
-            "throttle_ceiling_c": {"type": "number", "description": "Re-verify per candidate against 83C ceiling."},
+            "throttle_ceiling_c": {"type": ["number", "null"], "description": "Re-verify per candidate against 83C ceiling."},
             "power_peak_w": {"type": "number", "minimum": 0},
             "power_avg_w": {"type": "number", "minimum": 0},
             "util_avg_pct": {"type": "number", "minimum": 0, "maximum": 100},
@@ -228,12 +233,12 @@
       "properties": {
         "per_call_warm_ms_p50": {"type": "number", "minimum": 0},
         "per_call_warm_ms_p95": {"type": "number", "minimum": 0},
-        "per_call_warm_ms_max": {"type": "number", "minimum": 0},
+        "per_call_warm_ms_max": {"type": ["number", "null"], "minimum": 0},
         "cold_start_ms": {"type": "number", "minimum": 0},
         "per_task_wall_seconds_p50": {"type": "number", "minimum": 0},
-        "per_task_wall_seconds_p95": {"type": "number", "minimum": 0},
+        "per_task_wall_seconds_p95": {"type": ["number", "null"], "minimum": 0},
         "repeats": {"type": "integer", "minimum": 1, "description": "3+ for Full tier."},
-        "variance_note": {"type": "string"}
+        "variance_note": {"type": ["string", "null"]}
       }
     },
 

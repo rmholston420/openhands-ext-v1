@@ -127,3 +127,19 @@ Entry format:
 - **Files changed:** `scripts/smoke-test-vllm.sh`, `adrs/ADR-0005-flashinfer-blackwell-workaround.md`, `adrs/README.md`.
 - **Related BUILD_LOG entry:** 2026-08-11 00:30 EDT
 - **Supersedes:** —
+
+## 2026-08-11 00:50 EDT — flashinfer SM_120 fully resolved: cu129 JIT cache retires ADR-0005 workaround
+
+- **Symptom:** vLLM smoke previously required `VLLM_USE_FLASHINFER_SAMPLER=0` (ADR-0005) because `flashinfer.jit.core.check_cuda_arch()` rejected the SM_120 stub returned by `Failed to get device capability: SM 12.x requires CUDA >= 12.9`. Workaround skipped only the sampler; every other flashinfer entry point (FP8 attention, MoE, MLA) would still hit the same failure at Phase 0 for AWQ/INT4/MoE candidates.
+- **Affected stage / plugin / port:** Phase -1 · §-1.5 vLLM smoke test → Phase 0 prerequisite.
+- **Root cause:** flashinfer-python 0.6.16.post3's device-capability query requires the SM_120-aware AOT kernels supplied by the version-matched `flashinfer-jit-cache-<version>+cu129` wheel from `https://flashinfer.ai/whl/cu129/`. Without those AOT kernels, the sampler workaround is the only functional path but leaves every non-sampler flashinfer call broken.
+- **Fix applied:** Installed `flashinfer-jit-cache==0.6.16.post3+cu129` (~1.9 GiB) via the flashinfer.ai cu129 index. Version must match `flashinfer-python` exactly — mismatch fails loudly at import (verified 2026-08-11 with .post3 vs .post4+cu129 pairing). Removed the `VLLM_USE_FLASHINFER_SAMPLER=0` unconditional export from `scripts/smoke-test-vllm.sh`; replaced with a comment pointing to ADR-0006 and documenting the temporary re-enable escape hatch. Added a `2b` step to `scripts/install-vllm.sh` that pulls the matching JIT cache whenever `flashinfer-python` is detected. Retired ADR-0005 with a status-amendment block; authored ADR-0006 as the successor.
+- **Files changed:**
+  - `scripts/smoke-test-vllm.sh` (removed unconditional workaround export; note now points to ADR-0006)
+  - `scripts/install-vllm.sh` (added JIT-cache install step)
+  - `adrs/ADR-0005-flashinfer-blackwell-workaround.md` (status amendment)
+  - `adrs/ADR-0006-flashinfer-jit-cache-cu129.md` (new, ratified)
+  - `adrs/README.md` (index update)
+- **Verification:** `bench/results/phase-neg-1-smoke-vllm-20260811T044948Z.json` — smoke passed with `VLLM_USE_FLASHINFER_SAMPLER` unset; health OK 22 s; RTX 5090 device_cap `(12, 0)` correctly detected on torch 2.13.0+cu130.
+- **Related BUILD_LOG entry:** 2026-08-11 00:52 EDT
+- **Supersedes:** 2026-08-11 00:27 EDT (workaround) — that fix is retired, not incorrect. Use it as a temporary escape hatch only if a future flashinfer-python upgrade breaks the JIT-cache pairing.

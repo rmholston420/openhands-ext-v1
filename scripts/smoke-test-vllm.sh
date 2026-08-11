@@ -26,14 +26,19 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$REPO_ROOT"
 
-# --- flashinfer Blackwell workaround (2026-08-11) ---
-# flashinfer 0.6.16 (bundled with vllm 0.27.0) cannot read SM_120 device
-# capability under CUDA <12.9 and falls back through check_cuda_arch()
-# which then raises "FlashInfer requires GPUs with sm75 or higher".
-# See DEBUG_LOG.md 2026-08-11 and ADR-0005.
-# Disabling the flashinfer sampler forces vLLM's native top-k/top-p path.
-export VLLM_USE_FLASHINFER_SAMPLER="${VLLM_USE_FLASHINFER_SAMPLER:-0}"
-# --- end workaround ---
+# --- flashinfer Blackwell (SM_120) note ---
+# The original ADR-0005 workaround (VLLM_USE_FLASHINFER_SAMPLER=0) is no
+# longer required after installing flashinfer-jit-cache==0.6.16.post3+cu129,
+# which supplies the SM_120-aware AOT kernels flashinfer needs. vLLM still
+# prints a benign "Failed to get device capability: SM 12.x requires
+# CUDA >= 12.9." message at import; it now proceeds through the SM_120 path
+# via the JIT cache. See DEBUG_LOG.md 2026-08-11 (post-workaround retire)
+# and ADR-0005 (amended -> retired via ADR-0006).
+#
+# If a future flashinfer-python upgrade breaks the JIT cache pairing, set
+# VLLM_USE_FLASHINFER_SAMPLER=0 as a temporary escape hatch and file an
+# amendment to ADR-0006.
+# --- end note ---
 
 
 LOG="/tmp/openhands-ext-v1-smoke-vllm-$(date +%s).log"

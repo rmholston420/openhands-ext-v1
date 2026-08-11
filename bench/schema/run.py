@@ -217,8 +217,13 @@ def _to_json_safe(obj: Any) -> Any:
 
     - Enum -> its .value
     - datetime -> ISO-8601 with 'Z' if UTC
-    - dict -> recurse
+    - dict -> recurse (None values preserved so schema sees explicit null)
     - list/tuple -> recurse
+
+    Nulls are preserved intentionally: the schema requires all seven top-level
+    category keys to be present. Optional nested fields (rubric, notes,
+    variance_note, throttle_ceiling_c, per_call_warm_ms_max, per_task_wall_seconds_p95)
+    are declared nullable in the schema.
     """
     if isinstance(obj, Enum):
         return obj.value
