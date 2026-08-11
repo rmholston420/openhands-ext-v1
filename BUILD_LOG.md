@@ -1256,3 +1256,11 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Files touched:** SESSION_HANDOFF.md
 - **Ports / adapters affected:** —
 - **Stop-condition status:** The stage-2 command I published used `python -m bench.runner.main`, but `bench/runner/main.py` has no `if __name__ == "__main__":` block — the module has module-level imports only, so `python -m ...` runs the imports and exits 0 with no output. User ran it three times; each produced no output and a clean prompt. Correct entrypoint is `scripts/benchmark-tier-runner.py`, which builds the argparse parser and calls `run_tier(args)` from `bench/runner/main.py`. Confirmed via `grep -n "add_argument\|ArgumentParser" scripts/benchmark-tier-runner.py`.
+
+## 2026-08-11 10:57 EDT — Phase 0.3 gate-2 stage-2: candidate file shape fix
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · stage-2 preflight
+- **What changed:** `bench/candidates/coder-medium-stage2-single.json` reshaped from `{"candidates":[...]}` to a bare JSON list `[...]`.
+- **Files touched:** bench/candidates/coder-medium-stage2-single.json
+- **Ports / adapters affected:** —
+- **Stop-condition status:** First stage-2 attempt failed `TypeError: string indices must be integers, not 'str'` at `bench/runner/main.py:808` (`slug = row["model"]`). `run_tier` at :692 does `candidates_raw = json.loads(...)` and iterates directly; the loader expects a bare list. Existing pool files (`coder-medium-pool.json`) confirmed as bare lists. Wrapper removed.
