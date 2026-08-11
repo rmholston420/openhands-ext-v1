@@ -63,7 +63,14 @@ from openhands.sdk import Conversation
 # For Phase 3 row-1 smoke we only need terminal + file_editor.
 from openhands.tools import get_default_tools
 
-TASK = Path("bench/smoke-phase-3/task.md").read_text()
+# Extract ONLY the verbatim prompt from task.md — sending the full task doc
+# causes the agent to wander (StuckDetector loop-kills at ~60s).
+_task_full = Path("bench/smoke-phase-3/task.md").read_text()
+_prompt_marker = "## Prompt (verbatim, hand off to agent)"
+_end_marker = "## Pass criteria"
+_start = _task_full.index(_prompt_marker) + len(_prompt_marker)
+_end = _task_full.index(_end_marker)
+TASK = _task_full[_start:_end].strip().lstrip("> ").strip()
 EXPECTED_LINE = "OpenHands-Ext v1 Phase 3 smoke target."
 
 t0 = time.time()
