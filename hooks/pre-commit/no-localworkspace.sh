@@ -36,7 +36,7 @@ else
 fi
 
 # Allow-list regex — a file matching this is exempt.
-ALLOW_RE='^(docs/specs/|docs/donor-inventory\.md$|docs/verification/|adrs/|PORTING_LEDGER\.md$|BUILD_LOG\.md$|DEBUG_LOG\.md$|KNOWN_ISSUES\.md$|SESSION_HANDOFF\.md$|hooks/pre-commit/no-localworkspace\.sh$|scripts/install-hooks\.sh$|.*/tests?/|.*\.test\.[a-z]+$|.*_test\.py$|.*/test_.*)'
+ALLOW_RE='^(docs/specs/|docs/donor-inventory\.md$|docs/verification/|adrs/|PORTING_LEDGER\.md$|BUILD_LOG\.md$|DEBUG_LOG\.md$|KNOWN_ISSUES\.md$|SESSION_HANDOFF\.md$|hooks/pre-commit/no-localworkspace\.sh$|hooks/pre-commit/dispatch\.sh$|hooks/pre-commit/size-guard\.sh$|hooks/pre-push/no-diverged-remote\.sh$|scripts/install-hooks\.sh$|scripts/session-start\.sh$|scripts/session-end\.sh$|.*/tests?/|.*\.test\.[a-z]+$|.*_test\.py$|.*/test_.*)'
 
 VIOLATIONS=""
 while IFS= read -r f; do

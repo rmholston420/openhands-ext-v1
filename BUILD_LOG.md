@@ -67,3 +67,27 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** —
 - **PORTING_LEDGER / ADR updated:** — (ADR-0002 language unchanged; allow-list is implementation detail)
 - **Stop-condition status:** met (hook now green, commit proceeds)
+
+## 2026-08-10 23:45 EDT — ADR-0003 mirror discipline + Phase -1 executable scripts
+
+- **Stage / plugin / port:** Pre-Phase -1 · governance + Phase -1 execution scaffolding
+- **What changed:**
+  - Filed `adrs/ADR-0003-repo-colossus-mirror-discipline.md` (three-category rule: tracked / regenerable-by-script / ephemeral; HARD sync strictness).
+  - Added `hooks/pre-commit/dispatch.sh` (chains all pre-commit checks).
+  - Added `hooks/pre-commit/size-guard.sh` (10 MiB single-file limit, empty allow-list — ADR-0003).
+  - Added `hooks/pre-push/no-diverged-remote.sh` (rejects push if origin/main advanced — ADR-0003).
+  - Extended `scripts/install-hooks.sh` to install dispatcher + pre-push hook.
+  - Added `scripts/session-start.sh` and `scripts/session-end.sh` (HARD-fail sync gates).
+  - Added `scripts/bootstrap-venv.sh` (idempotent .venv creation; uses modern `hf` CLI; NO `exec > >(tee)` — see DEBUG_LOG 23:38 EDT).
+  - Added `scripts/build-llama-cpp.sh` (CUDA 12.8 + gcc-13 host compiler + SM_120; re-fetches latest tag live).
+  - Added `scripts/install-oh-sdk.sh` (re-fetches PyPI versions live per spec §-1.1; records to `bench/results/`).
+  - Added `scripts/install-vllm.sh` (re-fetches latest vLLM version live).
+  - Added `scripts/pull-models.sh` (Qwen2.5-1.5B-Instruct GGUF Q4_K_M + safetensors snapshot).
+  - Added `scripts/smoke-test-llama-cpp.sh` (spec §-1.5 SDK-to-runtime, port 8082).
+  - Added `scripts/smoke-test-vllm.sh` (spec §-1.5 SDK-to-runtime, port 8083).
+  - Extended `.gitignore` to cover `vendor/` and `bench/results/*.log`.
+  - Extended `hooks/pre-commit/no-localworkspace.sh` allow-list for new hook + script paths.
+- **Files touched:** `adrs/ADR-0003-repo-colossus-mirror-discipline.md`, `adrs/README.md`, `hooks/pre-commit/{dispatch,size-guard,no-localworkspace}.sh`, `hooks/pre-push/no-diverged-remote.sh`, `scripts/{install-hooks,session-start,session-end,bootstrap-venv,build-llama-cpp,install-oh-sdk,install-vllm,pull-models,smoke-test-llama-cpp,smoke-test-vllm}.sh`, `.gitignore`
+- **Ports / adapters affected:** none (governance + execution scaffolding only)
+- **PORTING_LEDGER / ADR updated:** ADR-0003 filed
+- **Stop-condition status:** met (Colossus can now run Phase -1 as a sequence of idempotent script invocations, each with hard sync + regeneration guarantees)

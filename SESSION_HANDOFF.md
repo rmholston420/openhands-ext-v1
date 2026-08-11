@@ -1,54 +1,69 @@
-# OpenHands-Ext v1 — Session Handoff — 2026-08-10 23:24 EDT
+# OpenHands-Ext v1 — Session Handoff — 2026-08-10 23:45 EDT
 
 ## Current build-sequencing position
 
-- **Stage / phase:** Pre-Phase -1 (author-side setup complete; Colossus-side execution not yet started)
-- **Plugin / kernel component:** Repo bootstrap, scaffolding, governance
-- **Port(s) in progress:** none (donor inventory complete, ports remain PLANNED)
+- **Stage / phase:** Pre-Phase -1 complete; **Phase -1 execution ready on Colossus**.
+- **Plugin / kernel component:** governance (ADR-0003 mirror discipline filed); Phase -1 execution scripts landed.
+- **Port(s) in progress:** none.
 
 ## Completed this session
 
-- Created private repo `rmholston420/openhands-ext-v1` (MIT).
-- Committed `integration-execution-plan-v16.md` to `docs/specs/`.
-- Live-fetched all upstream versions → `VERSIONS.lock` (fetch timestamp `2026-08-11T03:24:45Z`).
-- Scaffolded directory structure for all downstream phases.
-- Initialized four operational logs: `BUILD_LOG.md`, `DEBUG_LOG.md`, `KNOWN_ISSUES.md`, `SESSION_HANDOFF.md`.
-- Initialized `PORTING_LEDGER.md` with 9 pre-drafted `PLANNED` entries (per-file SHAs captured from donors).
-- Authored `ADR-0001-repo-bootstrap.md` and `ADR-0002-localworkspace-guard-pre-commit.md`.
-- Wrote pre-commit hook `hooks/pre-commit/no-localworkspace.sh` and installer `scripts/install-hooks.sh`.
-- Wrote donor inventory `docs/donor-inventory.md` with commit SHAs for OH-GUI and Forge-OH.
+- Filed **ADR-0003** — three-category mirror discipline (tracked / regenerable-by-script / ephemeral) with HARD sync strictness.
+- Added pre-commit dispatcher (`hooks/pre-commit/dispatch.sh`) chaining size-guard + LocalWorkspace checks.
+- Added pre-commit size-guard (`hooks/pre-commit/size-guard.sh`, 10 MiB limit, empty allow-list).
+- Added pre-push hook (`hooks/pre-push/no-diverged-remote.sh`).
+- Extended `scripts/install-hooks.sh` to install all three hooks; idempotent.
+- Added `scripts/session-start.sh` (fetches, verifies clean tree + non-diverged remote, tails handoff + BUILD_LOG).
+- Added `scripts/session-end.sh` (commits + pushes with hard-fail on divergence, marks Colossus authorship).
+- Added `scripts/bootstrap-venv.sh` (idempotent replacement for the previous inline block that killed the interactive shell — see `DEBUG_LOG.md` 2026-08-10 23:38 EDT).
+- Added `scripts/build-llama-cpp.sh` (CUDA 12.8 + `/usr/bin/gcc-13` host compiler + `-DCMAKE_CUDA_ARCHITECTURES=120`; re-fetches latest tag).
+- Added `scripts/install-oh-sdk.sh` (re-fetches PyPI versions, installs pinned).
+- Added `scripts/install-vllm.sh` (re-fetches vllm version, installs pinned, records torch/CUDA versions).
+- Added `scripts/pull-models.sh` (Qwen2.5-1.5B-Instruct in GGUF Q4_K_M + safetensors, both via modern `hf` CLI).
+- Added `scripts/smoke-test-llama-cpp.sh` (spec §-1.5, port 8082, records GPU snapshot).
+- Added `scripts/smoke-test-vllm.sh` (spec §-1.5, port 8083, records GPU snapshot).
+- Extended `.gitignore` for `vendor/` and `bench/results/*.log`.
+- Extended LocalWorkspace hook allow-list for new hook + script paths.
 
 ## Remaining before current Definition of Done
 
-Definition of Done for this session was **author-side scoping only** — met. The next DoD
-belongs to Phase -1 on Colossus, per spec §-1 Verification table:
+**Phase -1 Definition of Done (spec §-1 Verification table) — execute on Colossus in this order:**
 
-- Re-fetch live tags on Colossus (compare against `VERSIONS.lock`).
-- `pip install` OpenHands stack at re-verified tags.
-- Build llama.cpp from re-verified tag with `-DCMAKE_CUDA_ARCHITECTURES=120`.
-- `pip install vllm==<top-of-releases-at-Colossus-build-time>`.
-- Run §-1.5 SDK-to-runtime smoke test on a small model, both runtimes.
-- Report the Phase -1 Verification table row-by-row.
-- Then, and only then, populate Phase 0.0c Category 7 run metadata with the actual
-  runtime build/release tags Colossus used.
+1. `git pull` (or `bash scripts/session-start.sh` which does this plus checks).
+2. `bash scripts/install-hooks.sh` — install the updated hooks (idempotent).
+3. `bash scripts/bootstrap-venv.sh` — the `.venv/` from the killed run is likely usable but re-running is safe.
+4. `bash scripts/install-oh-sdk.sh` — installs pinned OpenHands SDK stack, records to `bench/results/`.
+5. `bash scripts/install-vllm.sh` — installs pinned vLLM, records torch/CUDA versions.
+6. `bash scripts/build-llama-cpp.sh` — clones + builds llama.cpp with SM_120 (5-15 min).
+7. `bash scripts/pull-models.sh` — pulls Qwen2.5-1.5B in both formats (~4 GB total).
+8. `bash scripts/smoke-test-llama-cpp.sh` — spec §-1.5 verification (llama.cpp).
+9. `bash scripts/smoke-test-vllm.sh` — spec §-1.5 verification (vLLM).
+10. `bash scripts/session-end.sh -m "phase(-1): all §-1 Verification table rows green"` — commits the `bench/results/*.json` metadata files and pushes.
+
+**Report Phase -1 Verification table row-by-row after step 9.** Metadata JSONs under `bench/results/` will be the authoritative record.
 
 ## Open questions / awaiting user answer
 
-None. All ambiguities from the previous session have been resolved by user answers
-recorded in ADR-0001 and ADR-0002.
+None. ADR-0003 ratified with optimal choices per user directive.
 
 ## Exact next action
 
-On Colossus (from a fresh terminal):
+On Colossus:
 
 ```bash
-mkdir -p ~/dev && cd ~/dev
-gh repo clone rmholston420/openhands-ext-v1
-cd openhands-ext-v1
-bash scripts/install-hooks.sh
-cat VERSIONS.lock                             # freshness reference
-cat SESSION_HANDOFF.md                        # this file
-cat docs/specs/integration-execution-plan-v16.md | head -100
+cd ~/dev/openhands-ext-v1
+git pull origin main
+bash scripts/session-start.sh
 ```
 
-Then begin Phase -1 execution per spec §-1.4 and §-1.5.
+`session-start.sh` will refuse to run if the tree is dirty. Colossus previously had modified `.gitignore` (from the killed script). If session-start fails on dirty tree, resolve first:
+
+```bash
+cd ~/dev/openhands-ext-v1
+git diff .gitignore              # inspect (probably matches what's now on origin)
+git checkout .gitignore          # discard local changes; new .gitignore comes from git pull
+git pull origin main
+bash scripts/session-start.sh
+```
+
+Then step through steps 3-10 above, one script at a time. If any script fails, its output is at `/tmp/openhands-ext-v1-<script>-<timestamp>.log`; paste the tail and I'll diagnose.
