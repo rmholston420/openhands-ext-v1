@@ -385,3 +385,16 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (runtime plumbing, not a port contract).
 - **PORTING_LEDGER / ADR updated:** ADR-0010 filed; ADR index refreshed. No new vendored component.
 - **Stop-condition status:** ready for coder-fast smoke re-run. Fallback path is now reachable *and* the underlying vLLM tool-call API is enabled server-side. Expected next R2 signal: whether the thinking model at 4096-token budget emits tool_calls cleanly, or narrates in `<think>` and starves — that outcome determines whether a follow-up ADR flips coder task-set opt-in for `enable_thinking=false`.
+
+## 2026-08-11 03:15 EDT — ADR-0011 filed; coder tool-call parser = hermes
+
+- **Stage / plugin / port:** Phase 0.1 · Fast tier · `VLLMServer.ROLE_FLAGS["coder"]`.
+- **What changed:** Flipped coder role's `--tool-call-parser` from `qwen3_coder` to `hermes` to match Qwen3-Thinking-2507's Hermes-style tool-call emission. Rest of ADR-0010's per-role flag mechanism unchanged (auto-tool-choice on, reasoning parser `qwen3`, planner/embedder unaffected).
+- **Files touched:**
+  - `bench/runner/server.py` — `ROLE_FLAGS["coder"]` value + docstring.
+  - `adrs/ADR-0010-fast-tier-vllm-role-flags.md` — status→Amended, cross-link.
+  - `adrs/ADR-0011-fast-tier-coder-tool-call-parser-hermes.md` — new.
+  - `adrs/README.md` — 0010 status update + 0011 row.
+- **Ports / adapters affected:** none (runtime launcher configuration only).
+- **PORTING_LEDGER / ADR updated:** ADR-0011 filed (Ratified · Phase 0.1); ADR-0010 amended.
+- **Stop-condition status:** in-progress — awaiting coder-fast smoke re-run to verify `msg.tool_calls != []` on at least one task before declaring the parser choice ratified in-practice.

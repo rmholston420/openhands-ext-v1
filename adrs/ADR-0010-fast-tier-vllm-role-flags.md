@@ -1,8 +1,15 @@
 # ADR-0010 — Fast-tier vLLM per-role launch flags
 
-**Status:** Ratified
+**Status:** Amended · see ADR-0011 for the coder `--tool-call-parser` value
 **Lock-in phase:** Phase 0.1 · Fast tier
 **Supersedes:** —
+
+> **STATUS AMENDMENT (2026-08-11):** The mechanism (per-role flag injection in
+> `VLLMServer.ROLE_FLAGS`) is unchanged and remains Ratified. Only the coder
+> `--tool-call-parser` value moves from `qwen3_coder` to `hermes`, because the
+> Qwen3-Thinking-2507 model emits Hermes-style `<tool_call>{json}</tool_call>`
+> blocks that the `qwen3_coder` parser (Qwen3-Coder XML `<function=…>` format)
+> does not match. See ADR-0011.
 
 ## Context
 
@@ -49,7 +56,7 @@ Fast-tier defaults for the Qwen3 family:
 
 | Role     | Flags |
 |---|---|
-| `coder`    | `--enable-auto-tool-choice --tool-call-parser qwen3_coder --reasoning-parser qwen3` |
+| `coder`    | `--enable-auto-tool-choice --tool-call-parser hermes --reasoning-parser qwen3` (amended by ADR-0011; was `qwen3_coder`) |
 | `planner`  | `--reasoning-parser qwen3` |
 | `embedder` | *(none)* |
 

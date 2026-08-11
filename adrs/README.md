@@ -17,7 +17,8 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0007 | [Fast-tier task authoring, sampling, and elimination-rubric methodology](ADR-0007-fast-tier-task-methodology.md) | Ratified | Phase 0.1 |
 | 0008 | [Fast tier disables thinking mode for planner (opt-in for coder)](ADR-0008-fast-tier-thinking-disabled.md) | Ratified | Phase 0.1 |
 | 0009 | [Fast-tier planner uses guided decoding (response_format=json_schema)](ADR-0009-fast-tier-guided-decoding.md) | Ratified | Phase 0.1 |
-| 0010 | [Fast-tier vLLM per-role launch flags](ADR-0010-fast-tier-vllm-role-flags.md) | Ratified | Phase 0.1 |
+| 0010 | [Fast-tier vLLM per-role launch flags](ADR-0010-fast-tier-vllm-role-flags.md) | Amended · see ADR-0011 | Phase 0.1 |
+| 0011 | [Fast-tier coder tool-call parser = hermes](ADR-0011-fast-tier-coder-tool-call-parser-hermes.md) | Ratified | Phase 0.1 |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 

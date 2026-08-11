@@ -252,3 +252,24 @@ Entry format:
   - `bench/runner/probes.py`: new `HttpPostError` wraps `HTTPError` and includes best-effort `exc.read()` body (1024 char cap) in the message. All three probe branches (planner, embedder, coder-fallback) catch `HttpPostError` in addition to the generic transport tuple. Future 400s will show the actual vLLM validation error in `detail`.
 - **Files changed:** `bench/runner/server.py`, `bench/runner/main.py`, `bench/runner/probes.py`, `adrs/ADR-0010-fast-tier-vllm-role-flags.md`, `adrs/README.md`.
 - **Related BUILD_LOG entry:** 2026-08-11 03:06 EDT.
+
+## 2026-08-11 03:15 EDT — coder-fast smoke: HTTP 200 x5, but `msg.tool_calls==[]`; parser mismatch
+
+- **Symptom:** After ADR-0010 landed (commit `912c964`), coder-fast smoke re-run against `qwen3-30b-a3b-thinking-2507-awq` reached the model — server log shows `POST /v1/chat/completions HTTP/1.1 200 OK` for all 5 tasks, prompt/gen throughput ~55 tok/s prompt / ~215 tok/s gen. Sidecar records **all 5 tasks fail** with `detail: no tool_calls (finish='stop')`. `raw_content` for every task contains a well-formed Hermes-style call as literal text inside `message.content`, e.g.:
+  ```
+  <tool_call>
+  {"name": "read_file", "arguments": {"path": "/workspace/probe/greeting.txt"}}
+  </tool_call>
+  ```
+  `message.tool_calls == []`.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast tier · `VLLMServer` (`bench/runner/server.py::VLLMServer.ROLE_FLAGS["coder"]`).
+- **Search performed:** `grep -in -E "tool_calls|hermes|qwen3_coder|<tool_call>|tool-call parser" DEBUG_LOG.md` — only prior hits are the 2026-08-11 03:06 EDT entry that fixed the earlier HTTP-400 issue by installing the launch-flag mechanism. No prior fix for the parser-value mismatch. Proceeding with fresh diagnosis.
+- **Root cause:** Wrong `--tool-call-parser` value on the coder launch cmd. vLLM 0.27 ships parsers `hermes`, `qwen3_coder`, and `qwen3_xml` (confirmed via `vllm.tool_parsers.ToolParserManager.list_registered()`). `qwen3_coder` in this build is the Rust-backed `Qwen3EngineToolParser(Qwen3ParserToolAdapter)`; it targets Qwen3-**Coder**'s XML wire format (`<function=NAME><parameter=…>…</parameter></function>`), not Hermes-style `<tool_call>{json}</tool_call>` blocks. Qwen3-Thinking-2507's chat template emits Hermes blocks. The `hermes_tool_parser.Hermes2ProToolParser` regex is exactly `<tool_call>(.*?)</tool_call>|<tool_call>(.*)` — a direct match. With the wrong parser registered, vLLM accepts the request, streams the model's output, sees no XML function block, and leaves `tool_calls=[]` while the raw call stays in `content`.
+- **Fix applied:** `VLLMServer.ROLE_FLAGS["coder"]` value changes from `qwen3_coder` to `hermes`. Reasoning parser stays `qwen3`; auto-tool-choice stays on. Locked in via ADR-0011 (amends ADR-0010 value only; ADR-0010 mechanism unchanged).
+- **Files changed:**
+  - `bench/runner/server.py`: `ROLE_FLAGS["coder"][2]` → `"hermes"`. Docstring rewritten to explain the parser-format mapping (Hermes vs qwen3_coder XML) and cite the 2026-08-11 observation.
+  - `adrs/ADR-0010-fast-tier-vllm-role-flags.md`: status → `Amended · see ADR-0011`; STATUS AMENDMENT block added; role-flags table row for coder updated with cross-link.
+  - `adrs/ADR-0011-fast-tier-coder-tool-call-parser-hermes.md`: new; Ratified · Phase 0.1.
+  - `adrs/README.md`: ADR-0010 row updated; ADR-0011 row added.
+- **Related BUILD_LOG entry:** 2026-08-11 03:15 EDT (this session).
+- **Verification (pending):** re-run coder-fast smoke; expect launch cmd to show `--tool-call-parser hermes`; expect at least one task's `raw_content` to now show `tool_calls != []` with a parsed name+arguments; expect verdict to depend only on whether the model chose the right tool + arguments (probes.py fallback semantics).

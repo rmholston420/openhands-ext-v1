@@ -318,11 +318,19 @@ class VLLMServer(BaseServer):
     Role-flag policy per ADR-0010:
       - coder:    OpenAI-compatible tool-call API is only enabled when the
                   server is launched with `--enable-auto-tool-choice` +
-                  `--tool-call-parser qwen3_coder`. Qwen3-Thinking family
-                  additionally needs `--reasoning-parser qwen3` for vLLM 0.27
-                  to accept `tool_choice="auto"` requests (otherwise every
-                  /v1/chat/completions call returns HTTP 400 at API-validation
-                  before touching the model — observed 2026-08-11).
+                  a `--tool-call-parser` matching the model's on-the-wire
+                  tool-call format. Qwen3-Thinking-2507 emits Hermes-style
+                  `<tool_call>{json}</tool_call>` blocks, so we use
+                  `--tool-call-parser hermes`. (The `qwen3_coder` parser
+                  in vLLM 0.27 targets Qwen3-Coder's XML `<function=…>`
+                  wire format and does NOT match Hermes blocks — using it
+                  causes msg.tool_calls to be empty even when the model
+                  emitted a well-formed call. Observed 2026-08-11.)
+                  Qwen3-Thinking family additionally needs
+                  `--reasoning-parser qwen3` for vLLM 0.27 to accept
+                  `tool_choice="auto"` requests (otherwise every
+                  /v1/chat/completions call returns HTTP 400 at
+                  API-validation before touching the model).
       - planner:  `--reasoning-parser qwen3` so vLLM strips <think> blocks
                   server-side and structured-output (guided decoding) works
                   in cooperation with thinking mode.
@@ -338,7 +346,7 @@ class VLLMServer(BaseServer):
     ROLE_FLAGS: dict[str, list[str]] = {
         "coder": [
             "--enable-auto-tool-choice",
-            "--tool-call-parser", "qwen3_coder",
+            "--tool-call-parser", "hermes",
             "--reasoning-parser", "qwen3",
         ],
         "planner": [
