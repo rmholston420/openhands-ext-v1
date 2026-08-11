@@ -190,9 +190,11 @@ verdict["has_docker_ok_string"] = any_event(
 verdict["has_hello_txt"] = any_event(
     lambda e: "hello.txt" in evt_text(e)
 )
+# Fatal-only: individual terminal action failures on the road to
+# success are normal (grep-not-found, mkdir -p a second time, etc.).
+# Fail the smoke only on ConversationErrorEvent (SDK-level failure).
 verdict["has_terminal_error"] = any_event(
-    lambda e: "terminal_error" in evt_text(e).lower()
-             or ("Observation" in e["cls"] and "error" in evt_text(e).lower())
+    lambda e: e["cls"] == "ConversationErrorEvent"
 )
 
 verdict["pass"] = (
