@@ -525,3 +525,19 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** none (elimination follows existing ADR-0007 methodology and ADR-0011 v25 registry-authoring rule; no new decision).
 - **Stop-condition status:** met — fast-tier coder pool locked at 2 cells (thinker vLLM + 35B MoE GGUF llama.cpp). Ready for 2-cell POOL confirmation run.
+
+
+## 2026-08-11 04:55 EDT — Coder-fast POOL confirmed 2/2 pass; author planner-fast + embedder-fast pool files
+
+- **Stage / plugin / port:** Phase 0.1 · Fast tier · planner + embedder pool authoring
+- **What changed:**
+  - Coder-fast 2-cell smoke confirmation run 2026-08-11 04:47–04:48 EDT: 2/2 pass (thinker vLLM 216 tok/s + 35B MoE llama.cpp 256 tok/s). Fast-tier coder pool locked and Definition of Done met.
+  - Authored `bench/candidates/planner-fast-pool.json` (3 cells) per spec §0.0b planner pool: qwen3-30b-a3b-thinking-2507-awq (vLLM, dual-role via ADR-0012), qwen3_6-27b-q6k-gguf (llama.cpp GPU), qwen3_6-35b-a3b-q4kxl-gguf (llama.cpp GPU). 27B kept in pool despite coder-fast R2 failure: planner-fast is structural JSON (no tool-selection); coder-fast failure was task-specific to `str_replace_editor` read-first stall and does not generalize.
+  - Authored `bench/candidates/embedder-fast-pool.json` (6 cells) — 4 registered embedder models × device axis, excluding vLLM CPU cells because bench/runner/main.py:391 refuses them at Phase 0.1 (v16 addition classifies as infra gap, not model failure). Cells: 0.6B bf16 vLLM/GPU · 0.6B Q8_0 llama.cpp/GPU+CPU · 4B bf16 vLLM/GPU · 4B Q8_0 llama.cpp/GPU+CPU. All 4 model slugs present on disk per models/manifest.json.
+- **Files touched:**
+  - `bench/candidates/planner-fast-pool.json` (new)
+  - `bench/candidates/embedder-fast-pool.json` (new)
+  - `BUILD_LOG.md`, `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none (pool authoring only; ADR-0008 thinking-disable + ADR-0009 guided-decoding + ADR-0012 dual-role already ratified).
+- **Stop-condition status:** met for coder-fast (2/2 pass); ready to launch planner-fast POOL (3 candidates satisfies guard §0.0b min=3) and embedder-fast POOL (6 candidates satisfies guard §0.0b min=4).

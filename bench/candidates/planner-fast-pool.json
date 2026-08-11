@@ -1,0 +1,38 @@
+[
+  {
+    "model": "qwen3-30b-a3b-thinking-2507-awq",
+    "hf_repo": "cpatonn/Qwen3-30B-A3B-Thinking-2507-AWQ-4bit",
+    "format": "safetensors",
+    "runtime": "vllm",
+    "device": "gpu",
+    "role": "planner",
+    "quant": "awq-4bit",
+    "approx_size_gib": 18,
+    "reasoning_parser": "qwen3",
+    "notes": "30B-A3B MoE thinker (AWQ-4bit). Dual-role coder+planner per ADR-0012. Fast-tier planner disables thinking via tasks/planner-fast.json chat_template_kwargs.enable_thinking=false (ADR-0008); reasoning_parser retained so vLLM 0.27 accepts requests. Pool authored 2026-08-11 04:55 EDT."
+  },
+  {
+    "model": "qwen3_6-27b-q6k-gguf",
+    "hf_repo": "unsloth/Qwen3.6-27B-GGUF",
+    "format": "gguf",
+    "runtime": "llama.cpp",
+    "device": "gpu",
+    "role": "planner",
+    "quant": "q6_k",
+    "gguf_file": "Qwen3.6-27B-Q6_K.gguf",
+    "approx_size_gib": 22,
+    "notes": "Dense 27B Q6_K. Planner is structural JSON (no tool-selection); coder-fast R2 failure was task-specific and does not disqualify from planner pool. Pool authored 2026-08-11 04:55 EDT."
+  },
+  {
+    "model": "qwen3_6-35b-a3b-q4kxl-gguf",
+    "hf_repo": "unsloth/Qwen3.6-35B-A3B-GGUF",
+    "format": "gguf",
+    "runtime": "llama.cpp",
+    "device": "gpu",
+    "role": "planner",
+    "quant": "q4_k_xl_ud",
+    "gguf_file": "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+    "approx_size_gib": 21,
+    "notes": "MoE 35B/A3B Unsloth Dynamic Q4_K_XL. Passed coder-fast POOL (5/5 tool_calls). Pool authored 2026-08-11 04:55 EDT."
+  }
+]

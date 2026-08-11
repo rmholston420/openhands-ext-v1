@@ -1,36 +1,50 @@
-# OpenHands-Ext v1 Session Handoff — 2026-08-11 04:45 EDT
+# Kosmos Session Handoff — 2026-08-11 04:55 EDT
 
 ## Current build-sequencing position
-- **Stage / phase:** Phase 0.1 · Fast tier · coder pool
-- **Plugin / kernel component:** bench runner (candidate list)
-- **Port(s) in progress:** none (config-only change)
+- **Stage / phase:** Phase 0.1 · Fast tier
+- **Slice in progress:** planner-fast POOL (next: embedder-fast POOL)
+- **Port(s) in progress:** none (bench harness only)
 
 ## Completed this session
-- ADR-0011 amend 1 (per-cell tool-call parser) — plumbing wired (prior).
-- ADR-0011 amend 2 (per-cell reasoning parser) — plumbing wired + verified via 4-cell POOL re-run.
-- ADR-0011 ratified v25 (2026-08-11 04:38 EDT).
-- Coder-Instruct (`qwen3-coder-30b-a3b-instruct-awq-4bit`) eliminated from fast pool (task 02 forbidden_tools violation: execute_bash).
-- 27B Q6_K GGUF (`qwen3_6-27b-q6k-gguf`) eliminated from fast pool (task 02 expected_tool_sequence violation: read_file stall before edit).
-- BUILD_LOG + DEBUG_LOG entries appended for both eliminations.
-
-## Fast-tier coder pool (locked, 2 cells)
-1. `qwen3-30b-a3b-thinking-2507-awq` — vLLM, hermes tool-parser, qwen3 reasoning-parser (thinking).
-2. `qwen3_6-35b-a3b-q4kxl-gguf` — llama.cpp, MoE 35B/A3B Q4_K_XL UD.
+- Coder-fast pool 4 → 3 (eliminated Coder-Instruct, ADR-0011 ratified v25) — commit `951f580`
+- Coder-fast pool 3 → 2 (eliminated 27B Q6_K on R2 read-first stall) — commit `eeb4a1c`
+- Coder-fast 2-cell smoke confirmation: 2/2 pass (thinker + 35B MoE)
+- Authored `bench/candidates/planner-fast-pool.json` (3 cells)
+- Authored `bench/candidates/embedder-fast-pool.json` (6 cells)
 
 ## Remaining before current Definition of Done
-- Confirmation run of 2-cell fast-tier POOL — verify both pass on a clean invocation.
-- Advance to next Phase 0.1 slice (planner tier or slow tier — user decides).
+- Run planner-fast POOL (3 cells; §0.0b min=3 satisfied)
+- Run embedder-fast POOL (6 cells; §0.0b min=4 satisfied)
+- Apply R1/R2/R3 rubric to results; document eliminations
+- If any survivor pool < min for its role, either author fresh candidates or use `--smoke` for confirmation runs (same pattern as coder-fast)
 
 ## Open questions / awaiting user answer
-- Whether to keep Coder-Instruct and 27B Q6_K in scope for slow-tier evaluation (registry entries retained; not blocked either way).
+- none
 
 ## Exact next action
+
+Pull latest, then run planner-fast POOL:
+
 ```bash
-cd ~/dev/openhands-ext-v1 && git pull
+cd ~/dev/openhands-ext-v1
+git fetch origin && git reset --hard origin/main
 scripts/benchmark-tier-runner.py \
-  --tier fast --role coder \
-  --task-set bench/tasks/coder-fast.json \
+  --tier fast --role planner \
+  --task-set bench/tasks/planner-fast.json \
   --rubric bench/rubrics/fast-elimination.json \
-  --candidate-file bench/candidates/coder-fast-pool.json \
+  --candidate-file bench/candidates/planner-fast-pool.json \
   --vllm-release 0.27.0
 ```
+
+Then embedder-fast POOL:
+
+```bash
+scripts/benchmark-tier-runner.py \
+  --tier fast --role embedder \
+  --task-set bench/tasks/embedder-fast.json \
+  --rubric bench/rubrics/fast-elimination.json \
+  --candidate-file bench/candidates/embedder-fast-pool.json \
+  --vllm-release 0.27.0
+```
+
+Paste both run logs. Agent scores against R1/R2/R3.
