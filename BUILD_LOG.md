@@ -1145,3 +1145,14 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none yet (implementation slice will touch `bench/runner/probes.py`, `bench/runner/candidates.py`, `bench/schema/run.py`).
 - **PORTING_LEDGER / ADR updated:** ADR-0026 new (scope-lock). No spec surface edit required until the implementation slice; §17 stays clean because ADR-0026 extends ADR-0007 rather than replacing a row.
 - **Stop-condition status:** met for scope-lock. Implementation slice has its own stop conditions inside the ADR body (§Consequences).
+
+## 2026-08-11 10:22 EDT — ADR-0026 amended + step 1 (SDK verification) complete
+
+- **Stage / plugin / port:** OpenHands-Ext v1 · Phase 0.3 gate-2 · coder role · `.oh-venv` SDK verification.
+- **What changed:** Verified `openhands-sdk` + `openhands-tools` + `openhands-workspace` + `openhands-agent-server` already installed at 1.41.0 in `.venv` (Python 3.14.4). Docker Server 29.6.1 healthy. `DockerWorkspace` located at `openhands.workspace.DockerWorkspace` (separate `openhands-workspace` package), NOT at `openhands.sdk.workspace.DockerWorkspace` as ADR-0026 body originally implied. ADR-0026 amended with `IMPLEMENTATION NOTE (2026-08-11 10:22 EDT)` capturing correct import path; decision unchanged.
+- **Files touched:**
+  - `bench/runner/openhands-sdk-freeze-20260811T142200Z.txt` (new — version pin)
+  - `adrs/ADR-0026-coder-multi-turn-correctness-harness-v1.md` (amended with implementation note; status flag `Amended · Ratified`)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0026 amendment (in-place per kosmos-adr-authoring §6).
+- **Stop-condition status:** step 1 met. Ready for step 2 (DockerWorkspace `.start()` smoke test).

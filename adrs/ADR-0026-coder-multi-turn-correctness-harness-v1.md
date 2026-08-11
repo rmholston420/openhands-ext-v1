@@ -1,9 +1,19 @@
 # ADR-0026 — Coder multi-turn correctness harness v1 (Docker workspace + Perplexity-Max scored 0-100 + supersede prior verdict)
 
-**Status:** Ratified (scope-lock; implementation follows)
+**Status:** Amended · Ratified (scope-lock; implementation follows)
 **Lock-in phase:** Phase 0.3 gate-2
 **Supersedes:** planner-role-independent portion of ADR-0017 (coder scoring shape) at the medium-tier surface
 **Extends:** ADR-0007 (§0.0c category 1 SDK path), ADR-0022 (Phase 0.2 task-set + gold protocol pattern), ADR-0023 (coder role assignment — re-verified post-harness)
+
+> **IMPLEMENTATION NOTE (2026-08-11 10:22 EDT) — SDK 1.41.0 import path**
+>
+> Verified on Colossus `.venv` (Python 3.14.4): `openhands-sdk==1.41.0`, `openhands-tools==1.41.0`, `openhands-workspace==1.41.0`, `openhands-agent-server==1.41.0`, `docker==7.2.0`; Docker Server 29.6.1 healthy.
+>
+> In SDK 1.41.0, `DockerWorkspace` is **not** exported from `openhands.sdk.workspace` — that path only exposes the base classes (`BaseWorkspace`, `LocalWorkspace`, `RemoteWorkspace`, `Workspace`). `DockerWorkspace` lives in the separate `openhands-workspace` package at **`openhands.workspace.DockerWorkspace`** (source: `.venv/lib/python3.14/site-packages/openhands/workspace/docker/workspace.py`). The `openhands-workspace` package also exposes `APIRemoteWorkspace`, `ApptainerWorkspace`, `OpenHandsCloudWorkspace`, and a lazy `DockerDevWorkspace`.
+>
+> All implementation-slice references to "`openhands.sdk.workspace.DockerWorkspace`" in the original ADR body should be read as "`openhands.workspace.DockerWorkspace`." Decision 1 (workspace mechanism = DockerWorkspace) is unchanged; this is an import-path correction only.
+>
+> Version pin captured in `bench/runner/openhands-sdk-freeze-20260811T142200Z.txt`.
 
 ## Context
 
