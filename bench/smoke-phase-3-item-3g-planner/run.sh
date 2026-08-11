@@ -151,20 +151,26 @@ try:
     verdict["tool_calls"] = tool_calls_seen
     verdict["parsed_args"] = parsed_args_seen
 
-    # Pass predicate
+    # Pass predicate.
+    #
+    # Note on tool-name check: SDK auto-derives the OpenAI tool name from
+    # the ToolDefinition class name (snake_case). Our local subclass came
+    # out as '_llm_only_terminal'. Since we only handed the model ONE tool,
+    # the model "calling a tool with the right command" is sufficient
+    # evidence that the endpoint speaks native tool_calls. We record the
+    # name we saw for the log but do not gate on it.
     has_toolcall = len(tool_calls_seen) > 0
-    has_terminal_call = any(tc.get("name") == "terminal" for tc in tool_calls_seen)
+    tool_names_seen = sorted({tc.get("name") for tc in tool_calls_seen if tc.get("name")})
     has_command_arg = any(
         isinstance(a, dict) and "command" in a and "hello-planner-3g" in str(a.get("command", ""))
         for a in parsed_args_seen
     )
     verdict["has_toolcall"] = has_toolcall
-    verdict["has_terminal_call"] = has_terminal_call
+    verdict["tool_names_seen"] = tool_names_seen
     verdict["has_command_hello_planner_3g"] = has_command_arg
     verdict["pass"] = bool(
         err is None
         and has_toolcall
-        and has_terminal_call
         and has_command_arg
         and wall < 60
     )

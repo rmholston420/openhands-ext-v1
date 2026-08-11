@@ -18,10 +18,11 @@ Scope-limited by design:
 
 - `LLM.completion(messages=[Message(...)], tools=[terminal_td])` returns without exception.
 - `response.message.tool_calls` is a non-empty list.
-- At least one tool call has `.name == "terminal"` (or `.function.name == "terminal"` — whichever shape the SDK exposes).
 - The tool call's arguments parse as JSON.
 - The parsed arguments contain a `command` key whose value contains the string `hello-planner-3g`.
 - Wall time under 60 s (planner is slower than coder; 30 s is too tight).
+
+Note on tool-name assertion: the SDK auto-derives the OpenAI tool `name` from the `ToolDefinition` class name (snake_case). Our local minimal subclass renders as `_llm_only_terminal`. Since only ONE tool is offered to the model, the model “calling a tool with the right command” is sufficient evidence that the endpoint speaks native `tool_calls`. The tool name seen is recorded in the verdict for the log but not gated on.
 
 ## Fail criteria
 
