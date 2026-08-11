@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+# bench/smoke-phase-3-item-3c/run.sh — Phase 3 sign-off item 3.c smoke.
+#
+# Trivial task under DockerWorkspace instead of LocalWorkspace. Uses
+# the coder LLM at http://127.0.0.1:8100/v1 via network=host so the
+# agent-server container reaches it unchanged.
+
+set -uo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$REPO_ROOT"
+
+TS="$(date +%Y%m%d_%H%M%S)"
+OUT_DIR="$HOME/.forge-oh/bench_smoke_phase_3_item_3c/${TS}_run"
+mkdir -p "$OUT_DIR"
+
+VENV_PY="$REPO_ROOT/.venv/bin/python"
+
+# Preflight: coder up on :8100
+if ! curl -sf http://127.0.0.1:8100/v1/models >/dev/null 2>&1; then
+  echo "PRECONDITION FAIL: coder :8100 not reachable. Start it with"
+  echo "  nohup bash scripts/serve-coder.sh > /tmp/oh-serve/coder.log 2>&1 &"
+  echo "and retry." >&2
+  exit 2
+fi
+
+# Preflight: Docker
+if ! docker version --format '{{.Server.Version}}' >/dev/null 2>&1; then
+  echo "PRECONDITION FAIL: Docker daemon not reachable." >&2
+  exit 2
+fi
+
+TASK_FILE="$REPO_ROOT/bench/smoke-phase-3-item-3c/task.md"
+IMAGE="ghcr.io/openhands/agent-server:latest-python"
+
+echo "=== Phase 3 sign-off item 3.c smoke — $(date -Iseconds) ==="
+echo "OUT_DIR=$OUT_DIR"
+echo "IMAGE=$IMAGE"
+echo ""
+
+env \
+  OUT_DIR="$OUT_DIR" \
+  IMAGE="$IMAGE" \
+  TASK_FILE="$TASK_FILE" \
+  "$VENV_PY" - <<'PY'
+import json, os, time, traceback
+from pathlib import Path
+from datetime import datetime, timezone
+
+OUT_DIR = Path(os.environ["OUT_DIR"])
+IMAGE   = os.environ["IMAGE"]
+TASK    = Path(os.environ["TASK_FILE"]).read_text()
+
+from config.agent import build_agent
+from openhands.sdk import Conversation, Message, TextContent
+from openhands.workspace.docker.workspace import DockerWorkspace
+from openhands.sdk.workspace import RemoteWorkspace
+
+# Collect events
+events = []
+def on_event(ev):
+    try:
+        d = ev.model_dump(mode="json")
+    except Exception:
+        d = {"repr": repr(ev)}
+    events.append({"cls": type(ev).__name__, "data": d})
+
+verdict = {
+    "task": "3c_dockerworkspace_trivial",
+    "image": IMAGE,
+    "started_utc": datetime.now(timezone.utc).isoformat(),
+}
+
+t0 = time.time()
+err = None
+try:
+    with DockerWorkspace(
+        server_image=IMAGE,
+        network="host",
+        enable_gpu=False,
+        health_check_timeout=180.0,
+    ) as ws:
+        verdict["workspace_cls"] = type(ws).__name__
+        verdict["workspace_is_remote"] = isinstance(ws, RemoteWorkspace)
+        verdict["workspace_host"] = getattr(ws, "host", None)
+
+        agent = build_agent()
+        conv = Conversation(agent=agent, workspace=ws, callbacks=[on_event])
+        conv.send_message(Message(role="user",
+                                  content=[TextContent(text=TASK)]))
+        conv.run()
+
+        # Post-run state
+        try:
+            st_ws = conv.state.workspace
+            verdict["state_workspace_cls"] = type(st_ws).__name__
+        except Exception as e:
+            verdict["state_workspace_cls_err"] = f"{type(e).__name__}: {e}"
+
+except Exception as e:
+    err = f"{type(e).__name__}: {e}"
+    verdict["exception"] = err
+    verdict["traceback"] = traceback.format_exc()
+
+wall = time.time() - t0
+verdict["wall_seconds"] = round(wall, 2)
+verdict["event_count"]  = len(events)
+
+# Type counts
+tc = {}
+for e in events:
+    tc[e["cls"]] = tc.get(e["cls"], 0) + 1
+verdict["type_counts"] = tc
+
+def any_event(pred):
+    return any(pred(e) for e in events)
+
+def action_names():
+    names = []
+    for e in events:
+        if "Action" in e["cls"]:
+            d = e["data"]
+            # ActionEvent.action.name or .tool_name; be liberal
+            for path in (("action","name"), ("action","tool_name"),
+                         ("tool_name",), ("name",)):
+                cur = d
+                ok = True
+                for k in path:
+                    if isinstance(cur, dict) and k in cur:
+                        cur = cur[k]
+                    else:
+                        ok = False; break
+                if ok and isinstance(cur, str):
+                    names.append(cur); break
+    return names
+
+verdict["action_names"] = action_names()
+
+def evt_text(e):
+    return json.dumps(e["data"], default=str)[:8000]
+
+verdict["has_finish_action"] = any_event(
+    lambda e: e["cls"] == "ActionEvent" and "Finish" in evt_text(e)
+)
+verdict["has_docker_ok_string"] = any_event(
+    lambda e: "docker-ok" in evt_text(e)
+)
+verdict["has_hello_txt"] = any_event(
+    lambda e: "hello.txt" in evt_text(e)
+)
+verdict["has_terminal_error"] = any_event(
+    lambda e: "terminal_error" in evt_text(e).lower()
+             or ("Observation" in e["cls"] and "error" in evt_text(e).lower())
+)
+
+verdict["pass"] = (
+    err is None
+    and verdict.get("workspace_is_remote", False)
+    and verdict["event_count"] > 0
+    and verdict["has_finish_action"]
+    and (verdict["has_docker_ok_string"] or verdict["has_hello_txt"])
+    and not verdict["has_terminal_error"]
+    and wall < 300
+)
+
+(OUT_DIR / "events.json").write_text(json.dumps(events, indent=2, default=str))
+(OUT_DIR / "verdict.json").write_text(json.dumps(verdict, indent=2, default=str))
+print(json.dumps(verdict, indent=2, default=str))
+PY
+
+rc=$?
+echo ""
+echo "=== Item 3.c smoke complete — rc=$rc — verdict at $OUT_DIR/verdict.json ==="
+exit $rc
