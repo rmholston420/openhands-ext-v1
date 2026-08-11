@@ -1466,3 +1466,22 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **35b coder retirement:** deferred to Phase 1 per user directive 2026-08-11 12:56 EDT. Not addressed in Phase 0.4.
 
 ---
+
+## 2026-08-11 13:16 EDT — Phase 0.4 gate-4 DoD step 3 COMPLETE: corpus manifest committed at pinned SHAs
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · embedder Full-tier · corpus manifest
+- **What changed:** Committed `bench/corpus/embedder-full-multi-block/MANIFEST.json` with three-repo pin: openhands-ext-v1@5489fb19 (main, 26 py/pyi + 42 md governance), Kosmos@1f33519a on branch `stage-3-13-tektos-intention` (user's live working state, 392 py/pyi + 97 md governance — 45 commits ahead of Kosmos main@c455165 per user choice S1 2026-08-11 13:15 EDT), Rigpa-LMS@55b55539 (main, 551 py/pyi). Totals: **969 code files, 139 docs files**. Per-repo file lists persisted under `bench/corpus/embedder-full-multi-block/file_lists/`. Fetch protocol documented (git clone + checkout by SHA; runner verifies HEAD SHA matches after checkout). CHECKSUMS.sha256 for per-file byte-identity guard deferred to step 3.5 (before qrels labeling). ADR-0030 progress note appended (still Proposed; ratifies on step 6). `post_hoc_edit_locked=true` on the manifest per ADR-0030.
+- **Diagnostic correction (search-first per Kosmos DEBUG_LOG discipline):** Earlier `gh api compare` reading in 13:11 EDT session step misdirected on directionality — I initially claimed local Kosmos was 45 commits BEHIND GitHub main, when in fact `stage-3-13-tektos-intention` is 45 commits AHEAD of main. Root cause: read the compare status field as "behind" without cross-checking which branch was `base` vs `head`. Fix: `git rev-parse HEAD` on user's local `~/dev/kosmos` returned `1f33519` which matched GitHub's `stage-3-13-tektos-intention` tip exactly; `git pull --ff-only origin main` reporting "already up to date" was the disambiguating signal (means: the fetched `origin/main` doesn't have anything the local checked-out branch is missing, NOT that local main is caught up). Recorded so future SHA-divergence work uses `git branch --show-current` up front instead of assuming main.
+- **Files touched:**
+  - `bench/corpus/embedder-full-multi-block/MANIFEST.json` (created; post_hoc_edit_locked)
+  - `bench/corpus/embedder-full-multi-block/file_lists/code_openhands-ext-v1.txt` (26 lines)
+  - `bench/corpus/embedder-full-multi-block/file_lists/code_kosmos.txt` (392 lines)
+  - `bench/corpus/embedder-full-multi-block/file_lists/code_rigpa-lms.txt` (551 lines)
+  - `bench/corpus/embedder-full-multi-block/file_lists/docs_openhands-ext-v1.txt` (42 lines)
+  - `bench/corpus/embedder-full-multi-block/file_lists/docs_kosmos.txt` (97 lines)
+  - `adrs/ADR-0030-phase-0-4-embedder-full-tier-re-eval.md` (progress note added)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0030 progress note (not a status flip; still Proposed).
+- **Stop-condition status:** Gate-4 DoD step 3 COMPLETE. Steps 4 (40 queries authored blind), 5 (rubric commit), 6 (qrels labeling + hash lock) remain before Ratification.
+
+---

@@ -1,6 +1,9 @@
 # ADR-0030 — Phase 0.4 embedder Full-tier re-eval (three-way, pre-registered)
 
 **Status:** Proposed (flips to Ratified on fixture lock-in: corpus manifest committed with pinned repo SHAs, 40 queries authored blind, rubric committed, qrels labeled by Perplexity-Max and hash-locked)
+
+> **PROGRESS NOTE (2026-08-11 13:16 EDT):** Fixture lock-in step 3 (corpus manifest) COMPLETE. `bench/corpus/embedder-full-multi-block/MANIFEST.json` committed at pinned SHAs: openhands-ext-v1@5489fb19 (main), Kosmos@1f33519a on branch `stage-3-13-tektos-intention` (user's live working state, 45 commits ahead of Kosmos main; option S1 per user 2026-08-11 13:15 EDT), Rigpa-LMS@55b55539 (main). Totals: 969 code files (26 + 392 + 551), 139 docs files (42 + 97). Diagnostic correction filed in BUILD_LOG: earlier comparison output was misread — stage-3-13 is AHEAD of main by 45, not behind. Steps 4–6 remain before Ratification.
+
 **Lock-in phase:** Phase 0.4 gate-4 opener
 **Supersedes:** —
 **Extends:** ADR-0016 (medium-tier hybrid rubric), ADR-0017 (embedder production placement, amend #3: 4B-Q8 llama.cpp CPU), ADR-0022 (gold protocol), ADR-0028 (Full-tier ADR-opener template)
