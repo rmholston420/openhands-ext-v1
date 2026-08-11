@@ -1050,3 +1050,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** — (implementation detail; ADR-0022 unaffected)
 - **Stop-condition status:** Ready for Medium dry-run retry.
+
+## 2026-08-11 09:38 EDT — vllm-coder restart after Phase 0.2 medium bench
+
+- **Stage / plugin / port:** OpenHands-Ext v1 · Phase 0.2 · vllm-coder serving endpoint (:8100).
+- **What changed:** Restarted vllm-coder after Phase 0.2 Medium bench completion. Diagnosed FlashInfer-sampler / SM_120 / CUDA 12.8 engine-core crash (see DEBUG_LOG 2026-08-11 09:37 EDT). Persisted `export VLLM_USE_FLASHINFER_SAMPLER=0` in `~/.bashrc` so future shells launch cleanly. New PID 2055812, `/v1/models` healthy, VRAM 31415 MiB.
+- **Files touched:** `~/.bashrc` (host).
+- **Ports / adapters affected:** vllm-coder endpoint (:8100).
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** met (endpoint healthy, model registered, VRAM within envelope; standalone-launch reproducibility now guaranteed across shells until CUDA 12.9 upgrade).

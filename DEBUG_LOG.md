@@ -555,3 +555,18 @@ Entry format:
   - v3 smoke test 5/5 PASS (T4 delta = 18113 prompt tokens, T5 event_count = 20)
 - **Files changed:** none (host UFW config). Documented in `tests/smoke/README.md` and `adrs/ADR-0020-*.md`.
 - **Related BUILD_LOG entry:** 2026-08-11 08:12 EDT
+
+## 2026-08-11 09:37 EDT — vllm-coder engine core crash: FlashInfer sampler on SM_120/CUDA 12.8
+
+- **Symptom:** `RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}` on `vllm serve` startup. Root cause (log line 137): `RuntimeError: FlashInfer requires GPUs with sm75 or higher`. Preceded by `Failed to get device capability: SM 12.x requires CUDA >= 12.9.` (log line 14). Crash occurs during `_dummy_sampler_run` in the profile-run phase after model weights load successfully (16.96 GiB, 9.8 s). Stack: `topk_topp_sampler.forward_cuda` → `flashinfer_sample` → `flashinfer.sampling.top_k_top_p_sampling_from_logits` → `top_k_mask_logits` → `get_sampling_module` → JIT build → `check_cuda_arch` fails.
+- **Affected stage / plugin / port:** OpenHands-Ext v1 · Phase 0.2 · vllm-coder serving endpoint (:8100).
+- **Root cause:** FlashInfer JIT sampler on vLLM v0.27.0 cannot detect SM_120 (Blackwell RTX 5090) device capability under CUDA 12.8 — the driver-side capability query fails with "SM 12.x requires CUDA >= 12.9" and FlashInfer's `check_cuda_arch` fallback raises the misleading sm75 error. vLLM's `topk_topp_sampler` selects FlashInfer as the default sampler backend when available (log: `Using FlashInfer for top-p & top-k sampling`), so any standalone `vllm serve` launch hits this path during `profile_run` / `_dummy_sampler_run` regardless of runtime request sampling params. The Phase 0.2 medium bench did NOT trigger this because (a) llama.cpp cells don't use FlashInfer, (b) the bench-driven vllm cells launched from a shell where `VLLM_USE_FLASHINFER_SAMPLER=0` was set for that subprocess, and (c) Ollama uses its own sampler. Only the post-bench standalone restart in a fresh shell exposed the missing env-var persistence.
+- **Fix applied:** Set `VLLM_USE_FLASHINFER_SAMPLER=0` inline on the launch command; appended `export VLLM_USE_FLASHINFER_SAMPLER=0` to `~/.bashrc` for future shells (with comment: remove after CUDA 12.9 upgrade). Restart succeeded: PID 2055812 healthy on :8100, `curl http://localhost:8100/v1/models` returns `qwen3-coder-30b-a3b-instruct-awq-4bit`, VRAM 31415 MiB (within 90% of 32 GB envelope).
+- **Files changed:** `~/.bashrc` (host config; no repo files).
+- **Related BUILD_LOG entry:** 2026-08-11 09:38 EDT.
+
+### Reusable lessons
+
+1. **`Failed to get device capability: SM 12.x requires CUDA >= 12.9` is the true root** — the sm75 error below it is misleading FlashInfer fallback text. Grep the log for the SM-12 message first on any Blackwell + CUDA 12.8 vLLM crash.
+2. **`VLLM_USE_FLASHINFER_SAMPLER=0` must live in `~/.bashrc`** (or a systemd unit) — subprocess-only exports die with the shell. Any post-reboot / post-tmux-restart standalone `vllm serve` will crash without it until CUDA 12.9.
+3. **Bench harness safety by accident:** the harness set the env var per-cell subprocess, so cells passed while the interactive shell was still broken. Bench-passing ≠ endpoint-launchable in a fresh shell.
