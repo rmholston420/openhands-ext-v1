@@ -3,7 +3,7 @@
 #
 # Prereqs:
 #   1. scripts/serve-coder.sh running (port 8100).
-#   2. scripts/extract-max-output-tokens.sh already run (config/max-output-tokens.json exists).
+#   2. scripts/populate-max-output-tokens.sh already run (config/max-output-tokens.json exists).
 #   3. .venv/ active OR sourced.
 #
 # Runs the smoke task from bench/smoke-phase-3/task.md via config.agent.build_agent().
@@ -39,7 +39,7 @@ fi
 
 # Prereq 2: measured max_output_tokens present
 if [ ! -f "$REPO_ROOT/config/max-output-tokens.json" ]; then
-  echo "FAIL: config/max-output-tokens.json missing — run scripts/extract-max-output-tokens.sh first" >&2
+  echo "FAIL: config/max-output-tokens.json missing — run scripts/populate-max-output-tokens.sh first" >&2
   exit 1
 fi
 

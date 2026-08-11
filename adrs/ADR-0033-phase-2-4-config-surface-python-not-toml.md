@@ -4,6 +4,8 @@
 **Lock-in phase:** Phase 2.4 (Tiered multi-LLM routing) · Phase 3 (verification)
 **Supersedes:** —
 
+> **STATUS AMENDMENT (2026-08-11 17:20 EDT):** During Phase 2.4 authoring, investigation on Colossus established that the Phase 0.x bench harness (`bench/results/*.json`, `bench/results/verdicts/*.json`) does **not** record per-response output-token counts — no `output_tokens`, `completion_tokens`, or `response_tokens` field is present in any Phase 0.x artifact. Spec §2.4's "measured-in-full-tier, not assumed" mandate was not honored by the harness that produced ADR-0025 and ADR-0029. The extract script planned in the original decision (`scripts/extract-max-output-tokens.sh`) is therefore replaced by `scripts/populate-max-output-tokens.sh`, which populates `config/max-output-tokens.json` with **spec-sheet ceiling values** (8192 for both roles) and provenance flavor `SPEC_SHEET`. Phase 3 verification produces the first empirical observation of actual response lengths. If observed peak approaches or exceeds 8192 in normal use, file ADR-0035 to bump both values and re-run (reversal path: edit two ints in `config/max-output-tokens.json`, no code change). This amendment does not change the core decision (Python config surface, option 6c, option 7a); it only corrects the mechanism for populating one field.
+
 ## Context
 
 Spec `docs/specs/integration-execution-plan-v16.md` §2.4 (L328-357) specifies the Phase 2.4 config surface as a TOML file with sections `[llm]`, `[llm.planner]`, `[llm.condenser]`, `[llm.embedding]`. The spec was authored before the openhands-sdk 1.41.0 config surface was inspected directly.
@@ -63,8 +65,8 @@ Populating a TOML file that no SDK loader reads would create dead configuration.
 **Files created:**
 - `config/agent.py` — canonical Python config module (this ADR's primary deliverable).
 - `config/router.py` — `CoderPlannerRouter(RouterLLM)` subclass with `select_llm(messages, call_context)`.
-- `scripts/extract-max-output-tokens.sh` — extracts and records measured `max_output_tokens` from Phase 0.3 bench JSON (`~/.forge-oh/bench_*_run/*.json`) into a checked-in provenance file (`config/max-output-tokens.json`).
-- `config/max-output-tokens.json` — provenance record: `{"coder": {"value": N, "source": "<bench-json-path>", "measured_at": "<UTC>"}, "planner": {...}}`.
+- `scripts/populate-max-output-tokens.sh` — populates `config/max-output-tokens.json` with spec-sheet ceiling values (8192 for both roles) and provenance flavor `SPEC_SHEET`. See status amendment above for the empirical-measurement gap that made this necessary. Values are overridable via `CODER_MAX_OUTPUT_TOKENS` / `PLANNER_MAX_OUTPUT_TOKENS` env vars.
+- `config/max-output-tokens.json` — provenance record with per-role `value`, `source`, `provenance` flavor (`SPEC_SHEET` or `EMPIRICAL_PHASE_3`), `populated_at`, and `empirical_override_pending` pointer to ADR-0035 (deferred, fires only if Phase 3 or later observes response length approaching the ceiling).
 - `bench/smoke-phase-3/task.md` — minimal trivial task (Phase 3 verification, spec L378-383 first row).
 - `bench/smoke-phase-3/run.sh` — smoke runner: brings up coder endpoint, runs task, asserts event stream + FinishAction.
 

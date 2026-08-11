@@ -18,8 +18,9 @@ Co-residency contract (ADR-0017 amend):
     coder XOR planner + embedder   (coder and planner never co-run)
 
 max_output_tokens values are loaded from config/max-output-tokens.json,
-populated by scripts/extract-max-output-tokens.sh from measured Phase 0.3
-bench JSON (~/.forge-oh/bench_*_run/*.json). Do not hardcode.
+populated by scripts/populate-max-output-tokens.sh (spec-sheet ceiling per
+ADR-0033 status amendment 2026-08-11 17:20 EDT; empirical override deferred
+to ADR-0035 if Phase 3+ observes response length approaching the ceiling).
 
 Usage:
 
@@ -78,16 +79,17 @@ _MAX_OUT_PATH = Path(__file__).parent / "max-output-tokens.json"
 
 
 def _load_max_output_tokens() -> dict[str, int]:
-    """Return {"coder": int, "planner": int} from measured provenance file.
+    """Return {"coder": int, "planner": int} from the provenance file.
 
-    Fails loud if the file is missing — spec §2.4 requires "measured, not
-    assumed" values. Run scripts/extract-max-output-tokens.sh first.
+    Fails loud if the file is missing. Run scripts/populate-max-output-tokens.sh
+    first. The provenance file records `provenance` flavor (SPEC_SHEET or
+    EMPIRICAL_PHASE_3) per ADR-0033.
     """
     if not _MAX_OUT_PATH.exists():
         raise FileNotFoundError(
             f"config/max-output-tokens.json not found at {_MAX_OUT_PATH}. "
-            "Run scripts/extract-max-output-tokens.sh to populate it from "
-            "measured Phase 0.3 bench JSON before importing this module."
+            "Run scripts/populate-max-output-tokens.sh to populate it "
+            "before importing this module."
         )
     data = json.loads(_MAX_OUT_PATH.read_text())
     out: dict[str, int] = {}

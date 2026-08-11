@@ -6,7 +6,7 @@ Canonical Phase 2.4 config surface per **ADR-0033** (Python module, not TOML).
 
 - **`agent.py`** — canonical runtime config. Builds three `LLM` instances against Phase 0.3 winners, wires `CoderPlannerRouter`, and returns a fully-configured `Agent` via `build_agent()`.
 - **`router.py`** — `CoderPlannerRouter(RouterLLM)`. Dispatches via `LLMCallContext.metadata["role"]` (option 6c). Default route: coder.
-- **`max-output-tokens.json`** — provenance-tracked measured limits from Phase 0.3 bench JSON. Populated by `scripts/extract-max-output-tokens.sh`. Required before `config.agent` can be imported.
+- **`max-output-tokens.json`** — provenance-tracked ceiling values (currently `SPEC_SHEET` per ADR-0033 status amendment 2026-08-11 17:20 EDT; empirical override deferred to ADR-0035). Populated by `scripts/populate-max-output-tokens.sh`. Required before `config.agent` can be imported.
 
 ## Usage
 

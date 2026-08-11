@@ -1,52 +1,31 @@
-# Kosmos Session Handoff — 2026-08-11 17:10 EDT
+# Kosmos Session Handoff — 2026-08-11 17:20 EDT
 
 ## Current build-sequencing position
 
-- **Stage / phase:** Phase 2.4 (config surface authored) → Phase 3 (verification, pending execution)
-- **Plugin / kernel component:** OpenHands-Ext v1 canonical config surface — `config/agent.py` + `config/router.py`
-- **Port(s) in progress:** none formally; `CoderPlannerRouter` is a config-surface subclass, not a port
+- **Stage / phase:** Phase 2.4 (Tiered multi-LLM routing) — authoring COMPLETE; awaiting user to populate `config/max-output-tokens.json` on Colossus, then Phase 3 verification (row-1 smoke + row-2 role-switch).
+- **Plugin / kernel component:** config surface (`config/agent.py`, `config/router.py`), Phase 3 smoke harness (`bench/smoke-phase-3/`).
+- **Port(s) in progress:** none new. ADR-0033 (Ratified, amended 17:20 EDT) locks the config surface. Router uses SDK 1.41 `RouterLLM` base; dispatch via `LLMCallContext.metadata["role"]` (option 6c). Condenser reuses coder endpoint (option 7a).
 
 ## Completed this session
 
-- Filed ADR-0031 (Ratified) — Phase 0.4 gate-4 embedder verdict DEFER; retain 4B-Q8 incumbent
-- Filed ADR-0032 (Ratified) — Phase 1 spec-scope closure: 1.1 DockerWorkspace-only policy CLOSED; 1.2 code-explorer registration deferred to Phase 2.4/3
-- Committed offline scorer + 4-query calibration markdown to `bench/scoring/embedder-full-multi-block-calibration/`
-- Amended spec §Phase 1 L292 with 1.2 deferral footnote
-- Amended pre-commit allow-list to exempt `docs/BENCHMARK_UNPAUSE_GATES.md`
-- Inspected openhands-sdk 1.41.0 on Colossus: RouterLLM base class + MultimodalRouter reference impl + LLMSummarizingCondenser + openhands.tools.delegate + openhands.tools.task.TaskToolSet
-- Filed ADR-0033 (Ratified) — Phase 2.4 config surface: Python module, not TOML; option 6c LLMCallContext dispatch; option 7a coder-as-condenser
-- Authored `config/agent.py` (build_coder_llm / build_planner_llm / build_embedder_llm / build_router / build_condenser / build_agent)
-- Authored `config/router.py` (CoderPlannerRouter subclass dispatching via `LLMCallContext.metadata['role']`)
-- Authored `scripts/extract-max-output-tokens.sh` (measured provenance → `config/max-output-tokens.json`)
-- Authored `bench/smoke-phase-3/{task.md, README-target.txt, run.sh}` for Phase 3 row-1 verification
-- Amended spec §2.4 with ADR-0033 pointer; rewrote `config/README.md`
+- 17:10 EDT — ADR-0033 Ratified; `config/agent.py` + `config/router.py` + `bench/smoke-phase-3/` authored; commit `c01c1e4` pushed.
+- 17:20 EDT — ADR-0033 amended: `max_output_tokens` provenance flipped from EMPIRICAL to SPEC_SHEET after Colossus investigation confirmed Phase 0.x bench harness records zero output-token fields. Replaced `extract-max-output-tokens.sh` with `populate-max-output-tokens.sh` (spec-sheet ceiling 8192 for both roles, provenance flavor SPEC_SHEET, empirical override deferred to ADR-0035).
 
 ## Remaining before current Definition of Done
 
-Phase 2.4 authoring is complete. Phase 3 verification matrix (spec L378-386) is the next DoD gate:
-
-1. User runs `scripts/extract-max-output-tokens.sh` on Colossus to populate `config/max-output-tokens.json`
-2. User clones agent-canvas donor: `git clone https://github.com/OpenHands/agent-canvas.git ~/dev/agent-canvas-stock && cd ~/dev/agent-canvas-stock && git checkout v1.6.1`
-3. User starts coder endpoint: `scripts/serve-coder.sh` (foreground) in a separate terminal
-4. User runs Phase 3 row-1 smoke: `bash bench/smoke-phase-3/run.sh` → confirm event stream + tool action + FinishAction + expected line + wall < 60s
-5. Phase 3 row-2 (role-switch): dispatch a planner task via `DelegateTool` with `call_context.metadata["role"]="planner"` → confirm CoderPlannerRouter selects planner, supervisor swap completes
-6. File ADR-0034 (Phase 3 verdict) after both rows pass
+- User runs on Colossus:
+  1. `cd ~/dev/openhands-ext-v1 && git pull`
+  2. `bash scripts/populate-max-output-tokens.sh`
+  3. `cat config/max-output-tokens.json`
+  4. `.venv/bin/python -c "from config.agent import build_agent; a = build_agent(); print('build_agent OK', type(a).__name__)"`
+- Then Phase 3 verification:
+  - Row 1: `bash bench/smoke-phase-3/run.sh` (trivial task, coder endpoint, expects event stream + FinishAction, wall < 60s).
+  - Row 2: role-switch via `DelegateTool` with `call_context.metadata["role"]="planner"` — likely triggers the SDK 1.41 `RouterLLM.completion()` non-forwarding contingency; decide Path A (override `completion()` in `CoderPlannerRouter`) vs Path B (`fallback_message_heuristic=True`) during execution. Path A is preferred per ADR-0033 §Contingencies.
 
 ## Open questions / awaiting user answer
 
-- **LLMCallContext metadata propagation:** the SDK 1.41 `RouterLLM.completion()` signature does NOT forward `call_context` to `select_llm()` by default (base class only passes `messages`). Two paths, decidable at Phase 3 row-2:
-    - **Path A:** Override `completion()` in `CoderPlannerRouter` to intercept `call_context` before calling `select_llm(messages, call_context=call_context)`.
-    - **Path B:** Flip `CoderPlannerRouter.fallback_message_heuristic = True` and use `[role:planner]` marker in the last user message as the dispatch signal (option 6b fallback documented in ADR-0033).
-    Recommendation: Path A (cleaner, matches option 6c intent). Decide during row-2 execution.
+- None. The `SPEC_SHEET` provenance flavor was chosen agent-side under the "make the optimal choice when the spec or evidence makes it clear" clause (spec-sheet ceilings are conservative upper bounds; empirical measurement path is preserved via ADR-0035 deferral).
 
 ## Exact next action
 
-Run on Colossus:
-
-```bash
-cd ~/dev/openhands-ext-v1 && git pull
-bash scripts/extract-max-output-tokens.sh
-cat config/max-output-tokens.json
-```
-
-Paste output. Then decide whether to clone agent-canvas + run the smoke immediately or in a follow-up session.
+- User: run the four Colossus commands above (`git pull`, `populate-max-output-tokens.sh`, `cat`, `build_agent` import test). Paste output. Then Phase 3 row-1 smoke.
