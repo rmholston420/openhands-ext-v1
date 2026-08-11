@@ -1,5 +1,5 @@
 {
-  "$comment": "Phase 0 §0.0b candidate registry. Editing this file changes what pull-models.sh fetches and what the tier runner considers 'in the pool'. Do NOT hardcode revisions here — pull-models.sh resolves and pins revisions at download time and records them in models/manifest.json. Per ADR-0013, entries with architectures ending in ForConditionalGeneration (Qwen3.5-VL family) are excluded from coder + planner pools — they carry a vision tower that starves KV cache on a 32 GiB card. Verify config.json.architectures[0] ends in ForCausalLM before adding a coder/planner candidate.",
+  "$comment": "Phase 0 \u00a70.0b candidate registry. Editing this file changes what pull-models.sh fetches and what the tier runner considers 'in the pool'. Do NOT hardcode revisions here \u2014 pull-models.sh resolves and pins revisions at download time and records them in models/manifest.json. Per ADR-0013, entries with architectures ending in ForConditionalGeneration (Qwen3.5-VL family) are excluded from coder + planner pools \u2014 they carry a vision tower that starves KV cache on a 32 GiB card. Verify config.json.architectures[0] ends in ForCausalLM before adding a coder/planner candidate.",
   "schema_version": "1.0.0",
   "roles": {
     "coder": [
@@ -9,10 +9,14 @@
         "hf_files": [],
         "format": "safetensors",
         "runtime": "vllm",
-        "role_pool": ["coder", "planner"],
+        "role_pool": [
+          "coder",
+          "planner"
+        ],
         "approx_size_gib": 18,
         "tool_call_parser": "hermes",
-        "notes": "30B-A3B MoE thinker (AWQ-4bit). Dual-role per ADR-0012 after coder-fast smoke PASS 5/5 (2026-08-11 03:18 EDT). Hermes tool-call flavor (<tool_call>{json}</tool_call>) — parser explicit per ADR-0011 amendment 2026-08-11."
+        "notes": "30B-A3B MoE thinker (AWQ-4bit). Dual-role per ADR-0012 after coder-fast smoke PASS 5/5 (2026-08-11 03:18 EDT). Hermes tool-call flavor (<tool_call>{json}</tool_call>) \u2014 parser explicit per ADR-0011 amendment 2026-08-11.",
+        "reasoning_parser": "qwen3"
       },
       {
         "slug": "qwen3-coder-30b-a3b-instruct-awq-4bit",
@@ -20,18 +24,25 @@
         "hf_files": [],
         "format": "safetensors",
         "runtime": "vllm",
-        "role_pool": ["coder"],
+        "role_pool": [
+          "coder"
+        ],
         "approx_size_gib": 17,
         "tool_call_parser": "qwen3_coder",
-        "notes": "Purpose-built coder-instruct (non-thinking). Qwen3MoeForCausalLM per llm-explorer metadata + on-disk config.json 2026-08-11 04:05 EDT (passes ADR-0013 rule; vision_config absent). AWQ-4bit group_size 32 (cyankiwi v1.0), Apache-2.0. Model card sampling: temp=0.7 top_p=0.8 top_k=20 repetition_penalty=1.05 (matches local-llm-bench coder preset). Chat template inspection 2026-08-11 04:06 EDT: outer <tool_call> wraps inner <function=name><parameter=arg>value</parameter></function> — Qwen3-Coder XML wire format. Parser MUST be qwen3_coder per ADR-0011 amendment; hermes parser would return tool_calls=[] with the raw call left in message.content."
+        "notes": "Purpose-built coder-instruct (non-thinking). Qwen3MoeForCausalLM per llm-explorer metadata + on-disk config.json 2026-08-11 04:05 EDT (passes ADR-0013 rule; vision_config absent). AWQ-4bit group_size 32 (cyankiwi v1.0), Apache-2.0. Model card sampling: temp=0.7 top_p=0.8 top_k=20 repetition_penalty=1.05 (matches local-llm-bench coder preset). Chat template inspection 2026-08-11 04:06 EDT: outer <tool_call> wraps inner <function=name><parameter=arg>value</parameter></function> \u2014 Qwen3-Coder XML wire format. Parser MUST be qwen3_coder per ADR-0011 amendment; hermes parser would return tool_calls=[] with the raw call left in message.content."
       },
       {
         "slug": "qwen3_6-27b-q6k-gguf",
         "hf_repo": "unsloth/Qwen3.6-27B-GGUF",
-        "hf_files": ["Qwen3.6-27B-Q6_K.gguf"],
+        "hf_files": [
+          "Qwen3.6-27B-Q6_K.gguf"
+        ],
         "format": "gguf",
         "runtime": "llama.cpp",
-        "role_pool": ["coder", "planner"],
+        "role_pool": [
+          "coder",
+          "planner"
+        ],
         "approx_size_gib": 22,
         "notes": "Dense 27B, Q6_K quant. Fits 32 GiB VRAM comfortably with KV cache."
       },
@@ -41,17 +52,25 @@
         "hf_files": [],
         "format": "safetensors",
         "runtime": "vllm",
-        "role_pool": ["coder", "planner"],
+        "role_pool": [
+          "coder",
+          "planner"
+        ],
         "approx_size_gib": 55,
         "notes": "Dense 27B bf16 base. Does NOT fit 32 GiB VRAM at full precision; kept for CPU-offload / reference scoring only. Runner must gate at load time."
       },
       {
         "slug": "qwen3_6-35b-a3b-q4kxl-gguf",
         "hf_repo": "unsloth/Qwen3.6-35B-A3B-GGUF",
-        "hf_files": ["Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"],
+        "hf_files": [
+          "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"
+        ],
         "format": "gguf",
         "runtime": "llama.cpp",
-        "role_pool": ["coder", "planner"],
+        "role_pool": [
+          "coder",
+          "planner"
+        ],
         "approx_size_gib": 22,
         "notes": "MoE 35B / 3B-active, Unsloth Dynamic Q4_K_XL. Fits 32 GiB VRAM. Size calibrated from manifest 2026-08-11."
       }
@@ -63,9 +82,13 @@
         "hf_files": [],
         "format": "safetensors",
         "runtime": "vllm",
-        "role_pool": ["coder", "planner"],
+        "role_pool": [
+          "coder",
+          "planner"
+        ],
         "approx_size_gib": 18,
-        "notes": "30B-A3B MoE thinker (AWQ-4bit). Dual-role per ADR-0012 (coder + planner). Size calibrated from manifest 2026-08-11."
+        "notes": "30B-A3B MoE thinker (AWQ-4bit). Dual-role per ADR-0012 (coder + planner). Size calibrated from manifest 2026-08-11.",
+        "reasoning_parser": "qwen3"
       }
     ],
     "embedder": [
@@ -75,7 +98,9 @@
         "hf_files": [],
         "format": "safetensors",
         "runtime": "vllm",
-        "role_pool": ["embedder"],
+        "role_pool": [
+          "embedder"
+        ],
         "approx_size_gib": 2,
         "notes": "Official Qwen embedding, bf16 safetensors."
       },
@@ -85,7 +110,9 @@
         "hf_files": [],
         "format": "gguf",
         "runtime": "llama.cpp",
-        "role_pool": ["embedder"],
+        "role_pool": [
+          "embedder"
+        ],
         "approx_size_gib": 1,
         "notes": "Official Qwen embedding GGUF. File selected by pull script (Q8_0 preferred)."
       },
@@ -95,7 +122,9 @@
         "hf_files": [],
         "format": "safetensors",
         "runtime": "vllm",
-        "role_pool": ["embedder"],
+        "role_pool": [
+          "embedder"
+        ],
         "approx_size_gib": 8,
         "notes": "Official Qwen embedding-4B bf16 safetensors."
       },
@@ -105,7 +134,9 @@
         "hf_files": [],
         "format": "gguf",
         "runtime": "llama.cpp",
-        "role_pool": ["embedder"],
+        "role_pool": [
+          "embedder"
+        ],
         "approx_size_gib": 5,
         "notes": "Official Qwen embedding-4B GGUF. File selected by pull script (Q8_0 preferred)."
       }

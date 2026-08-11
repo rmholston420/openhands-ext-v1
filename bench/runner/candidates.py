@@ -48,6 +48,16 @@ class ExpandedCandidate:
     # family uses "qwen3_coder" (XML <function=name>/<parameter=...>);
     # Qwen3-Thinking family uses "hermes" (<tool_call>{json}</tool_call>).
     tool_call_parser: Optional[str] = None
+    # Per-cell vLLM --reasoning-parser. When None, NO reasoning parser flag is
+    # emitted (ROLE_FLAGS no longer defaults it). Amendment 2026-08-11 04:26 EDT
+    # (ADR-0011 amend 2): reasoning-parser is per-cell, model-card-driven.
+    # Thinking models (Qwen3-Thinking-2507) set "qwen3" so vLLM strips
+    # <think>...</think> blocks and exposes them via the `reasoning` field.
+    # Non-thinking models (Qwen3-Coder-Instruct) MUST leave this None — the
+    # qwen3 reasoning parser captures the model's XML function-call block into
+    # `reasoning` before the tool_call_parser can extract it, resulting in
+    # tool_calls=[] and mangled output on tasks that emit no separator prose.
+    reasoning_parser: Optional[str] = None
 
 
 def _load_registry() -> dict:
@@ -132,6 +142,7 @@ def expand_for_role(role: str, *, include_oversized: bool = False,
                 local_gguf_file=gguf_file,
                 notes=entry.get("notes", ""),
                 tool_call_parser=entry.get("tool_call_parser"),
+                reasoning_parser=entry.get("reasoning_parser"),
             )
             out.append(cand)
 
@@ -152,6 +163,7 @@ def expand_for_role(role: str, *, include_oversized: bool = False,
                 local_gguf_file=c.local_gguf_file,
                 notes=c.notes + " (CPU cell)",
                 tool_call_parser=c.tool_call_parser,
+                reasoning_parser=c.reasoning_parser,
             )
             cpu_variants.append(cpu)
         out = out + cpu_variants

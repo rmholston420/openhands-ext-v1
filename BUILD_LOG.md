@@ -484,3 +484,18 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **PORTING_LEDGER / ADR updated:** ADR-0011 amended (per-cell parser). No PORTING_LEDGER entry (no OSS component added; the new candidate is vendored via the existing manifest flow which already records HF rev + sha256).
 - **Stop-condition status:** plumbing complete + syntax-verified (both .py files parse; both .json files valid). Ready for 4-cell coder-fast POOL re-run to verify the coder-instruct passes with qwen3_coder parser. Quality-over-speed reminder held: this candidate is a purpose-built coder-instruct; if slow tier scores it meaningfully higher than the thinker+GGUFs, it wins the router slot even if slower.
 - **Next action:** commit + push; then user runs `.venv/bin/python -m bench.runner.main --candidate-file bench/candidates/coder-fast-pool.json --tier fast --role coder --rubric bench/rubrics/fast-tier-coder-r1.json` (or equivalent — actual entry-point unchanged) to verify 4/4 pass including coder-instruct with correct parser.
+
+## 2026-08-11 04:26 EDT — Per-cell reasoning-parser wired (ADR-0011 amend 2)
+
+- **Stage / plugin / port:** Phase 0.1 · Fast tier coder pool · vLLM launch flags
+- **What changed:** `--reasoning-parser` is now per-cell via `cand.reasoning_parser`. Removed from `VLLMServer.ROLE_FLAGS["coder"]` and `ROLE_FLAGS["planner"]` defaults. Thinker sets `"qwen3"` explicitly in registry + pool; Coder-Instruct leaves it unset. Fixes Cell 2 coder-fast POOL failure where qwen3 reasoning parser was capturing the model's `<function=...>` XML into `reasoning` field, stranding `tool_calls=[]`.
+- **Files touched:**
+  - `bench/runner/candidates.py` — `ExpandedCandidate.reasoning_parser: Optional[str] = None`; both `ExpandedCandidate()` sites in `expand_for_role`.
+  - `bench/runner/main.py` — `_from_candidate_dict` reads `row.get("reasoning_parser")`; `_make_server` appends `--reasoning-parser` via `extra_flags` when set.
+  - `bench/runner/server.py` — `VLLMServer.ROLE_FLAGS`: removed `--reasoning-parser qwen3` from `coder` and `planner`.
+  - `bench/candidates/registry.json` — thinker gains `reasoning_parser: "qwen3"` under both `roles.coder` and `roles.planner`.
+  - `bench/candidates/coder-fast-pool.json` — thinker row gains `reasoning_parser: "qwen3"`; coder-instruct row unchanged.
+  - `adrs/ADR-0011-fast-tier-coder-tool-call-parser-hermes.md` — STATUS AMENDMENT 2 appended.
+- **Ports / adapters affected:** none (bench runner only).
+- **PORTING_LEDGER / ADR updated:** ADR-0011 amend 2.
+- **Stop-condition status:** in-progress — awaiting re-run of 4-cell coder-fast POOL to verify Cell 2 passes tasks 01/04.

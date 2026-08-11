@@ -345,3 +345,12 @@ Entry format:
   ```
 - **Files changed:** none. Documenting the pattern for future post-run inspection scripts. No source-code fix needed — the runner itself is correct.
 - **Related BUILD_LOG entry:** 2026-08-11 03:52 EDT (pool close).
+
+## 2026-08-11 04:26 EDT — Non-thinking coder + reasoning-parser interference (Cell 2 fail on tasks 01/04)
+
+- **Symptom:** Coder-fast POOL Cell 2 `qwen3-coder-30b-a3b-instruct-awq-4bit` verdict=fail. Sidecar `probe.json` raw_content showed tasks 01 (read-file) & 04 (write-file) had `content=null`, `tool_calls=[]`, and `reasoning` field containing the model's `<function=name><parameter=arg>value</parameter></function>` XML plus a stray `</tool_call>` closer with no matching opener. Tasks 03/05 passed with clean `tool_calls[]`. Task 02 failed independently (wrong tool called — semantic, not parser).
+- **Affected stage / plugin / port:** Phase 0.1 · vLLM launch flags · coder role · non-thinking coder-instruct model family.
+- **Root cause:** `--reasoning-parser qwen3` was applied as a role default in `VLLMServer.ROLE_FLAGS["coder"]`. On non-thinking Qwen3-Coder-Instruct, the qwen3 reasoning parser captures the entire assistant output into the OpenAI `reasoning` field before the qwen3_coder tool-call parser inspects `content`. When the model emits the `<function=…>` XML without separator prose (tasks 01/04), all of it lands in `reasoning`, leaving `content=null` and `tool_calls=[]`. Tasks 03/05 happened to emit prose first that consumed the reasoning slot, so the subsequent tool-call reached `content`.
+- **Fix applied:** ADR-0011 amend 2 — `--reasoning-parser` is now per-cell. Removed from `ROLE_FLAGS` defaults. Thinking models set `reasoning_parser="qwen3"` explicitly; non-thinking coders leave it unset.
+- **Files changed:** `bench/runner/candidates.py`, `bench/runner/main.py`, `bench/runner/server.py`, `bench/candidates/registry.json`, `bench/candidates/coder-fast-pool.json`, `adrs/ADR-0011-fast-tier-coder-tool-call-parser-hermes.md`.
+- **Related BUILD_LOG entry:** 2026-08-11 04:26 EDT.

@@ -1,8 +1,43 @@
 # ADR-0011 — Fast-tier coder `--tool-call-parser` = `hermes` (Qwen3-Thinking-2507)
 
-**Status:** Amended (2026-08-11 04:07 EDT) — hermes is the **default**; per-cell override supported.
+**Status:** Amended (2026-08-11 04:07 EDT, 2026-08-11 04:26 EDT) — hermes is the **default** tool-call parser; per-cell override supported; **reasoning-parser is now per-cell with no role default**.
 **Lock-in phase:** Phase 0.1 · Fast tier
 **Supersedes:** — (amends ADR-0010's `ROLE_FLAGS["coder"]` value only; the mechanism from ADR-0010 stands)
+
+> **STATUS AMENDMENT 2 (2026-08-11 04:26 EDT):** `--reasoning-parser` is now **per-cell**, not a role default. `VLLMServer.ROLE_FLAGS["coder"]` and `ROLE_FLAGS["planner"]` no longer include `--reasoning-parser qwen3`. Candidates whose model card declares thinking-mode output (Qwen3-Thinking-2507 family) MUST set `reasoning_parser="qwen3"` in their registry / pool row. Non-thinking coders (Qwen3-Coder-Instruct family) MUST leave the field unset.
+>
+> **Root cause driving the amendment:** the qwen3 reasoning parser captures assistant output into the OpenAI `reasoning` field before the tool-call parser inspects `content`. On thinking models this is desired (strips `<think>` blocks). On non-thinking coders (Qwen3-Coder-Instruct) it captures the model's `<function=name><parameter=arg>value</parameter></function>` XML block into `reasoning`, leaving `content=null` and `tool_calls=[]`. Observed 2026-08-11 04:18 EDT on Cell 2 (qwen3-coder-30b-a3b-instruct-awq-4bit) tasks 01/04 of coder-fast POOL: reasoning field contained a stray `</tool_call>` closer with no matching opener; tasks 03/05 passed only because the model emitted separator prose that consumed the reasoning-parser slot before the XML.
+>
+> **Ratified additions:**
+>
+> - `bench/candidates/registry.json` entries and pool rows MAY include `"reasoning_parser"`. When present, it is passed as `--reasoning-parser <value>`. When absent, NO reasoning-parser flag is emitted.
+> - `ExpandedCandidate` gained `reasoning_parser: Optional[str] = None`, propagated through `expand_for_role()` (both GPU and CPU-embedder construction sites) and `_from_candidate_dict()`.
+> - `_make_server()` for vLLM cells appends `["--reasoning-parser", cand.reasoning_parser]` to `extra_flags` only when set.
+> - `VLLMServer.ROLE_FLAGS` (server.py): coder = `[--enable-auto-tool-choice, --tool-call-parser, hermes]`; planner = `[]`; embedder = `[]`. Reasoning parser is no longer a role default.
+>
+> **Registry-authoring rule (extends the tool-call-parser rule):**
+>
+> | Model family | Thinking mode | reasoning_parser |
+> |---|---|---|
+> | Qwen3-Thinking-2507 (`Qwen3-…-Thinking-…`) | Yes (`<think>…</think>` emitted) | `"qwen3"` |
+> | Qwen3-Coder-Instruct (`Qwen3-Coder-…-Instruct-…`) | No | UNSET (`None`) |
+> | Qwen3 base Instruct (non-coder, non-thinking) | No | UNSET (`None`) |
+>
+> Wrong setting → tool-call XML routed into `reasoning`, `tool_calls: []`, R2/R3 fail with `no tool_calls (finish='stop')`.
+>
+> **First locked-in overrides:**
+> - `qwen3-30b-a3b-thinking-2507-awq`: `reasoning_parser="qwen3"` (both `roles.coder` and `roles.planner` entries in registry, and coder-fast-pool row).
+> - `qwen3-coder-30b-a3b-instruct-awq-4bit`: `reasoning_parser` INTENTIONALLY unset.
+>
+> **Consequences of amendment 2:**
+> - `bench/runner/candidates.py`: `ExpandedCandidate.reasoning_parser` added; both `ExpandedCandidate()` construction sites in `expand_for_role` updated.
+> - `bench/runner/main.py::_from_candidate_dict`: reads `row.get("reasoning_parser")`.
+> - `bench/runner/main.py::_make_server`: appends `--reasoning-parser` via `extra_flags` when set.
+> - `bench/runner/server.py::VLLMServer.ROLE_FLAGS`: `--reasoning-parser qwen3` removed from `coder` and `planner` role defaults.
+> - `bench/candidates/registry.json`: `reasoning_parser="qwen3"` added to thinker under both `roles.coder` and `roles.planner`.
+> - `bench/candidates/coder-fast-pool.json`: `reasoning_parser="qwen3"` added to thinker row; coder-instruct row unchanged (field absent).
+> - `PORTING_LEDGER.md`: no changes (no OSS component added).
+> - Amendment references BUILD_LOG entry at 2026-08-11 04:26 EDT.
 
 > **STATUS AMENDMENT (2026-08-11 04:07 EDT):** Parser is now **per-cell**, not global. The class-level default in `VLLMServer.ROLE_FLAGS["coder"]` remains `hermes` (correct for Qwen3-Thinking-2507 and any other model whose chat template emits `<tool_call>{json}</tool_call>` blocks). Candidates whose chat template emits a different wire format MUST declare `tool_call_parser` in their registry entry; the runner appends `--tool-call-parser <value>` after `ROLE_FLAGS` so vLLM argparse honors last-value-wins.
 >

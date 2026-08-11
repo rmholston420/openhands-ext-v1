@@ -343,14 +343,18 @@ class VLLMServer(BaseServer):
 
     # Per-role vLLM launch flags. Prepended to the caller's `extra_flags`
     # (caller flags win on any conflict via later position). See ADR-0010.
+    # ADR-0011 amend 2 (2026-08-11 04:26 EDT): --reasoning-parser is no longer
+    # a role default; it is per-cell via cand.reasoning_parser. Applying
+    # --reasoning-parser qwen3 to a non-thinking model (Qwen3-Coder-Instruct)
+    # routes its XML function-call block into the OpenAI `reasoning` field and
+    # strands tool_calls empty. Thinking models must set reasoning_parser="qwen3"
+    # explicitly in registry.json / candidate-file rows.
     ROLE_FLAGS: dict[str, list[str]] = {
         "coder": [
             "--enable-auto-tool-choice",
             "--tool-call-parser", "hermes",
-            "--reasoning-parser", "qwen3",
         ],
         "planner": [
-            "--reasoning-parser", "qwen3",
         ],
         "embedder": [],
     }

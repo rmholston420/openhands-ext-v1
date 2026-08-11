@@ -403,6 +403,12 @@ def _make_server(
         extra_flags: list[str] = []
         if cand.tool_call_parser is not None and role == Role.CODER:
             extra_flags.extend(["--tool-call-parser", cand.tool_call_parser])
+        # Per-cell --reasoning-parser (ADR-0011 amend 2, 2026-08-11 04:26 EDT).
+        # Only emitted when set; ROLE_FLAGS no longer defaults it because a
+        # reasoning parser on a non-thinking model captures tool-call XML into
+        # the `reasoning` field and strands tool_calls empty.
+        if cand.reasoning_parser is not None:
+            extra_flags.extend(["--reasoning-parser", cand.reasoning_parser])
 
         return VLLMServer(
             cell_id=cell_id,
@@ -748,4 +754,5 @@ def _from_candidate_dict(row: dict) -> ExpandedCandidate:
         local_gguf_file=row.get("gguf_file"),
         notes=row.get("notes", ""),
         tool_call_parser=row.get("tool_call_parser"),
+        reasoning_parser=row.get("reasoning_parser"),
     )
