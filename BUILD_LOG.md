@@ -826,3 +826,16 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** coder (8100) only. Planner (llama.cpp, 8082) not affected. Embedder (CPU) not affected.
 - **PORTING_LEDGER / ADR updated:** none (env-vars-only workaround; no ADR needed unless CUDA upgrade path becomes a formal decision).
 - **Stop-condition status:** in-progress (coder restart pending; embedder healthy; VRAM budget healthy)
+
+## 2026-08-11 06:57 EDT — Four deferred spec-compliance questions resolved
+
+- **Stage / plugin / port:** Phase 0.2 · governance · pre-Phase-0.3 boundary hardening
+- **What changed:** Resolved the four deferred spec-compliance questions from the Medium-tier pause:
+  1. ADR-0017 status line relabeled to `Ratified v25 · Amended ×3 (pre-Phase-0.3)` (anchors ratification, flags pre-Phase-0.3 boundary).
+  2. Config surface: env-vars-only through Phase 0.2 (no `configs/dev-current/`, no `config/config.toml`, no `mcp-servers/inference-backends/` — POST-PHASE-0.3 ONLY rule preserved).
+  3. Phase-1 pre-commit hook: no action needed. Existing `no-localworkspace.sh` already enforces the spec §Phase-1 zero-`LocalWorkspace` policy per ADR-0002. Remaining Phase-1 checks (container isolation, code-explorer delegation) are integration tests, deferred until Phase-1 opens.
+  4. Un-pause checklist: authored `docs/BENCHMARK_UNPAUSE_GATES.md` with 9 gates covering endpoints, ADR reconciliation, reusable-lesson coverage, VRAM budgets for both large-model roles, Blackwell workarounds, bench rubric integrity, deferred-decision triggers, Phase-0.3 config boundary, and pre-commit hooks. Current status: 8 GREEN, 1 UNVERIFIED (planner VRAM budget — needs one clean planner start).
+- **Files touched:** `adrs/ADR-0017-production-role-selection-pre-medium.md` (status line), `docs/BENCHMARK_UNPAUSE_GATES.md` (new), `SESSION_HANDOFF.md` (updated).
+- **Ports / adapters affected:** none (governance-only).
+- **PORTING_LEDGER / ADR updated:** ADR-0017 status refinement (not a new decision, so no new ADR).
+- **Stop-condition status:** met (Q1–Q4 resolved). Next milestone: planner verification → Gate 4 GREEN → un-pause eligibility.

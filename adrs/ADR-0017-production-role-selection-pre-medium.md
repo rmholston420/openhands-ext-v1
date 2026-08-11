@@ -6,7 +6,7 @@
 
 > **STATUS AMENDMENT (2026-08-11 06:10 EDT):** Coder port moved from **8000 → 8001** to avoid conflict with the OpenHands agent (which binds 127.0.0.1:8000 on Colossus). Model, runtime, parser flags, and co-residency policy unchanged. Affected files patched in the same commit: `bench/candidates/production-selection.json`, `scripts/serve-coder.sh`, `scripts/stop-large-model.sh`, `scripts/check-production-endpoints.sh`. Original decision text below is preserved verbatim; treat every reference to `port 8000` as `port 8001` under this amendment. **This amendment is superseded by amendment #2 above (8001 → 8100).**
 
-**Status:** Ratified · Amended three times (2026-08-11 06:10 EDT: coder 8000→8001; 2026-08-11 06:24 EDT: coder 8001→8100; 2026-08-11 06:39 EDT: embedder GPU→CPU per spec)
+**Status:** Ratified v25 · Amended ×3 (pre-Phase-0.3) — explicitly subject to revision when Medium-tier planning starts. Amendment log: 2026-08-11 06:10 EDT (coder 8000→8001); 2026-08-11 06:24 EDT (coder 8001→8100); 2026-08-11 06:39 EDT (embedder GPU→CPU per spec).
 **Lock-in phase:** Phase 0.2 (Medium-tier authoring paused) → Phase 1 handoff
 **Supersedes:** —
 
