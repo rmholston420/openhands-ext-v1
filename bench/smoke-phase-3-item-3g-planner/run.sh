@@ -56,10 +56,28 @@ _start = TASK.index(_start_marker) + len(_start_marker)
 _end = TASK.index(_end_marker)
 PROMPT = TASK[_start:_end].strip().lstrip("> ").strip()
 
+from typing import Sequence
+
 from config.agent import build_planner_llm, _load_max_output_tokens
 from openhands.sdk.llm.message import Message, TextContent
 from openhands.sdk.tool import ToolDefinition
-from openhands.tools.terminal import TerminalAction
+from openhands.tools.terminal import TerminalAction, TerminalObservation
+
+
+# ToolDefinition is abstract (requires .create()). We only want the
+# LLM-facing shape — no executor, no ConversationState, no filesystem.
+# Local minimal concrete subclass:
+class _LLMOnlyTerminalTool(ToolDefinition[TerminalAction, TerminalObservation]):
+    @classmethod
+    def create(cls) -> Sequence["_LLMOnlyTerminalTool"]:
+        return [cls(
+            action_type=TerminalAction,
+            observation_type=TerminalObservation,
+            description=(
+                "Run a shell command in the workspace and return its output. "
+                "Use for any shell interaction (echo, ls, cat, mkdir, etc.)."
+            ),
+        )]
 
 verdict = {
     "task": "3g_planner_toolcall",
@@ -77,13 +95,7 @@ try:
 
     # Build a ToolDefinition wrapping the shipped TerminalAction schema.
     # No executor — we are only verifying that the model decides to call.
-    terminal_td = ToolDefinition(
-        description=(
-            "Run a shell command in the workspace and return its output. "
-            "Use for any shell interaction (echo, ls, cat, mkdir, etc.)."
-        ),
-        action_type=TerminalAction,
-    )
+    terminal_td = _LLMOnlyTerminalTool.create()[0]
     verdict["tool_openai_json"] = json.loads(json.dumps(
         terminal_td.to_openai_tool(),
         default=str,
