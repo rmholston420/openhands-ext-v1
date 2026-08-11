@@ -28,6 +28,7 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0018 | [Phase −1 version pins (drift-tolerant baseline)](ADR-0018-phase-minus-1-version-pins.md) | Ratified | Phase −1 |
 | 0019 | [Phase 2 MCP port range, mode wrapper, skills convention](ADR-0019-phase-2-mcp-port-range-and-mode-wrapper.md) | Ratified | Phase 2 |
 | 0020 | [UFW bridge egress for sandbox healthcheck](ADR-0020-ufw-bridge-egress-for-sandbox-healthcheck.md) | Ratified | Phase 1 |
+| 0021 | [Live UI Playwright smoke test](ADR-0021-live-ui-playwright-smoke.md) | Ratified | Phase 1 |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 

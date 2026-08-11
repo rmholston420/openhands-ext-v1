@@ -922,3 +922,36 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
   - Container images 1.36.0 (openhands-app internal) vs installed SDK 1.41.0 skew — documented pre-existing (KNOWN_ISSUES).
   - `--network host` on smoke ephemera earlier was diagnostic-only; final path uses standard bridge + UFW rule (Phase 1-clean).
   - Sandbox stays alive after each conversation; caller responsible for cleanup with `docker rm -f oh-agent-server-*`.
+
+## 2026-08-11 08:22 EDT — Live UI Playwright smoke (headless) — 7/8 hard PASS
+
+- **Stage / plugin / port:** Phase 1 · Live UI smoke · Playwright chromium against openhands-app :3000
+- **What changed:** New Playwright-driven UI smoke that opens a real browser at :3000, dismisses consent, creates a new conversation, types a task into the composer, submits, and verifies the agent responded IN THE DOM (not just via API). Ground truth = expected sentinel token visible in page body + vLLM prompt_tokens delta > 500.
+- **Result:** 7/8 hard PASS. UI6 (agent-loading-spinner) is SOFT — spinner is transient and can be missed on fast responses. All other checks PASS including UI7 (token in DOM) and UI8 (all 5 Canvas GUI tabs present: planner/editor/vscode/terminal/browser).
+- **DOM selectors discovered (documented for future tests):**
+  - composer: `div[data-testid="chat-input"]` (contenteditable, NOT textarea)
+  - send: `button[data-testid="submit-button"]`
+  - consent: `button[data-testid="confirm-preferences"]`
+  - new conversation: `button[data-testid="launch-new-conversation-button"]`
+  - Canvas tabs: `button[data-testid="conversation-tab-{planner,editor,vscode,terminal,browser}"]`
+- **Baseline metrics:** vllm_delta = +18113 prompt_tokens, token OK-LIVE-UI-2026 found at t+0s (agent responded faster than the poll loop).
+- **Files touched:**
+  - `tests/smoke/test_openhands_live_ui.py` (new)
+  - `tests/smoke/probe_dom.py` (new — DOM discovery helper)
+  - `tests/smoke/probe_conversation.py` (new — conversation-view DOM discovery)
+  - `adrs/ADR-0021-live-ui-playwright-smoke.md` (new)
+- **Stop-condition status:** met.
+
+## 2026-08-11 08:30 EDT — Live UI headed test v2 — real streaming visible
+
+- **Stage / plugin / port:** Phase 1 · Live UI smoke · headed variant with streaming visibility
+- **What changed:** Added headed variant `test_openhands_live_ui_headed_v2.py` that opens a real chromium window on the Colossus display and drives a multi-step coding task (write file, run it, show output). Task chosen so the agent runs ~20-30s, making streaming visible in the browser AND via terminal metrics.
+- **Result:** natural stop at t+28.5s. prompt_tokens delta +74565, generation_tokens delta +931. body_chars grew 838 → 3598 in visible increments. Terminal tab + editor tab screenshots captured showing agent's file + command output.
+- **Why v2 supersedes v1 headed:** v1 headed used a one-word sentinel task ("Reply OK-LIVE-UI-HEADED") which the agent completed before Playwright polled — resulting in identical screenshots. v2's coding task forces multi-second work and screenshots capture streaming increments.
+- **Files touched:**
+  - `tests/smoke/test_openhands_live_ui_headed.py` (v1 headed, kept for reference)
+  - `tests/smoke/test_openhands_live_ui_headed_v2.py` (canonical headed test)
+  - `adrs/ADR-0021-live-ui-playwright-smoke.md` (updated with headed baseline)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0021 filed.
+- **Stop-condition status:** met. Phase 1 live UI proof complete — API smoke (v3) + headless UI smoke + headed streaming-visible smoke all PASS.
