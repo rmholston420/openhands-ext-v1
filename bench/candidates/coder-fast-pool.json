@@ -1,0 +1,37 @@
+[
+  {
+    "model": "qwen3-30b-a3b-thinking-2507-awq",
+    "hf_repo": "cpatonn/Qwen3-30B-A3B-Thinking-2507-AWQ-4bit",
+    "format": "safetensors",
+    "runtime": "vllm",
+    "device": "gpu",
+    "role": "coder",
+    "quant": "awq-4bit",
+    "approx_size_gib": 18,
+    "notes": "vLLM cell. Passed coder-fast POOL 2026-08-11 07:29 UTC (5/5 tool_calls). Re-run in this combined pool to give the guard min_pool=3."
+  },
+  {
+    "model": "qwen3_6-27b-q6k-gguf",
+    "hf_repo": "unsloth/Qwen3.6-27B-GGUF",
+    "format": "gguf",
+    "runtime": "llama.cpp",
+    "device": "gpu",
+    "role": "coder",
+    "quant": "q6_k",
+    "gguf_file": "Qwen3.6-27B-Q6_K.gguf",
+    "approx_size_gib": 21,
+    "notes": "Dense 27B Q6_K, llama.cpp b10356 build. GGUF metadata verified text-only 2026-08-11 03:45 EDT (0 VL tensors of 851)."
+  },
+  {
+    "model": "qwen3_6-35b-a3b-q4kxl-gguf",
+    "hf_repo": "unsloth/Qwen3.6-35B-A3B-GGUF",
+    "format": "gguf",
+    "runtime": "llama.cpp",
+    "device": "gpu",
+    "role": "coder",
+    "quant": "q4_k_xl_ud",
+    "gguf_file": "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+    "approx_size_gib": 21,
+    "notes": "MoE 35B/A3B Unsloth Dynamic Q4_K_XL, llama.cpp b10356. GGUF metadata verified text-only 2026-08-11 03:45 EDT (arch=qwen35moe, 0 VL tensors of 733)."
+  }
+]
