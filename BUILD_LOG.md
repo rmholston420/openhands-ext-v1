@@ -1342,3 +1342,17 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** none.
 - **Stop-condition status:** Stage-2 harness stop condition met. Ready to score against Perplexity-Max gold + rubric (`post_hoc_edit_locked=true`). Awaiting user decision on stage-3 execution mode (AWQ alone vs. AWQ + 35b together).
+
+## 2026-08-11 11:53 EDT — Phase 0.3 gate-2 CLOSED · ADR-0027 filed · coder = AWQ confirmed
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · stage-3 (scoring) · coder role selection
+- **What changed:** Both stage-2 candidates (AWQ + 35b) scored by Perplexity Max against `bench/rubrics/medium-scored.json` and per-task gold under `bench/gold/coder-medium/`. Macro means: AWQ = 85.4, 35b = 88.7 (+3.3 to 35b). Pre-registered reversal criteria applied mechanically: rule 1 (flip) fails all-≥85 gate (35b T05=70, T08=68); rule 2 (confirm AWQ) fires under loose ≤70 reading, does not fire under strict <70; rule 3 (intermediate → confirm AWQ + log per-task mix) fires under strict reading. Both readings converge on **CONFIRM AWQ**. Coder production cell unchanged: `qwen3-coder-30b-a3b-instruct-awq-4bit` (vLLM, GPU, :8501).
+- **Files touched:**
+  - adrs/ADR-0027-phase-0-3-gate-2-coder-verdict-confirm-awq.md (new)
+  - adrs/README.md (index row added)
+  - BUILD_LOG.md (this entry)
+  - SESSION_HANDOFF.md (overwrite)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0027 (new). No cascading amendments to ADR-0017 / ADR-0023 coder rows. ADR-0026 unchanged (no amendment 4 needed).
+- **Follow-up filed (non-blocking):** 35b T05/T08 finish-omission on report-style tasks — reproducible signal, characterize before any llama.cpp-planner re-eval; do not block gate-3.
+- **Stop-condition status:** Phase 0.3 gate-2 stop condition met. Gate-2 CLOSED. Awaiting user direction to open Phase 0.3 gate-3 (ADR-0028 reserved).

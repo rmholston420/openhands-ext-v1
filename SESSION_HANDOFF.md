@@ -1,53 +1,42 @@
-# Kosmos Session Handoff — 2026-08-11 11:40 EDT
+# OpenHands-Ext v1 Session Handoff — 2026-08-11 11:53 EDT
 
 ## Current build-sequencing position
 
-- **Stage / phase:** Phase 0.3 gate-2 · stage-2 → stage-3 transition
-- **Plugin / kernel component:** bench/runner/probes.py (coder multi-turn correctness harness v1.1)
-- **Port(s) in progress:** LLMPort (coder role · AWQ path); scoring stage (Perplexity-Max gold + rubric)
+- **Stage / phase:** Phase 0.3 gate-2 — **CLOSED**
+- **Plugin / kernel component:** Coder role selection (production routing)
+- **Port(s) in progress:** None. Next gate (0.3 gate-3) not yet opened; ADR-0028 reserved.
 
 ## Completed this session
 
-- Diagnosed + fixed LLM transport (host↔container via 172.17.0.1 + 0.0.0.0 bind) — commit `034dad6`
-- Diagnosed + fixed empty `tools=[]` in Agent construction — commit `4c05562`
-- Diagnosed + fixed `default_tools` scoping (thread as kwarg to `_run_sdk_task`) — commit `8963a10`
-- Stage-2 gate FIRST PASS at commit `8963a10` (10/10 tasks, 0 agent_errors, 129.7s run, 94s probe, artifact `20260811T152400Z`) — but `tool_trace` was `list[str]` (tool names only)
-- Authored ADR-0026 amendment 3: bundled all four wire-up fixes (transport + tools + scoping + trace schema v1 → v1.1) + task-10 mode clarification
-- Expanded `_on_event` to build `tool_trace: list[dict]` with `{tool, args, success, observation}` — commit `74e17ae`
-- Stage-2 gate REGENERATED at commit `74e17ae` with v1.1 trace (artifact `20260811T153712Z`)
-
-## Canonical stage-2 artifact (ready for stage-3 scoring)
-
-- Path: `bench/results/smoke/smoke-medium-coder-qwen3-coder-30b-a3b-instruct-awq-4bit-vllm-gpu-20260811T153712Z.probe.json`
-- Sidecar: `bench/results/smoke/smoke-medium-coder-qwen3-coder-30b-a3b-instruct-awq-4bit-vllm-gpu-20260811T153712Z.json`
-- `harness_version`: v1.1
-- `openhands_sdk_version`: 1.41.0
-- `harness_commit_sha`: 74e17ae
-- Cell verdict: pass · 10/10 tasks · 0 agent_errors · 0 run_errors
-- Tools observed exercising: `file_editor` (view + str_replace + create), `terminal`, `think`, `finish`
-
-## Invalidated stage-2 artifacts (retained on disk per "never rm bench/results/*.json" rule)
-
-- `20260811T151156Z` — tools=[] Action/Error loop (pre-`4c05562`)
-- `20260811T152029Z` — NameError on default_tools (pre-`8963a10`)
-- `20260811T152400Z` — first PASS run but v1 trace (list[str]; superseded by `20260811T153712Z`)
+- Committed default_tools kwarg fix (`8963a10`)
+- First stage-2 pass at tool_trace v1 (10/10) — trace schema flagged as under-specified (`list[str]`)
+- Authored ADR-0026 amendment 3 (transport + tools + scoping + trace schema v1.1); committed (`74e17ae`)
+- Rewrote `_on_event` to emit `tool_trace: list[dict]` with ActionEvent↔ObservationEvent FIFO correlation; bumped harness_version v1→v1.1 in probes.py + task-set file
+- Regenerated AWQ stage-2 artifact at v1.1 (10/10 pass): `smoke-medium-coder-qwen3-coder-30b-a3b-instruct-awq-4bit-vllm-gpu-20260811T153712Z.probe.json`
+- Committed SESSION_HANDOFF + BUILD_LOG (`faa30e6`)
+- Added stage-2 candidate file for 35b fallback: `bench/candidates/coder-medium-stage2-35b.json` (`215fb14`)
+- Ran 35b stage-2 (10/10 pass): `smoke-medium-coder-qwen3_6-35b-a3b-q4kxl-gguf-llama-cpp-gpu-20260811T154307Z.probe.json`
+- Scored both candidates (Perplexity Max, gold-bounded, post_hoc_edit_locked): AWQ macro 85.4, 35b macro 88.7
+- Applied pre-registered reversal criteria mechanically; verdict robust to strict/loose <70 reading
+- Filed **ADR-0027** (Phase 0.3 gate-2 coder verdict: CONFIRM AWQ) + updated adrs/README.md index
+- BUILD_LOG entry appended; this SESSION_HANDOFF overwritten
 
 ## Remaining before current Definition of Done
 
-- **Stage-3: score against Perplexity-Max gold.** Feed `20260811T153712Z.probe.json` + rubric + gold to the scoring stage. Rubric at `bench/rubrics/coder-medium-multi-turn.rubric.json` (locked, `post_hoc_edit_locked=true`). Gold at `bench/gold/coder-medium/` (locked).
-- Pre-registered reversal criteria (POST-HOC INTERPRETATION PROHIBITED):
-  1. Flip to `qwen3_6-35b-a3b-q4kxl-gguf` if ALL 10 scores ≥85 AND macro lead >3 pts
-  2. Confirm ADR-0023 coder if AWQ macro leads ≥3 pts OR 35b <70 on any 2 tasks
-  3. Intermediate: confirm + log per-task mix
-- After scoring, author verdict ADR (ADR-0027 or amendment to ADR-0023, TBD by outcome shape).
+- None. Phase 0.3 gate-2 DoD met. Coder-medium production role locked as AWQ (`qwen3-coder-30b-a3b-instruct-awq-4bit`, vLLM, GPU, :8501).
 
 ## Open questions / awaiting user answer
 
-- **Stage-3 execution mode.** Options:
-  - (a) Feed the artifact + rubric + gold to Perplexity Max (this thread) for immediate scoring — no additional Colossus work needed.
-  - (b) Score the sole AWQ candidate now; the 35b-a3b-q4kxl fallback candidate would need its own stage-2 pass (~2 min) before the reversal criteria can be evaluated.
-- Recommendation: (b) — even if AWQ scores ≥85 across the board, the reversal criteria require comparison against 35b. Running 35b now costs one extra 2-min stage-2 pass and unblocks the full verdict decision tree.
+- **Gate-3 opener:** which role to attack next (planner Full-tier vs coder Full-tier vs embedder re-eval)? ADR-0028 reserved for whichever the user chooses.
+- **35b T05/T08 finish-omission follow-up:** filed as non-blocking in ADR-0027 §Sub-decision 6. Investigate opportunistically. Decision on when to characterize: after user selects gate-3 target.
 
 ## Exact next action
 
-Ask user: "Run stage-2 on the 35b-a3b-q4kxl fallback candidate now (2 min) so both candidates can be scored in one shot? Or score the AWQ candidate alone first and decide about 35b after?"
+Await user direction on Phase 0.3 gate-3 opener. When directed, load `kosmos-adr-authoring` + `local-llm-bench` and open ADR-0028 skeleton for the selected role.
+
+## Key production selections locked as of this handoff
+
+- **Coder (Medium):** `qwen3-coder-30b-a3b-instruct-awq-4bit` — vLLM, GPU, port :8501 (ADR-0017 + ADR-0023 + ADR-0027)
+- **Planner (Medium):** `qwen3_6-27b-q6k-gguf` — llama.cpp, GPU, port :8082 (ADR-0023 + ADR-0025)
+- **Embedder:** `qwen3-embedding-4b-Q8_0` (ADR-0017)
+- **Co-residency:** Option 2 (ADR-0017)
