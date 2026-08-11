@@ -364,3 +364,13 @@ Entry format:
 - **Fix applied:** Elimination, not repair. Removed the candidate from `bench/candidates/coder-fast-pool.json` (registry entry retained). Rationale per user rule "quality over speed, ties within 3 points → faster wins": Cell 2 is not within 3 points of the thinker on this rubric (it failed a task the thinker probably passes) and the failure is a legitimate model-quality strike.
 - **Files changed:** `bench/candidates/coder-fast-pool.json`, `adrs/ADR-0011-fast-tier-coder-tool-call-parser-hermes.md`, `adrs/README.md`, `BUILD_LOG.md`.
 - **Related BUILD_LOG entry:** 2026-08-11 04:38 EDT.
+
+
+## 2026-08-11 04:45 EDT — qwen3_6-27b-q6k-gguf fails task 02 (read_file stall vs str_replace_editor)
+
+- **Symptom:** 3-cell coder-fast POOL run 2026-08-11 04:41–04:42 EDT. Cell 2 (`qwen3_6-27b-q6k-gguf`, llama.cpp) verdict=fail. Sidecar detail: `wrong tool: called='read_file' expected='str_replace_editor'`. Reasoning_content (verbatim): model planned a two-step "read first, then replace" sequence and emitted `read_file` as the first tool call. Other tasks (01/03/04/05) all pass.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast tier · rubric evaluation.
+- **Root cause:** Model behavior on the sampling boundary at temp=0.6 top_p=0.95 (Qwen defaults). Task 02 rubric expects `str_replace_editor` as the first (and only, since the probe is single-turn) tool call; task notes explicitly say the probe "validates str_replace_editor selection over the naive write_file / bash sed fallback." A read-first stall for a surgical-edit task is the discriminating failure mode. Prior 4-cell run at 04:32 EDT passing this candidate was a lucky sample, not a stable behavior. R2 malformed-output triggered.
+- **Fix applied:** Elimination, not repair. Registry entry retained. NOT a rubric bug — post-hoc rubric edits prohibited by fast-elimination.json §0.0a bullet 3 and would defeat the tool-discrimination purpose of task 02. Seed-pinning llama.cpp would only make the flake reproducible, not fix the underlying tool-selection weakness.
+- **Files changed:** `bench/candidates/coder-fast-pool.json`, `BUILD_LOG.md`, `SESSION_HANDOFF.md`.
+- **Related BUILD_LOG entry:** 2026-08-11 04:45 EDT.

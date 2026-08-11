@@ -513,3 +513,15 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (bench candidate list + ADR).
 - **PORTING_LEDGER / ADR updated:** ADR-0011 ratified.
 - **Stop-condition status:** met — fast-tier coder pool locked at 3 cells (thinker vLLM + 2 GGUF llama.cpp). Ready to advance to next Phase 0.1 slice.
+
+
+## 2026-08-11 04:45 EDT — Eliminate qwen3_6-27b-q6k-gguf from fast-tier pool
+
+- **Stage / plugin / port:** Phase 0.1 · Fast tier coder pool
+- **What changed:** `bench/candidates/coder-fast-pool.json` reduced from 3 → 2 cells. Removed `qwen3_6-27b-q6k-gguf`. Registry entry retained. Rationale: 3-cell POOL run 2026-08-11 04:41–04:42 EDT verdict fail on rubric R2 (expected_tool_sequence not satisfied). Task 02 (str_replace_editor selection) — model called `read_file` as its only tool call (single-turn probe; no next turn exists). Sidecar reasoning_content shows the model planned a read-then-edit sequence, but the probe evaluates only the first tool call and task 02 is designed to discriminate models that stall with a read before an edit. Prior 4-cell run at 04:32–04:34 EDT had this candidate pass — that outcome was a lucky sample at temp=0.6 top_p=0.95; this run is more typical. Not a rubric bug; task 02 is explicitly designed to fail read-first stalls (see task notes: "Validates str_replace_editor selection over the naive write_file / bash sed fallback"). Post-hoc rubric edit prohibited by §0.0a bullet 3.
+- **Files touched:**
+  - `bench/candidates/coder-fast-pool.json` (3 → 2 cells)
+  - `BUILD_LOG.md`, `DEBUG_LOG.md`, `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none (elimination follows existing ADR-0007 methodology and ADR-0011 v25 registry-authoring rule; no new decision).
+- **Stop-condition status:** met — fast-tier coder pool locked at 2 cells (thinker vLLM + 35B MoE GGUF llama.cpp). Ready for 2-cell POOL confirmation run.
