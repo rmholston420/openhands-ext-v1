@@ -113,12 +113,19 @@ _check_chat() {
       prompt='Reply with exactly one line: OK'
       ;;
   esac
+  # Forward chat_template_kwargs.enable_thinking=false per ADR-0008 for
+  # thinking-capable models (Qwen3/3.6 planner and coder both default to
+  # thinking under --jinja / vLLM Jinja template). Without this, the model
+  # spends max_tokens inside <think>...</think> and the visible content is
+  # empty. Non-thinking models ignore the kwarg. See DEBUG_LOG 2026-08-11
+  # 02:45 EDT and 2026-08-11 07:03 EDT.
   local payload
   payload="$(jq -n --arg m "$served" --arg p "$prompt" '{
     model: $m,
     messages: [{role:"user", content:$p}],
     max_tokens: 32,
-    temperature: 0.0
+    temperature: 0.0,
+    chat_template_kwargs: { enable_thinking: false }
   }')"
   local out http bytes ms body
   out="$(_time_curl -X POST "$endpoint/chat/completions" \

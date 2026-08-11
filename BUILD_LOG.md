@@ -839,3 +839,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (governance-only).
 - **PORTING_LEDGER / ADR updated:** ADR-0017 status refinement (not a new decision, so no new ADR).
 - **Stop-condition status:** met (Q1–Q4 resolved). Next milestone: planner verification → Gate 4 GREEN → un-pause eligibility.
+
+## 2026-08-11 07:04 EDT — check-production-endpoints probe: enable_thinking=false forwarded
+
+- **Stage / plugin / port:** Un-pause · Gate 4 (planner VRAM verification) · `scripts/check-production-endpoints.sh`.
+- **What changed:** `_check_chat` request body now sends `chat_template_kwargs: {enable_thinking: false}` per ADR-0008. Fixes empty-content failure against Qwen3.6-35B planner under llama.cpp `--jinja`. Non-thinking models ignore the kwarg — same probe now works for thinking and non-thinking roles.
+- **Files touched:** `scripts/check-production-endpoints.sh`.
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none — enforces existing ADR-0008 without amendment.
+- **Stop-condition status:** in-progress. Gate 4 verification re-run pending.

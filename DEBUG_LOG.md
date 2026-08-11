@@ -523,3 +523,17 @@ Entry format:
   2. Set `VLLM_USE_FLASHINFER_SAMPLER=0` on every Blackwell + CUDA-12.8 vLLM serve until the toolchain is upgraded to CUDA ≥ 12.9. Attention kernels (FlashAttention) work fine on the same GPU/CUDA combo; only the sampler is broken.
   3. Diagnostic order matters: when a large-model serve script fails, `awk '/EngineCore.*failed|Traceback/{flag=1} flag{print}' log` reveals the worker-process failure that the API server's outer traceback hides.
   4. Superseded diagnosis path: when `--gpu-memory-utilization` was blamed first (this session's amendment #3), the actual failure was two layers deeper (sampler kernel, not memory preflight). The `Failed to get device capability` line was in the log the whole time but was 6 lines above the OOM ValueError; both were present. Always grep for CUDA/kernel/capability warnings BEFORE assuming a memory shortfall is the cause, even when a memory error is present in the same log.
+
+## 2026-08-11 07:03 EDT — check-production-endpoints planner chat probe: empty content
+
+- **Symptom:** `check-production-endpoints.sh` reports `FAIL /v1/chat/completions returned empty content (299 ms)` on planner (port 8082, qwen3_6-35b-a3b-q4kxl-gguf via llama.cpp `--jinja`). `/v1/models` PASS in the same run. Model loads, VRAM budget passes.
+- **Affected stage / plugin / port:** Un-pause · Gate 4 (planner VRAM verification) · `scripts/check-production-endpoints.sh` `_check_chat`.
+- **Root cause:** Probe request body sends `max_tokens: 32` and `temperature: 0.0` with no `chat_template_kwargs`. Qwen3.6-35B is thinking-capable; under llama.cpp `--jinja` the default template enables thinking. Model spends the 32-token budget inside `<think>…</think>` and returns empty `message.content`. Same family as 2026-08-11 02:45 EDT `Planner-fast R2 mass-failure`.
+- **Fix applied:** Added `chat_template_kwargs: {enable_thinking: false}` to `_check_chat` request body per ADR-0008. Non-thinking models ignore the kwarg, so this is safe for both current and future thinking / non-thinking planners and coders. No amendment to ADR-0008 required — this probe was violating an existing decision, not creating a new one.
+- **Files changed:** `scripts/check-production-endpoints.sh`.
+
+### Reusable lessons
+
+1. **Any chat probe against a Qwen3/3.6 endpoint MUST forward `chat_template_kwargs: {enable_thinking: false}`** unless the probe explicitly wants thinking output. Missing the kwarg + tight `max_tokens` = empty content, guaranteed.
+2. **Empty `content` with `http=200` and `/v1/models` PASS** is a thinking-budget-starvation signature. Check `usage.completion_tokens` first — if it hit `max_tokens` with empty content, the CoT ate the budget.
+3. **DEBUG_LOG search-first works.** The 02:45 EDT entry was found in one grep and gave the diagnosis in under one minute.
