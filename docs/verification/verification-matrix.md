@@ -34,7 +34,7 @@ Spec §Phase 3 Verification (`docs/specs/integration-execution-plan-v16.md:382-3
 
 | # | Sign-off item | Status | Evidence / gap |
 |---|---|---|---|
-| 3.a | `code-explorer` tool registered (ADR-0032, deferred from Phase 1.2 to §2.4/Phase 3) | ⏳ pending inspection | Need to grep `config/agent.py` and `openhands.tools` for registration |
+| 3.a | `code-explorer` tool registered (ADR-0032, deferred from Phase 1.2 to §2.4/Phase 3) | ✅ registration only | `build_agent()` registers built-in subagents via `register_builtins_agents(enable_browser=False)` and includes `TaskToolSet` via `get_default_tools(enable_sub_agents=True)`. Smoke `bench/smoke-phase-3-item-3a/` `pass=true` 2026-08-11 18:15 EDT (`code-explorer` in registry, tools=`["terminal"]`, level=builtin, source matches shipped preset; agent tools = `terminal`, `file_editor`, `task_tracker`, `task_tool_set`). Live-delegation coverage rolls into 3.h. |
 | 3.b | MCP §2.2 tools callable | ⏳ pending inspection | Need to verify MCP servers from §2.2 are live and their tools list is non-empty |
 | 3.c | Trivial task under **DockerWorkspace** (not Local), real winning endpoints | ❌ not done | Row-1 smoke ran on `LocalWorkspace` (SDK default). Need Docker-workspace smoke. |
 | 3.d | Agent Canvas cloned, built, running against `http://127.0.0.1:8000` | ❌ not done | `git clone agent-canvas && npm run start` never executed |
@@ -46,7 +46,7 @@ Spec §Phase 3 Verification (`docs/specs/integration-execution-plan-v16.md:382-3
 
 Order of remaining work (dependency-first):
 
-1. 3.a inspection (`code-explorer` registration)
+1. ~~3.a inspection (`code-explorer` registration)~~ ✅ 2026-08-11 18:15 EDT
 2. 3.b inspection (MCP §2.2 status)
 3. 3.c — wire DockerWorkspace, rerun row-1 style smoke
 4. 3.h — wire DelegateTool coder→planner, rerun row-2 style smoke
