@@ -180,7 +180,11 @@ def _apply_fast_rubric(
     if probe is None:
         return "unknown", "no probe result"
 
-    # R2: >1 malformed task.
+    # R2: >1 malformed task per rubric (bench/rubrics/fast-elimination.json).
+    # Fast tier is elimination-only: eliminate iff >1 malformed. 1 malformed is
+    # a non-eliminating warning per rubric text. Do NOT delegate the verdict to
+    # verdict_from_probe here (which would fail on ANY malformed task) — that
+    # would violate the ratified R2 threshold. See DEBUG_LOG 2026-08-11.
     malformed = sum(1 for t in probe.tasks if t.verdict != "pass")
     if malformed > 1:
         details = [f"{t.task_id}: {t.detail or 'malformed'}"
@@ -188,13 +192,14 @@ def _apply_fast_rubric(
         notes.append(f"R2: {malformed} malformed tasks (>1 threshold): "
                      + "; ".join(details))
         v = "fail"
+    elif malformed == 1:
+        for t in probe.tasks:
+            if t.verdict != "pass":
+                notes.append(f"R2-warning: 1 malformed task "
+                             f"({t.task_id}: {t.detail or 'malformed'})")
+        v = "pass"
     else:
         v = verdict_from_probe(probe)
-        if malformed == 1:
-            for t in probe.tasks:
-                if t.verdict != "pass":
-                    notes.append(f"R2-warning: 1 malformed task "
-                                 f"({t.task_id}: {t.detail or 'malformed'})")
 
     # R3: latency outlier.
     if fastest_wall_seconds_for_role and fastest_wall_seconds_for_role > 0:

@@ -374,3 +374,26 @@ Entry format:
 - **Fix applied:** Elimination, not repair. Registry entry retained. NOT a rubric bug — post-hoc rubric edits prohibited by fast-elimination.json §0.0a bullet 3 and would defeat the tool-discrimination purpose of task 02. Seed-pinning llama.cpp would only make the flake reproducible, not fix the underlying tool-selection weakness.
 - **Files changed:** `bench/candidates/coder-fast-pool.json`, `BUILD_LOG.md`, `SESSION_HANDOFF.md`.
 - **Related BUILD_LOG entry:** 2026-08-11 04:45 EDT.
+
+
+## 2026-08-11 05:10 EDT — Fast-tier verdict flips to "fail" on any single malformed task; violates rubric R2
+
+- **Symptom:** Planner-fast POOL run 2026-08-11 04:59 EDT reported verdict=fail for cell `planner/qwen3_6-35b-a3b-q4kxl-gguf/llama.cpp/gpu` with notes `R2-warning: 1 malformed task (planner-fast-03-forge-oh-refactor: too few steps (3 < 4))`. Rubric text (`bench/rubrics/fast-elimination.json` R2, ratified 2026-08-11 05:51 UTC) states elimination requires ">1 malformed task"; a single malformed task is an R2-warning, non-eliminating.
+- **Search performed:** `grep -in "R2-warning\|verdict_from_probe\|apply_fast_rubric" DEBUG_LOG.md` — no prior hit. Fresh diagnosis.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast-tier bench harness (`bench/runner/main.py::_apply_fast_rubric`).
+- **Root cause:** In `_apply_fast_rubric`, the `malformed <= 1` branch delegated the verdict to `verdict_from_probe(probe)` (bench/runner/probes.py:679), which returns "fail" if any task's verdict != "pass". This overrode the R2 ">1" threshold: any single-task malformation produced a "fail" run verdict, contradicting the rubric R2 elimination trigger while the R2-warning note was correctly emitted. Symptom is a false-negative model verdict; rubric text itself is correct.
+- **Fix applied:** Split the branch: `malformed > 1` → fail (unchanged); `malformed == 1` → explicit `v = "pass"` plus warning note; `malformed == 0` → fall through to `verdict_from_probe` (unreachable pass path for defense-in-depth). Rubric file is untouched (post_hoc_edit_policy honored). Inline comment references this DEBUG_LOG entry.
+- **Files changed:**
+  - `bench/runner/main.py` — fix branch in `_apply_fast_rubric`.
+  - `scripts/rescore-fast-verdicts.py` — new one-shot rescore tool: reads existing `<result>.probe.json`, re-applies the corrected rubric via `_apply_fast_rubric`, and rewrites the `<result>.json` verdict/notes in place. Idempotent; rubric file never touched; harness commit stamped.
+- **Related BUILD_LOG entry:** 2026-08-11 05:10 EDT.
+
+## 2026-08-11 05:10 EDT — qwen3-30b-a3b-thinking-2507-awq cannot honor enable_thinking=false at 4096 planner budget
+
+- **Symptom:** Planner-fast POOL cell `planner/qwen3-30b-a3b-thinking-2507-awq/vllm/gpu` produced verdict=fail with notes `R2: 2 malformed tasks: planner-fast-01: schema violation ('steps' is a required property); planner-fast-03: truncated at max_tokens`. Vendored guided decoding (`response_format=json_schema strict=True`) was set; `chat_template_kwargs={"enable_thinking": false}` was set per ADR-0008.
+- **Search performed:** `grep -in "thinking-2507\|enable_thinking\|thinking blocks\|thinking budget" DEBUG_LOG.md` — no prior hit for this specific checkpoint variant.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast-tier planner model selection.
+- **Root cause:** The Qwen3-30B-A3B-**Thinking-2507**-AWQ checkpoint is post-trained with thinking-first behavior baked into its chat template and `generation_config.json`. Setting `enable_thinking=false` via `chat_template_kwargs` is honored at the router layer but the model still emits open-ended reasoning prose that consumes the entire completion budget. task-01 raw content: 8560 chars of prose reasoning, never emits a JSON object with `steps` (guided-decoding did not trigger because model kept generating prose tokens that the JSON schema constraint allowed as unrelated leading content until context ran out). task-03 raw content: 19145 chars of prose reasoning, `finish_reason=length` at 4096 tokens (truncated).
+- **Fix applied:** No fix on the model — this is a checkpoint-level structural incompatibility with the Fast-tier planner role (budget=4096, structural JSON, no room for thinking prose). Candidate legitimately eliminated on R2 (>1 malformed). ADR-0008 remedy (`enable_thinking=false`) is ineffective for this specific checkpoint; the -Thinking- variant is unfit for structural-JSON roles at Fast-tier budgets and should not be reintroduced without a corresponding fine-tune that removes the thinking-first prior or a task budget ≥ 16k.
+- **Files changed:** none (model verdict is legitimate on merit).
+- **Related BUILD_LOG entry:** 2026-08-11 05:10 EDT.

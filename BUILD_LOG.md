@@ -541,3 +541,23 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** none (pool authoring only; ADR-0008 thinking-disable + ADR-0009 guided-decoding + ADR-0012 dual-role already ratified).
 - **Stop-condition status:** met for coder-fast (2/2 pass); ready to launch planner-fast POOL (3 candidates satisfies guard §0.0b min=3) and embedder-fast POOL (6 candidates satisfies guard §0.0b min=4).
+
+
+## 2026-08-11 05:10 EDT — Planner-fast POOL run + embedder-fast POOL run + harness rubric-compliance fix
+
+- **Stage / plugin / port:** Phase 0.1 · Fast-tier · planner + embedder POOL evaluation; harness `_apply_fast_rubric` fix.
+- **What changed:**
+  - **Planner-fast POOL** executed 2026-08-11 04:57–04:59 EDT (harness `35382dd`). 3 cells; runner-reported verdicts: c1 thinker vLLM = fail (R2, 2 malformed), c2 27B Q6_K llama.cpp = pass, c3 35B-A3B Q4_K_XL llama.cpp = fail (R2-warning 1 malformed).
+  - **Diagnosis:** c3 verdict is a harness bug — R2-warning branch flipped to "fail" via `verdict_from_probe` while rubric R2 threshold is ">1 malformed". c1 verdict is legitimate on merit (Thinking-2507 checkpoint cannot honor `enable_thinking=false` at 4096 budget; see DEBUG_LOG 2026-08-11 05:10). Rubric text is correct; harness violated it.
+  - **Fix:** Patched `bench/runner/main.py::_apply_fast_rubric` to split the malformed==1 branch explicitly to `v = "pass"` with the pre-existing R2-warning note. Rubric file untouched; `post_hoc_edit_policy` honored. Fix is a code bug, not a rubric edit — no ADR.
+  - **Rescore tool:** Authored `scripts/rescore-fast-verdicts.py` — reads `<result>.probe.json`, re-applies corrected `_apply_fast_rubric`, rewrites `<result>.json` verdict/notes in place. Idempotent; stamps harness commit SHA. Rubric file never touched.
+  - **Embedder-fast POOL** executed 2026-08-11 04:59–05:03 EDT (harness `35382dd`). 6 cells, all pass. Fast-tier embedder DoD met. Cells: 0.6B-bf16/vLLM (14s cold), 0.6B-Q8/llama.cpp GPU (14s), 0.6B-Q8/llama.cpp CPU (1s), 4B-bf16/vLLM (~130s cold), 4B-Q8/llama.cpp GPU (6s), 4B-Q8/llama.cpp CPU (2s). VRAM peaks 400–6708 MiB; temps 38–61°C.
+- **Files touched:**
+  - `bench/runner/main.py` (rubric-compliance fix)
+  - `scripts/rescore-fast-verdicts.py` (new)
+  - `BUILD_LOG.md`, `DEBUG_LOG.md`, `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none. Rubric text unchanged; ADR-0008 (thinking-disable) is unaffected but observationally ineffective for the Thinking-2507 checkpoint variant — logged in DEBUG_LOG.
+- **Stop-condition status:**
+  - Embedder-fast: **met** (6/6 pass; pool locked pending rescore of any warnings).
+  - Planner-fast: **pending rescore + confirmation.** After rescore c3 → pass, planner pool becomes 2/3 (27B Q6_K + 35B Q4_K_XL) which satisfies §0.0b min=3 only after we backfill to 3 survivors OR run with `--smoke` for confirmation. Decision deferred until rescore evidence is on disk.
