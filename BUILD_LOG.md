@@ -1134,3 +1134,14 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0025 new. No spec surface edit needed (ADR-0023 already reflects planner = 27b-q6k in §17).
 - **Stop-condition status:** met. Phase 0.3 planner cell decision locked. Next Phase 0.3 work: coder multi-turn correctness harness upgrade OR proceed to Phase 1 router wiring.
+
+## 2026-08-11 10:15 EDT — ADR-0026 filed: coder multi-turn correctness harness v1 (scope-lock)
+
+- **Stage / plugin / port:** OpenHands-Ext v1 · Phase 0.3 gate-2 · coder role · `bench/runner/probes.py` `_probe_coder_sdk` promotion.
+- **What changed:** ADR filed pre-implementation to lock scope of six decisions (workspace mechanism = DockerWorkspace, correctness definition = Perplexity-Max scored 0-100, prior verdict fate = supersede at medium-tier, task-set = new `coder-medium-multi-turn.json` mirroring ADR-0022 pattern, SDK version pin captured in run_metadata, co-residency envelope = same sequential-block as ADR-0022 D4). Implementation slice does NOT run in this commit; slice + follow-up verdict ADR (0027+) come next.
+- **Files touched:**
+  - `adrs/ADR-0026-coder-multi-turn-correctness-harness-v1.md` (new, 152 lines)
+  - `adrs/README.md` (new index row)
+- **Ports / adapters affected:** none yet (implementation slice will touch `bench/runner/probes.py`, `bench/runner/candidates.py`, `bench/schema/run.py`).
+- **PORTING_LEDGER / ADR updated:** ADR-0026 new (scope-lock). No spec surface edit required until the implementation slice; §17 stays clean because ADR-0026 extends ADR-0007 rather than replacing a row.
+- **Stop-condition status:** met for scope-lock. Implementation slice has its own stop conditions inside the ADR body (§Consequences).
