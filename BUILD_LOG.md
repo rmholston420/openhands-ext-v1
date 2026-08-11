@@ -1671,3 +1671,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** all Phase 2.4 factories confirmed constructible
 - **PORTING_LEDGER / ADR updated:** ADR-0033 remains Ratified with 2 status amendments (17:20 EDT provenance flavor, 17:25 EDT condenser cap placement). Both amendments preserved the core decision (Python config surface, option 6c, option 7a).
 - **Stop-condition status:** Phase 2.4 Definition of Done MET. Phase 3 verification (row 1 smoke + row 2 role-switch) unblocked. NEXT: user runs `bash bench/smoke-phase-3/run.sh` after starting the coder endpoint (`scripts/serve-coder.sh` in a separate terminal).
+
+## 2026-08-11 17:48 EDT — Phase 3 verification row 1 smoke PASSED
+
+- **Stage / plugin / port:** Phase 3 (verification) · row 1 (build_agent E2E) · CoderPlannerRouter → coder :8100 → TerminalTool + FileEditorTool.
+- **What changed:** Phase 3 row-1 smoke pass criteria met end-to-end. Verdict: `wall_seconds=8.16, event_count=20, has_tool_action=true, has_finish_action=true, output_contains_expected_line=true, pass=true`.
+- **Files touched:** `~/.forge-oh/bench_smoke_phase_3/20260811_174840_run/verdict.json` (result artifact).
+- **Ports / adapters affected:** LLMPort (RouterLLM→CoderPlannerRouter→vLLM coder), ToolPort (TerminalTool, FileEditorTool via `get_default_tools`).
+- **PORTING_LEDGER / ADR updated:** ADR-0033 amend #3 (17:47 EDT).
+- **Stop-condition status:** Phase 3 row-1 DoD MET. Row 2 (planner routing via `LLMCallContext.metadata["role"]="planner"`) is next.
