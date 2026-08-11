@@ -350,6 +350,7 @@ class VLLMServer(BaseServer):
         super().__init__(
             cell_id=cell_id,
             cmd=cmd,
+            env=env,
             health_url=f"http://127.0.0.1:{port}/health",
             log_dir=log_dir,
             progress=progress,
