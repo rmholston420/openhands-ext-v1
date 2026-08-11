@@ -2,8 +2,10 @@
 # scripts/serve-coder.sh
 #
 # Start the production coder role — qwen3-coder-30b-a3b-instruct-awq-4bit on
-# vLLM, port 8000. Per ADR-0017 (production role selection) and
-# ADR-0011#amendment-1 (tool-call parser = qwen3_coder).
+# vLLM, port 8001. Per ADR-0017 (production role selection, amended
+# 2026-08-11 06:10 EDT to move coder 8000 -> 8001; OpenHands agent binds
+# 127.0.0.1:8000 on Colossus) and ADR-0011#amendment-1 (tool-call parser =
+# qwen3_coder).
 #
 # Prereqs:
 #   - HF snapshot at models/qwen3-coder-30b-a3b-instruct-awq-4bit/hf/ (run
@@ -29,7 +31,7 @@ cd "$REPO_ROOT"
 VENV_BIN="$REPO_ROOT/.venv/bin"
 VLLM="$VENV_BIN/vllm"
 HF_MODEL_DIR="$REPO_ROOT/models/qwen3-coder-30b-a3b-instruct-awq-4bit/hf"
-PORT="8000"
+PORT="8001"
 SERVED_NAME="qwen3-coder-30b-a3b-instruct-awq-4bit"
 
 GPU_MEM_UTIL="${VLLM_GPU_MEM_UTIL:-0.90}"

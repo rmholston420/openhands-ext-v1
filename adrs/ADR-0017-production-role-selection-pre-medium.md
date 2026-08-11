@@ -1,6 +1,8 @@
 # ADR-0017 — Production role selection (pre-Medium-tier)
 
-**Status:** Ratified
+> **STATUS AMENDMENT (2026-08-11 06:10 EDT):** Coder port moved from **8000 → 8001** to avoid conflict with the OpenHands agent (which binds 127.0.0.1:8000 on Colossus). Model, runtime, parser flags, and co-residency policy unchanged. Affected files patched in the same commit: `bench/candidates/production-selection.json`, `scripts/serve-coder.sh`, `scripts/stop-large-model.sh`, `scripts/check-production-endpoints.sh`. Original decision text below is preserved verbatim; treat every reference to `port 8000` as `port 8001` under this amendment.
+
+**Status:** Ratified · Amended (2026-08-11 06:10 EDT — coder port 8000 → 8001)
 **Lock-in phase:** Phase 0.2 (Medium-tier authoring paused) → Phase 1 handoff
 **Supersedes:** —
 
@@ -30,7 +32,7 @@ Assign production roles as follows, effective immediately:
 
 | Role | Model | Runtime | Device | Rationale anchor |
 |---|---|---|---|---|
-| **coder** | `qwen3-coder-30b-a3b-instruct-awq-4bit` | vLLM | GPU | ADR-0011 (parser `qwen3_coder`) + purpose-built coder-instruct |
+| **coder** | `qwen3-coder-30b-a3b-instruct-awq-4bit` | vLLM | GPU | ADR-0011 (parser `qwen3_coder`) + purpose-built coder-instruct (port **8001** per amendment above; conflict with OpenHands agent on 8000) |
 | **planner** | `qwen3_6-35b-a3b-q4kxl-gguf` | llama.cpp | GPU | ADR-0015 (thinker-2507-awq eliminated) + MoE decoding advantage |
 | **embedder** | `qwen3-embedding-4b-q8-gguf` | llama.cpp | GPU | 4B > 0.6B on MTEB; Q8_0 near-lossless on embedders; ~5 GiB VRAM |
 

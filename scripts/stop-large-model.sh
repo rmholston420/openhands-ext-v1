@@ -6,14 +6,14 @@
 # holds VRAM at a time. Never touches the embedder.
 #
 # Usage:
-#   scripts/stop-large-model.sh coder     # stops vLLM on port 8000
+#   scripts/stop-large-model.sh coder     # stops vLLM on port 8001 (was 8000; amended ADR-0017)
 #   scripts/stop-large-model.sh planner   # stops llama-server on port 8082
 #   scripts/stop-large-model.sh both      # stops both if either is up
 #   scripts/stop-large-model.sh status    # print who is up
 
 set -euo pipefail
 
-CODER_PORT="8000"
+CODER_PORT="8001"   # amended 2026-08-11 06:10 EDT (ADR-0017); OpenHands agent holds 8000
 PLANNER_PORT="8082"
 EMBEDDER_PORT="8090"
 

@@ -397,3 +397,18 @@ Entry format:
 - **Fix applied:** No fix on the model — this is a checkpoint-level structural incompatibility with the Fast-tier planner role (budget=4096, structural JSON, no room for thinking prose). Candidate legitimately eliminated on R2 (>1 malformed). ADR-0008 remedy (`enable_thinking=false`) is ineffective for this specific checkpoint; the -Thinking- variant is unfit for structural-JSON roles at Fast-tier budgets and should not be reintroduced without a corresponding fine-tune that removes the thinking-first prior or a task budget ≥ 16k.
 - **Files changed:** none (model verdict is legitimate on merit).
 - **Related BUILD_LOG entry:** 2026-08-11 05:10 EDT.
+
+## 2026-08-11 06:10 EDT — port 8000 already held by OpenHands agent on Colossus
+
+- **Symptom:** `scripts/serve-coder.sh` refused to launch with `FAIL: port 8000 already in use`. `scripts/stop-large-model.sh coder` reported the port "listener present but no owning pid", `TERM` and `KILL` escalation both failed with `STILL LISTENING — manual intervention required`.
+- **Affected stage / plugin / port:** Phase 0.2 · production serve infra · port allocation
+- **Root cause:** `sudo lsof -iTCP:8000 -sTCP:LISTEN` revealed the port is bound by the OpenHands agent process (`openhands-agent` PID 1670687, UID 10001). `stop-large-model.sh` couldn't stop it because (a) OpenHands runs as a different UID than the invoker, (b) the process is a legitimate long-running agent, not a stale vLLM leftover.
+- **Fix applied:** ADR-0017 amended (Ratified · Amended) — coder port moved 8000 → 8001. Model, runtime, parser flags, and co-residency policy unchanged. Four files patched in one commit (production-selection.json, serve-coder.sh, serve-planner.sh, stop-large-model.sh). OpenHands agent left in place on 8000.
+- **Files changed:**
+  - `adrs/ADR-0017-production-role-selection-pre-medium.md`
+  - `bench/candidates/production-selection.json`
+  - `scripts/serve-coder.sh`
+  - `scripts/serve-planner.sh`
+  - `scripts/stop-large-model.sh`
+- **Related BUILD_LOG entry:** 2026-08-11 06:10 EDT
+- **Reusable lesson:** Before assigning any port for a new local server, run `sudo lsof -iTCP:<port> -sTCP:LISTEN` on Colossus to check for existing owners. `ss -tln` alone does not reveal owning PIDs across UIDs without sudo, and `stop-large-model.sh`'s `fuser` fallback cannot kill processes owned by other UIDs.

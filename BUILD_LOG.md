@@ -736,3 +736,33 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none directly. Downstream: OpenHands router / MCP config will read `production-selection.json` when Phase 1 handoff work begins.
 - **PORTING_LEDGER / ADR updated:** ADR-0017 filed; index updated.
 - **Stop-condition status:** Production role selection **complete**. Serve infra in place. Benchmark work paused per user directive; ADR-0017 will be amended (not superseded) once Medium-tier verdicts land per ADR-0018+.
+
+## 2026-08-11 06:10 EDT — ADR-0017 amended (coder port 8000 → 8001); health-check script authored
+
+- **Stage / plugin / port:** Phase 0.2 · production serve infrastructure · port conflict resolution
+- **What changed:**
+  - **Port conflict discovered on first serve attempt:** OpenHands agent (PID 1670687, UID 10001) binds 127.0.0.1:8000 on Colossus as its own dashboard/API. My ADR-0017 selection had claimed port 8000 for vLLM coder without checking. Confirmed by `sudo lsof -iTCP:8000 -sTCP:LISTEN` returning `openhands` as the owner.
+  - **ADR-0017 amended (Ratified · Amended)** — status amendment block prepended; original decision text preserved verbatim; coder port moved 8000 → 8001. Model, runtime, parser flags, and co-residency policy unchanged. Amendment path (not supersession) is appropriate because the decision itself is unchanged; only the transport port shifted.
+  - **Four files patched in this single commit:**
+    - `bench/candidates/production-selection.json` — coder.port 8000 → 8001, endpoint updated, endpoints_summary updated, amendment_note added.
+    - `scripts/serve-coder.sh` — PORT 8000 → 8001, header comment updated.
+    - `scripts/stop-large-model.sh` — CODER_PORT 8000 → 8001, docstring updated.
+    - `scripts/serve-planner.sh` — co-residency preflight now checks port 8001, not 8000.
+  - **`scripts/check-production-endpoints.sh` authored** (was drafted last turn, unpushed at time of port-conflict discovery; ports resolved by reading selection JSON so no separate patch required). Health-check pattern:
+    1. Loads `bench/candidates/production-selection.json` (ADR-0017 canonical).
+    2. Verifies each role's port is listening.
+    3. GETs `/v1/models` and confirms `served_model_name` matches.
+    4. Sends a role-appropriate canary — chat completion for coder/planner (max 32 tokens, temp 0.0), two-string embed for embedder.
+    5. Reports latency_ms, output_tokens (chat) or vector_dim (embed) per role.
+    - Exit 0 = all PASS, 1 = one or more FAIL, 2 = misconfiguration. Never mutates config, never starts/stops servers.
+- **Files touched:**
+  - `adrs/ADR-0017-production-role-selection-pre-medium.md` (amendment block + status line + table note)
+  - `bench/candidates/production-selection.json` (coder port + endpoint + summary)
+  - `scripts/serve-coder.sh` (PORT constant + header)
+  - `scripts/serve-planner.sh` (co-residency preflight port)
+  - `scripts/stop-large-model.sh` (CODER_PORT + docstring)
+  - `scripts/check-production-endpoints.sh` (new, executable)
+  - `BUILD_LOG.md`, `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none directly.
+- **PORTING_LEDGER / ADR updated:** ADR-0017 amended in place.
+- **Stop-condition status:** ADR-0017 amendment landed cleanly; health-check script ready. Next action gated by user completing `scripts/pull-models.sh --role all` on Colossus to materialize the three production model files.
