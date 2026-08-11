@@ -20,6 +20,7 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0010 | [Fast-tier vLLM per-role launch flags](ADR-0010-fast-tier-vllm-role-flags.md) | Amended · see ADR-0011 | Phase 0.1 |
 | 0011 | [Fast-tier coder tool-call parser = hermes](ADR-0011-fast-tier-coder-tool-call-parser-hermes.md) | Ratified | Phase 0.1 |
 | 0012 | [Registry amendment: 30B thinker is dual-role coder+planner](ADR-0012-registry-dual-role-30b-thinker.md) | Ratified | Phase 0.1 |
+| 0013 | [Registry exclusion: Qwen3.5-VL multimodal not coder-pool](ADR-0013-registry-exclude-qwen3_5-multimodal-from-coder.md) | Ratified | Phase 0.1 |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 

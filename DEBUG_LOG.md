@@ -289,3 +289,20 @@ Entry format:
 - **Root cause (referenced):** ADR-0011 — `--tool-call-parser hermes` matches the Hermes-style `<tool_call>{json}</tool_call>` emission of Qwen3-Thinking-2507; `qwen3_coder` did not.
 - **Related BUILD_LOG entry:** 2026-08-11 03:18 EDT (this session).
 - **Files changed:** none (verification only).
+
+## 2026-08-11 03:36 EDT — coder-fast pool R1: torch.OutOfMemoryError on Qwen3.5-VL multimodal weights loaded into coder role
+
+- **Symptom (verbatim):** `torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 784.00 MiB. GPU 0 has a total capacity of 31.39 GiB of which 539.06 MiB is free. Process 23150 has 126.68 MiB memory in use. Including non-PyTorch memory, this process has 30.20 GiB memory in use.` (`qwen3_6-27b-int4-autoround`, KV cache profiling stage). Same class of error on `qwen3_6-35b-a3b-awq` (22.23 GiB weights instead of 17.7, otherwise identical). vLLM launcher exited returncode=1 for both cells during startup; server never reached `/health`.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast tier · coder pool · vLLM launcher path.
+- **Root cause:** Both candidates are Qwen3.5-VL multimodal models, not text-only. `config.json.architectures = ['Qwen3_5ForConditionalGeneration']` / `['Qwen3_5MoeForConditionalGeneration']` (HF `ForConditionalGeneration` = vision-language convention), `vision_config` populated (`depth: 27` vision-encoder layers), and vLLM startup emitted `Qwen3VLVideoProcessorInitKwargs` errors. vLLM 0.27 loads the vision tower unconditionally for these arch names, consuming ~10-12 GiB of VRAM that the text-only coder-fast tasks cannot use. At the 32 GiB SM_120 envelope with `--gpu-memory-utilization 0.9` and `--max-model-len 32768`, the vision-tower overhead leaves insufficient KV cache room and the KV profiler OOMs.
+- **NOT the cause:** vLLM version regression (R4-candidate note was auto-appended by the runner but is misleading here); tool-call parser; ROLE_FLAGS mechanism; runner code.
+- **Fix applied:** Remove `qwen3_6-27b-int4-autoround` and `qwen3_6-35b-a3b-awq` from `bench/candidates/registry.json` `roles.coder`. See ADR-0013. Registry-authoring rule added: `architectures[0]` must end in `ForCausalLM` for coder/planner candidates, or model card must document text-only path with published KV budget.
+- **Files changed:**
+  - `bench/candidates/registry.json` (multimodal entries removed; `$comment` amended with ADR-0013 rule).
+  - `adrs/ADR-0013-registry-exclude-qwen3_5-multimodal-from-coder.md` (new).
+  - `adrs/README.md` (index row).
+- **Related BUILD_LOG entry:** 2026-08-11 03:36 EDT (this session).
+- **Related result files:**
+  - `bench/results/phase-0-fast-coder-qwen3_6-27b-int4-autoround-vllm-gpu-20260811T073011Z.json`
+  - `bench/results/phase-0-fast-coder-qwen3_6-35b-a3b-awq-vllm-gpu-20260811T073355Z.json`
+  - `bench/results/server-logs/coder_qwen3_6-27b-int4-autoround_vllm_gpu-*.log`

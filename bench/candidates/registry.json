@@ -1,5 +1,5 @@
 {
-  "$comment": "Phase 0 §0.0b candidate registry. Editing this file changes what pull-models.sh fetches and what the tier runner considers 'in the pool'. Do NOT hardcode revisions here — pull-models.sh resolves and pins revisions at download time and records them in models/manifest.json.",
+  "$comment": "Phase 0 §0.0b candidate registry. Editing this file changes what pull-models.sh fetches and what the tier runner considers 'in the pool'. Do NOT hardcode revisions here — pull-models.sh resolves and pins revisions at download time and records them in models/manifest.json. Per ADR-0013, entries with architectures ending in ForConditionalGeneration (Qwen3.5-VL family) are excluded from coder + planner pools — they carry a vision tower that starves KV cache on a 32 GiB card. Verify config.json.architectures[0] ends in ForCausalLM before adding a coder/planner candidate.",
   "schema_version": "1.0.0",
   "roles": {
     "coder": [
@@ -34,16 +34,6 @@
         "notes": "Dense 27B bf16 base. Does NOT fit 32 GiB VRAM at full precision; kept for CPU-offload / reference scoring only. Runner must gate at load time."
       },
       {
-        "slug": "qwen3_6-27b-int4-autoround",
-        "hf_repo": "Intel/Qwen3.6-27B-int4-AutoRound",
-        "hf_files": [],
-        "format": "safetensors",
-        "runtime": "vllm",
-        "role_pool": ["coder", "planner"],
-        "approx_size_gib": 19,
-        "notes": "Intel official W4A16 AutoRound, group_size 128, symmetric. vLLM-servable. Size calibrated from manifest 2026-08-11."
-      },
-      {
         "slug": "qwen3_6-35b-a3b-q4kxl-gguf",
         "hf_repo": "unsloth/Qwen3.6-35B-A3B-GGUF",
         "hf_files": ["Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"],
@@ -52,16 +42,6 @@
         "role_pool": ["coder", "planner"],
         "approx_size_gib": 22,
         "notes": "MoE 35B / 3B-active, Unsloth Dynamic Q4_K_XL. Fits 32 GiB VRAM. Size calibrated from manifest 2026-08-11."
-      },
-      {
-        "slug": "qwen3_6-35b-a3b-awq",
-        "hf_repo": "QuantTrio/Qwen3.6-35B-A3B-AWQ",
-        "hf_files": [],
-        "format": "safetensors",
-        "runtime": "vllm",
-        "role_pool": ["coder", "planner"],
-        "approx_size_gib": 25,
-        "notes": "MoE 35B / 3B-active, AWQ 4-bit. vLLM ≥ 0.19. Data-free calibration. Size calibrated from manifest 2026-08-11."
       }
     ],
     "planner": [

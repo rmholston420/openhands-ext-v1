@@ -423,3 +423,20 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0012 Ratified.
 - **Stop-condition status:** ready to run `scripts/benchmark-tier-runner.py --tier fast --role coder --task-set bench/tasks/coder-fast.json --rubric bench/rubrics/fast-elimination.json --candidate-file bench/candidates/coder-fast-vllm.json` (no `--smoke`; §0.0b guard passes with 3 candidates).
+
+## 2026-08-11 03:36 EDT — Phase 0.1 coder-fast POOL run: 1/3 pass, 2/3 R1 eliminated
+
+- **Stage / plugin / port:** Phase 0.1 · Fast tier · coder pool · vLLM slice.
+- **What changed:** Ran real (non-smoke) Phase 0.1 coder-fast pool: `scripts/benchmark-tier-runner.py --tier fast --role coder --task-set bench/tasks/coder-fast.json --rubric bench/rubrics/fast-elimination.json --candidate-file bench/candidates/coder-fast-vllm.json --vllm-release 0.27.0`. Pool = 3 vLLM candidates. Verdicts:
+  - `qwen3-30b-a3b-thinking-2507-awq` — **pass**. 5/5 tool_calls, wall p50=1.14s, p95=5.06s, cold=29.0s. VRAM peak 30660 MiB, util avg 94.9%, temp peak 51 °C, 0 CUDA-OOM events, NVML coverage 100 %.
+  - `qwen3_6-27b-int4-autoround` — **fail (R1 launch_failure)**. Qwen3.5-VL multimodal; vision tower consumed ~12 GiB beyond weights, KV profiler OOM. Verdict source `transport`.
+  - `qwen3_6-35b-a3b-awq` — **fail (R1 launch_failure)**. Qwen3.5-VL multimodal; same class of failure. Verdict source `transport`.
+- **Files touched:**
+  - `bench/candidates/registry.json` (removed two multimodal entries; `$comment` amended per ADR-0013 rule).
+  - `adrs/ADR-0013-registry-exclude-qwen3_5-multimodal-from-coder.md` (new).
+  - `adrs/README.md` (index row).
+  - `bench/results/phase-0-fast-coder-*20260811T07*.json` + `.probe.json` (from the run).
+  - `bench/results/server-logs/coder_*_vllm_gpu-*.log` (from the run).
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0013 Ratified.
+- **Stop-condition status:** POOL not closed. Coder-fast has 1 vLLM survivor (`qwen3-30b-a3b-thinking-2507-awq`) after ADR-0013 exclusions. Registry now lists 4 coder entries: 1 vLLM survivor + 2 llama.cpp (unverified for VL-taint) + 1 vLLM bf16 (OOM-gated by design). To meet §0.0b `min_pool=3` for a real elimination, either (a) verify + smoke the two llama.cpp GGUF cells, or (b) pull additional text-only vLLM coder candidates (e.g. `Qwen3-Coder-30B-A3B-Instruct` variants, DeepSeek-Coder AWQ, Codestral AWQ). Awaiting user decision.
