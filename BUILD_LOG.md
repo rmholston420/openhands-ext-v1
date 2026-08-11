@@ -990,3 +990,17 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** none
 - **Stop-condition status:** met
+
+## 2026-08-11 08:49 EDT — Phase 0.2 medium-tier pool files authored + phase naming corrected
+
+- **Stage / plugin / port:** Phase 0.2 · Medium tier · candidates
+- **What changed:** Authored `bench/candidates/{coder,planner,embedder}-medium-pool.json` — mechanical extraction from Fast-tier pools with ADR-0014 (coder: 4 cells reinstated) and ADR-0015 (planner: 2 llama.cpp survivors, thinker eliminated) already-ratified decisions applied. Embedder pool authored retroactively for the record (verdict already locked 2026-08-11 06:05 EDT). No new decisions; no elimination between Fast→Medium for coder or embedder.
+- **Also:** Overwrote `SESSION_HANDOFF.md` correcting the phase-model naming — prior handoff called the next-queued step "Phase 0.3" but per `docs/specs/integration-execution-plan-v16.md` that step is Phase 0.2 (Medium tier). Phase 0.3 is the Full tier (~10 hr, SWE-bench-Verified, MDE with 3+ repeats). ADR-0016 rubric title ("Medium-tier scoring rubric") confirms the correct phase. Embedder work already completed IS Phase 0.2 — misnamed in prior sessions.
+- **Files touched:**
+  - `bench/candidates/coder-medium-pool.json` (new)
+  - `bench/candidates/planner-medium-pool.json` (new)
+  - `bench/candidates/embedder-medium-pool.json` (new)
+  - `SESSION_HANDOFF.md` (overwrite)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** no new ADR (pool files are mechanical derivation from ADR-0014/0015 already-ratified decisions)
+- **Stop-condition status:** Phase 0.2 pool authorship met. Coder-medium + planner-medium task sets + gold references remain blocked pending ADR authorship (decision surface: task count/shape, gold protocol, scoring passes, co-residency).
