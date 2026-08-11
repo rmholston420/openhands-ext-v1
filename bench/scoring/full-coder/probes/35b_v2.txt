@@ -1,0 +1,330 @@
+# bench/scoring/full-coder/probes/35b.probe.json
+# role: coder
+# notes: harness=v1 sdk=openhands-sdk max_iter=20 ws_boot=4.39s image=ghcr.io/openhands/agent-server:latest-python
+
+================================================================================
+TASK: coder-full-01-multifile-refactor-with-invariant
+verdict=pass source=verify wall=20.6s
+================================================================================
+turns=16 cap=False err=0
+mode=rubric_only
+expected_seq=['read_file', 'read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred=['str_replace_editor'] dispreferred=['write_file']
+smoke_exit=0
+smoke_stdout: ...                                                                      [100%]
+3 passed in 0.00s
+
+actual_seq (16): ['file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'terminal', 'terminal']
+finish_present: False
+
+--- FILE EDITS (2) ---
+>>> str_replace /workspace/repo/src/orders/order.py
+OLD:
+class Order:
+    def __init__(self, unit_price: float, quantity: int, tax_rate: float = 0.0):
+        self.unit_price = unit_price
+        self.quantity = quantity
+        self.tax_rate = tax_rate
+
+    def subtotal(self) -> float:
+        return self.unit_price * self.quantity
+
+    def total(self) -> float:
+        return self.subtotal() * (1.0 + self.tax_rate)
+---NEW:
+from decimal import Decimal
+
+
+class Order:
+    def __init__(self, unit_price: float, quantity: int, tax_rate: float = 0.0):
+        self.unit_price = unit_price
+        self.quantity = quantity
+        self.tax_rate = tax_rate
+
+    def subtotal(self) -> float:
+        return self.unit_price * self.quantity
+
+    def total(self) -> Decimal:
+        return Decimal(str(self.subtotal() * (1.0 + self.tax_rate)))
+
+>>> str_replace /workspace/repo/src/reports/summary.py
+OLD:
+from orders.order import Order
+
+
+def format_total(order: Order) -> str:
+    return f"total={order.total():.2f}"
+---NEW:
+from orders.order import Order
+
+
+def format_total(order: Order) -> str:
+    return f"total={float(order.total()):.2f}"
+
+
+
+================================================================================
+TASK: coder-full-02-bug-hunt-cross-module
+verdict=pass source=verify wall=9.0s
+================================================================================
+turns=10 cap=False err=0
+mode=rubric_only_with_immutable_check
+expected_seq=['execute_bash', 'read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred=['str_replace_editor', 'execute_bash'] dispreferred=['write_file']
+smoke_exit=0
+smoke_stdout: ...                                                                      [100%]
+3 passed in 0.00s
+
+actual_seq (10): ['file_editor', 'terminal', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'terminal']
+finish_present: False
+
+--- FILE EDITS (1) ---
+>>> str_replace /workspace/repo/src/pricing/discount.py
+OLD:
+def _percent_to_multiplier(percent: float) -> float:
+    # BUG: subtracts percent instead of (percent/100) from 1.0
+    return 1.0 - percent
+---NEW:
+def _percent_to_multiplier(percent: float) -> float:
+    return 1.0 - percent / 100.0
+
+
+
+================================================================================
+TASK: coder-full-03-feature-add-read-first-unfamiliar
+verdict=pass source=verify wall=9.1s
+================================================================================
+turns=5 cap=False err=0
+mode=rubric_only_with_immutable_check
+expected_seq=['read_file', 'str_replace_editor', 'execute_bash']
+preferred=['str_replace_editor'] dispreferred=['write_file']
+smoke_exit=0
+smoke_stdout: ...                                                                      [100%]
+3 passed in 0.00s
+
+actual_seq (5): ['file_editor', 'file_editor', 'file_editor', 'terminal', 'finish']
+finish_present: True
+
+--- FINISH.MESSAGE (353 chars) ---
+Successfully added the `peek(key)` method to `LRUCache` in `/workspace/repo/src/cache/lru.py`. The method returns the value associated with `key` if present, or `None` if absent, without updating recency (unlike `get()` which calls `move_to_end`). All 3 tests pass: `test_get_put_basic`, `test_peek_does_not_update_recency`, and `test_peek_missing_key`.
+
+--- FILE EDITS (1) ---
+>>> str_replace /workspace/repo/src/cache/lru.py
+OLD:
+    def get(self, key: Any) -> Optional[Any]:
+        if key not in self._data:
+            return None
+        self._data.move_to_end(key)
+        return self._data[key]
+
+    def put(self, key: Any, value: Any) -> None:
+---NEW:
+    def get(self, key: Any) -> Optional[Any]:
+        if key not in self._data:
+            return None
+        self._data.move_to_end(key)
+        return self._data[key]
+
+    def peek(self, key: Any) -> Optional[Any]:
+        if key not in self._data:
+            return None
+        return self._data[key]
+
+    def put(self, key: Any, value: Any) -> None:
+
+
+
+================================================================================
+TASK: coder-full-04-pytest-multi-failure-report
+verdict=pass source=verify wall=5.5s
+================================================================================
+turns=2 cap=False err=0
+mode=rubric_only_with_immutable_check
+expected_seq=['execute_bash', 'finish']
+preferred=['execute_bash'] dispreferred=['str_replace_editor', 'write_file']
+
+actual_seq (2): ['file_editor', 'terminal']
+finish_present: False
+
+
+
+================================================================================
+TASK: coder-full-05-json-config-schema-report
+verdict=pass source=verify wall=4.6s
+================================================================================
+turns=4 cap=False err=0
+mode=rubric_only
+expected_seq=['read_file', 'read_file', 'read_file', 'finish']
+preferred=['read_file', 'execute_bash'] dispreferred=['str_replace_editor', 'write_file']
+
+actual_seq (4): ['file_editor', 'file_editor', 'file_editor', 'file_editor']
+finish_present: False
+
+
+
+================================================================================
+TASK: coder-full-06-exact-diff-fix-plus-regression-test
+verdict=pass source=verify wall=7.7s
+================================================================================
+turns=7 cap=False err=0
+mode=rubric_only_with_immutable_check
+expected_seq=['read_file', 'str_replace_editor', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred=['str_replace_editor'] dispreferred=['write_file']
+smoke_exit=0
+smoke_stdout: ...                                                                      [100%]
+3 passed in 0.00s
+
+actual_seq (7): ['file_editor', 'file_editor', 'think', 'file_editor', 'file_editor', 'terminal', 'finish']
+finish_present: True
+
+--- FINISH.MESSAGE (486 chars) ---
+Fixed the bug and added the regression test. All 3 tests pass.
+
+**Bug:** `parse_line` used `line.rstrip(",")` before splitting, which removed trailing commas and dropped trailing empty fields (e.g., `'a,b,'` returned `['a', 'b']` instead of `['a', 'b', '']`).
+
+**Fix (1-line change in `csv_lite.py`):** Removed `.rstrip(",")` so `line.split(",")` is used directly.
+
+**Test added (in `test_csv_lite.py`):** `test_trailing_empty_field` asserts that `parse_line("a,b,") == ["a", "b", ""]`.
+
+--- FILE EDITS (2) ---
+>>> str_replace /workspace/repo/src/parser/csv_lite.py
+OLD:
+def parse_line(line: str) -> list[str]:
+    """Split a CSV line on commas. Does not handle quoting."""
+    # BUG: rstrip removes the trailing empty field
+    return line.rstrip(",").split(",")
+---NEW:
+def parse_line(line: str) -> list[str]:
+    """Split a CSV line on commas. Does not handle quoting."""
+    return line.split(",")
+
+>>> str_replace /workspace/repo/tests/test_csv_lite.py
+OLD:
+def test_single_field():
+    assert parse_line("only") == ["only"]
+---NEW:
+def test_single_field():
+    assert parse_line("only") == ["only"]
+
+
+def test_trailing_empty_field():
+    assert parse_line("a,b,") == ["a", "b", ""]
+
+
+
+================================================================================
+TASK: coder-full-07-config-driven-behavior-change
+verdict=pass source=verify wall=7.1s
+================================================================================
+turns=6 cap=False err=0
+mode=rubric_only
+expected_seq=['read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred=['str_replace_editor'] dispreferred=['write_file']
+smoke_exit=0
+smoke_stdout: Bonjour, Ada!
+
+actual_seq (6): ['file_editor', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'finish']
+finish_present: True
+
+--- FINISH.MESSAGE (301 chars) ---
+Updated `/workspace/repo/config/greet.json` to change the greeting from "Hello" to "Bonjour". The script already reads the greeting from the config file, so no changes were needed there — `python scripts/greet.py --name Ada` now prints `Bonjour, Ada!` while preserving the CLI interface and help text.
+
+--- FILE EDITS (1) ---
+>>> str_replace /workspace/repo/config/greet.json
+OLD:
+  "greeting": "Hello",
+---NEW:
+  "greeting": "Bonjour",
+
+
+
+================================================================================
+TASK: coder-full-08-error-handling-addition
+verdict=pass source=verify wall=12.3s
+================================================================================
+turns=8 cap=False err=0
+mode=rubric_only_with_immutable_check
+expected_seq=['read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred=['str_replace_editor'] dispreferred=['write_file']
+smoke_exit=0
+smoke_stdout: ..                                                                       [100%]
+2 passed in 0.00s
+
+actual_seq (8): ['file_editor', 'terminal', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'terminal']
+finish_present: False
+
+--- FILE EDITS (1) ---
+>>> str_replace /workspace/repo/src/net/fetch.py
+OLD:
+import json
+
+
+def fetch_json(url: str):
+    """Parse a URL's body as JSON. url is passed as raw JSON text for testability."""
+    return json.loads(url)
+---NEW:
+import json
+
+
+class FetchError(Exception):
+    def __init__(self, url: str, original_exc: Exception):
+        self.url = url
+        self.original_exc = original_exc
+        super().__init__(f"Failed to fetch {url}: {original_exc}")
+
+
+def fetch_json(url: str):
+    """Parse a URL's body as JSON. url is passed as raw JSON text for testability."""
+    try:
+        return json.loads(url)
+    except json.JSONDecodeError as e:
+        raise FetchError(url, e) from e
+
+
+
+================================================================================
+TASK: coder-full-09-unused-import-cluster-analysis
+verdict=pass source=verify wall=14.7s
+================================================================================
+turns=7 cap=False err=0
+mode=rubric_only_with_immutable_check
+expected_seq=['execute_bash', 'read_file', 'read_file', 'read_file', 'finish']
+preferred=['execute_bash', 'read_file'] dispreferred=['str_replace_editor', 'write_file']
+
+actual_seq (7): ['terminal', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'think', 'terminal']
+finish_present: False
+
+
+
+================================================================================
+TASK: coder-full-10-docstring-driven-impl-two-accepted
+verdict=pass source=verify wall=14.0s
+================================================================================
+turns=3 cap=False err=0
+mode=rubric_only
+expected_seq=['read_file', 'str_replace_editor']
+preferred=['str_replace_editor'] dispreferred=['write_file']
+smoke_exit=0
+smoke_stdout: OK
+
+actual_seq (3): ['file_editor', 'file_editor', 'terminal']
+finish_present: False
+
+--- FILE EDITS (1) ---
+>>> str_replace /workspace/repo/src/algos.py
+OLD:
+    pass
+---NEW:
+    if not values:
+        return None
+
+    sorted_vals = sorted(values)
+    n = len(sorted_vals)
+    mid = n // 2
+
+    if n % 2 == 1:
+        return float(sorted_vals[mid])
+    else:
+        return (sorted_vals[mid - 1] + sorted_vals[mid]) / 2.0
+
+

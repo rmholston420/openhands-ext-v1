@@ -1,0 +1,237 @@
+# bench/scoring/full-coder/probes/awq.probe.json
+# role: coder  notes: harness=v1 sdk=openhands-sdk max_iter=20 ws_boot=4.41s image=ghcr.io/openhands/agent-server:latest-python
+
+============================================================================
+TASK: coder-full-01-multifile-refactor-with-invariant
+verdict=fail source=verify wall=17.1s
+============================================================================
+turn_count=20 hit_iteration_cap=True agent_error_count=0
+expected_final_state_mode=rubric_only
+expected_tool_sequence=['read_file', 'read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred_tools=['str_replace_editor']
+dispreferred_tools=['write_file']
+run_error: ConversationRunError('Conversation run failed for id=bd675645-677d-4bda-83b2-9bd8af0803bd: MaxIterationsReached: Agent reached maximum iterations limit (20).')
+smoke_exit=0
+smoke_stdout (98 chars):
+...                                                                      [100%]
+3 passed in 0.00s
+
+
+actual_tool_sequence (20): ['file_editor', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'file_editor', 'file_editor', 'terminal', 'terminal', 'terminal', 'file_editor', 'file_editor', 'terminal', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'terminal', 'terminal']
+finish_in_tools=False
+
+--- terminal outputs (4) ---
+$ cd /workspace/repo && python -m pytest tests/ -v
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '/usr/local/bin/python: No module named pytest'}], 'is_error': False, 'command': 'cd /workspace/repo && python -m pytest tests/ -v', 'exit_code': 1, 'timeout': False, 'metadata': {'exit_code': 1, 'pid': -1, 'username': 'openhands', 'hostname': 'ff3f288d480b', 'working_dir': '/workspace/repo', 'py_interpreter_path': '/usr/local/bin/python', 'prefix': '', 'suffix': '\n[The command completed with exit code 1.]'}, 'full_output_save_dir': 'workspace/conversations/bd675645677d4bda83b29bd8af0803bd/observations', 'kind': 'TerminalObservation'}
+
+$ cd /workspace/repo && pip install pytest
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': "Defaulting to user installation because normal site-packages is not writeable\nCollecting pytest\n  Downloading pytest-9.1.1-py3-none-any.whl.metadata (7.6 kB)\nCollecting iniconfig>=1.0.1 (from pytest)\n  Downloading iniconfig-2.3.0-py3-none-any.whl.metadata (2.5 kB)\nRequirement already satisfied: packaging>=22 in /usr/local/lib/python3.13/site-packages (from pytest) (26.2)\nCollecting pluggy<2,>=1.5 (from pytest)\n  Downloading pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)\nCollecting pygments>=2.7.2 (from pytest)\n  Downloading pygments-2.20.0-py3-none-any.whl.metadata (2.5 kB)\nDownloading pytest-9.1.1-py3-none-any.whl (386 kB)\nDownloading pluggy-1.6.0-py3-none-any.whl (20 kB)\nDownloading iniconfig-2.3.0-py3-none-any.whl (7.5 kB)\nDownloading pygments-2.20.0-py3-none-any.whl (1.2 MB)\n   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 17.5 MB/s  0:00:00\nInstalling collected packages: pygments, pluggy, iniconfig, pytest\n   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 0/4 [pygments]  WARNING: The script pygmentize is installed in '/home/openhands/.local/bin' which is not on PATH.\n  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.\n   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╺━━━━━━━━━ 3/4 [pytest]  WARNING: The scripts py.test and pytest are installed in '/home/openhands/.local/bin' which is not on PATH.\n  Consider adding this directory to PATH or, if
+
+$ cd /workspace/repo && python -m pytest tests/ -v
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '===================================================================================================================== test session starts ======================================================================================================================\nplatform linux -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python\ncachedir: .pytest_cache\nrootdir: /workspace/repo\ncollected 3 items\n\ntests/test_order.py::test_subtotal PASSED                                                                                                                                                                                                                [ 33%]\ntests/test_order.py::test_total_returns_decimal FAILED                                                                                                                                                                                                   [ 66%]\ntests/test_summary.py::test_format_total PASSED                                                                                                                                                                                                          [100%]\n\n=========================================================================================================================== FAILURES ===================================================================================================================
+
+$ cd /workspace/repo && python -m pytest tests/ -v
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '===================================================================================================================== test session starts ======================================================================================================================\nplatform linux -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python\ncachedir: .pytest_cache\nrootdir: /workspace/repo\ncollected 3 items\n\ntests/test_order.py::test_subtotal PASSED                                                                                                                                                                                                                [ 33%]\ntests/test_order.py::test_total_returns_decimal PASSED                                                                                                                                                                                                   [ 66%]\ntests/test_summary.py::test_format_total PASSED                                                                                                                                                                                                          [100%]\n\n====================================================================================================================== 3 passed in 0.00s ===============================================================================================================
+
+
+
+============================================================================
+TASK: coder-full-02-bug-hunt-cross-module
+verdict=pass source=verify wall=13.4s
+============================================================================
+turn_count=13 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only_with_immutable_check
+expected_tool_sequence=['execute_bash', 'read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred_tools=['str_replace_editor', 'execute_bash']
+dispreferred_tools=['write_file']
+run_error: None
+smoke_exit=0
+smoke_stdout (98 chars):
+...                                                                      [100%]
+3 passed in 0.00s
+
+
+actual_tool_sequence (13): ['file_editor', 'terminal', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'file_editor', 'terminal', 'terminal', 'terminal', 'terminal', 'think', 'finish']
+finish_in_tools=True
+
+--- terminal outputs (4) ---
+$ cd /workspace/repo && python -m pytest tests/test_discount.py::test_apply_discount_percent -v
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '===================================================================================================================== test session starts ======================================================================================================================\nplatform linux -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python\ncachedir: .pytest_cache\nrootdir: /workspace/repo\ncollected 1 item\n\ntests/test_discount.py::test_apply_discount_percent FAILED                                                                                                                                                                                               [100%]\n\n=========================================================================================================================== FAILURES ===========================================================================================================================\n_________________________________________________________________________________________________________________ test_apply_discount_percent __________________________________________________________________________________________________________________\n\n    def test_apply_discount_percent():\n        # 20% off 100 should be 80\n>       assert apply_discount(100.0, 20) == 80.0\nE       assert -1900.0 == 80.0\nE        +  where -1900.0 = apply_discount(100.0, 20)\n\ntests/test_discount.py:10: Ass
+
+$ cd /workspace/repo && python -m pytest tests/test_discount.py::test_apply_discount_percent -v
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '===================================================================================================================== test session starts ======================================================================================================================\nplatform linux -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python\ncachedir: .pytest_cache\nrootdir: /workspace/repo\ncollected 1 item\n\ntests/test_discount.py::test_apply_discount_percent PASSED                                                                                                                                                                                               [100%]\n\n====================================================================================================================== 1 passed in 0.00s ======================================================================================================================='}], 'is_error': False, 'command': 'cd /workspace/repo && python -m pytest tests/test_discount.py::test_apply_discount_percent -v', 'exit_code': 0, 'timeout': False, 'metadata': {'exit_code': 0, 'pid': -1, 'username': 'openhands', 'hostname': 'ff3f288d480b', 'working_dir': '/workspace/repo', 'py_interpreter_path': '/usr/local/bin/python', 'prefix': '', 'suffix': '\n[The command completed with exit code 0.]'}, 'full_output_save_dir': 'workspace/conversations/bcebe6b9bb4641bca33ed3def7182646/observations
+
+$ cd /workspace/repo && python -m pytest tests/test_discount.py -v
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '===================================================================================================================== test session starts ======================================================================================================================\nplatform linux -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python\ncachedir: .pytest_cache\nrootdir: /workspace/repo\ncollected 3 items\n\ntests/test_discount.py::test_apply_discount_zero PASSED                                                                                                                                                                                                  [ 33%]\ntests/test_discount.py::test_apply_discount_percent PASSED                                                                                                                                                                                               [ 66%]\ntests/test_discount.py::test_apply_discount_full PASSED                                                                                                                                                                                                  [100%]\n\n====================================================================================================================== 3 passed in 0.00s ===============================================================================================================
+
+$ cd /workspace/repo && python -m pytest tests/ -q
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '...                                                                                                                                                                                                                                                      [100%]\n3 passed in 0.00s'}], 'is_error': False, 'command': 'cd /workspace/repo && python -m pytest tests/ -q', 'exit_code': 0, 'timeout': False, 'metadata': {'exit_code': 0, 'pid': -1, 'username': 'openhands', 'hostname': 'ff3f288d480b', 'working_dir': '/workspace/repo', 'py_interpreter_path': '/usr/local/bin/python', 'prefix': '', 'suffix': '\n[The command completed with exit code 0.]'}, 'full_output_save_dir': 'workspace/conversations/bcebe6b9bb4641bca33ed3def7182646/observations', 'kind': 'TerminalObservation'}
+
+
+
+============================================================================
+TASK: coder-full-03-feature-add-read-first-unfamiliar
+verdict=pass source=verify wall=7.0s
+============================================================================
+turn_count=7 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only_with_immutable_check
+expected_tool_sequence=['read_file', 'str_replace_editor', 'execute_bash']
+preferred_tools=['str_replace_editor']
+dispreferred_tools=['write_file']
+run_error: None
+smoke_exit=0
+smoke_stdout (98 chars):
+...                                                                      [100%]
+3 passed in 0.00s
+
+
+actual_tool_sequence (7): ['file_editor', 'file_editor', 'file_editor', 'terminal', 'file_editor', 'terminal', 'finish']
+finish_in_tools=True
+
+--- terminal outputs (1) ---
+$ cd /workspace/repo && python -m pytest tests/ -q
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '...                                                                                                                                                                                                                                                      [100%]\n3 passed in 0.01s'}], 'is_error': False, 'command': 'cd /workspace/repo && python -m pytest tests/ -q', 'exit_code': 0, 'timeout': False, 'metadata': {'exit_code': 0, 'pid': -1, 'username': 'openhands', 'hostname': 'ff3f288d480b', 'working_dir': '/workspace/repo', 'py_interpreter_path': '/usr/local/bin/python', 'prefix': '', 'suffix': '\n[The command completed with exit code 0.]'}, 'full_output_save_dir': 'workspace/conversations/37422bd2024e4e4aa11ca21b17cc2e64/observations', 'kind': 'TerminalObservation'}
+
+
+
+============================================================================
+TASK: coder-full-04-pytest-multi-failure-report
+verdict=pass source=verify wall=7.7s
+============================================================================
+turn_count=10 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only_with_immutable_check
+expected_tool_sequence=['execute_bash', 'finish']
+preferred_tools=['execute_bash']
+dispreferred_tools=['str_replace_editor', 'write_file']
+run_error: None
+
+actual_tool_sequence (10): ['terminal', 'terminal', 'terminal', 'terminal', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'think', 'finish']
+finish_in_tools=True
+
+--- terminal outputs (1) ---
+$ cd /workspace/repo && python -m pytest tests/ -v
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '===================================================================================================================== test session starts ======================================================================================================================\nplatform linux -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python\ncachedir: .pytest_cache\nrootdir: /workspace/repo\ncollected 5 items\n\ntests/test_mathx.py::test_add PASSED                                                                                                                                                                                                                     [ 20%]\ntests/test_mathx.py::test_mul PASSED                                                                                                                                                                                                                     [ 40%]\ntests/test_mathx.py::test_div_float FAILED                                                                                                                                                                                                               [ 60%]\ntests/test_mathx.py::test_div_by_zero FAILED                                                                                                                                                                                                             [
+
+
+
+============================================================================
+TASK: coder-full-05-json-config-schema-report
+verdict=pass source=verify wall=3.7s
+============================================================================
+turn_count=6 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only
+expected_tool_sequence=['read_file', 'read_file', 'read_file', 'finish']
+preferred_tools=['read_file', 'execute_bash']
+dispreferred_tools=['str_replace_editor', 'write_file']
+run_error: None
+
+actual_tool_sequence (6): ['terminal', 'file_editor', 'file_editor', 'file_editor', 'think', 'finish']
+finish_in_tools=True
+
+
+
+============================================================================
+TASK: coder-full-06-exact-diff-fix-plus-regression-test
+verdict=pass source=verify wall=12.6s
+============================================================================
+turn_count=12 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only_with_immutable_check
+expected_tool_sequence=['read_file', 'str_replace_editor', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred_tools=['str_replace_editor']
+dispreferred_tools=['write_file']
+run_error: None
+smoke_exit=0
+smoke_stdout (98 chars):
+...                                                                      [100%]
+3 passed in 0.00s
+
+
+actual_tool_sequence (12): ['file_editor', 'file_editor', 'terminal', 'file_editor', 'think', 'terminal', 'file_editor', 'file_editor', 'terminal', 'terminal', 'terminal', 'finish']
+finish_in_tools=True
+
+--- terminal outputs (1) ---
+$ cd /workspace/repo && python -m pytest tests/ -q
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '...                                                                                                                                                                                                                                                      [100%]\n3 passed in 0.00s'}], 'is_error': False, 'command': 'cd /workspace/repo && python -m pytest tests/ -q', 'exit_code': 0, 'timeout': False, 'metadata': {'exit_code': 0, 'pid': -1, 'username': 'openhands', 'hostname': 'ff3f288d480b', 'working_dir': '/workspace/repo', 'py_interpreter_path': '/usr/local/bin/python', 'prefix': '', 'suffix': '\n[The command completed with exit code 0.]'}, 'full_output_save_dir': 'workspace/conversations/b3c25ef70f7f4e62a7abf9e25bc6182f/observations', 'kind': 'TerminalObservation'}
+
+
+
+============================================================================
+TASK: coder-full-07-config-driven-behavior-change
+verdict=pass source=verify wall=8.5s
+============================================================================
+turn_count=9 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only
+expected_tool_sequence=['read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred_tools=['str_replace_editor']
+dispreferred_tools=['write_file']
+run_error: None
+smoke_exit=0
+smoke_stdout (14 chars):
+Bonjour, Ada!
+
+
+actual_tool_sequence (9): ['file_editor', 'file_editor', 'terminal', 'file_editor', 'terminal', 'terminal', 'terminal', 'think', 'finish']
+finish_in_tools=True
+
+
+
+============================================================================
+TASK: coder-full-08-error-handling-addition
+verdict=pass source=verify wall=9.4s
+============================================================================
+turn_count=10 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only_with_immutable_check
+expected_tool_sequence=['read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred_tools=['str_replace_editor']
+dispreferred_tools=['write_file']
+run_error: None
+smoke_exit=0
+smoke_stdout (98 chars):
+..                                                                       [100%]
+2 passed in 0.00s
+
+
+actual_tool_sequence (10): ['file_editor', 'terminal', 'file_editor', 'terminal', 'terminal', 'file_editor', 'terminal', 'terminal', 'terminal', 'finish']
+finish_in_tools=True
+
+--- terminal outputs (1) ---
+$ cd /workspace/repo && python -m pytest tests/ -q
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '..                                                                                                                                                                                                                                                       [100%]\n2 passed in 0.00s'}], 'is_error': False, 'command': 'cd /workspace/repo && python -m pytest tests/ -q', 'exit_code': 0, 'timeout': False, 'metadata': {'exit_code': 0, 'pid': -1, 'username': 'openhands', 'hostname': 'ff3f288d480b', 'working_dir': '/workspace/repo', 'py_interpreter_path': '/usr/local/bin/python', 'prefix': '', 'suffix': '\n[The command completed with exit code 0.]'}, 'full_output_save_dir': 'workspace/conversations/d5ae8136ac3042968ff005bb03ed3b98/observations', 'kind': 'TerminalObservation'}
+
+
+
+============================================================================
+TASK: coder-full-09-unused-import-cluster-analysis
+verdict=pass source=verify wall=12.8s
+============================================================================
+turn_count=12 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only_with_immutable_check
+expected_tool_sequence=['execute_bash', 'read_file', 'read_file', 'read_file', 'finish']
+preferred_tools=['execute_bash', 'read_file']
+dispreferred_tools=['str_replace_editor', 'write_file']
+run_error: None
+
+actual_tool_sequence (12): ['terminal', 'terminal', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'terminal', 'terminal', 'think', 'terminal', 'terminal', 'finish']
+finish_in_tools=True
+
+
+
+============================================================================
+TASK: coder-full-10-docstring-driven-impl-two-accepted
+verdict=pass source=verify wall=8.2s
+============================================================================
+turn_count=6 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only
+expected_tool_sequence=['read_file', 'str_replace_editor']
+preferred_tools=['str_replace_editor']
+dispreferred_tools=['write_file']
+run_error: None
+smoke_exit=0
+smoke_stdout (3 chars):
+OK
+
+
+actual_tool_sequence (6): ['file_editor', 'file_editor', 'terminal', 'terminal', 'file_editor', 'finish']
+finish_in_tools=True
+
+

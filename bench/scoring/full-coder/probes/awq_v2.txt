@@ -1,0 +1,515 @@
+# bench/scoring/full-coder/probes/awq.probe.json
+# role: coder
+# notes: harness=v1 sdk=openhands-sdk max_iter=20 ws_boot=4.41s image=ghcr.io/openhands/agent-server:latest-python
+
+================================================================================
+TASK: coder-full-01-multifile-refactor-with-invariant
+verdict=fail source=verify wall=17.1s
+================================================================================
+turns=20 cap=True err=0
+mode=rubric_only
+expected_seq=['read_file', 'read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred=['str_replace_editor'] dispreferred=['write_file']
+run_error: ConversationRunError('Conversation run failed for id=bd675645-677d-4bda-83b2-9bd8af0803bd: MaxIterationsReached: Agent reached maximum iterations limit (20).')
+smoke_exit=0
+smoke_stdout: ...                                                                      [100%]
+3 passed in 0.00s
+
+actual_seq (20): ['file_editor', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'file_editor', 'file_editor', 'terminal', 'terminal', 'terminal', 'file_editor', 'file_editor', 'terminal', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'terminal', 'terminal']
+finish_present: False
+
+--- FILE EDITS (2) ---
+>>> str_replace /workspace/repo/src/orders/order.py
+OLD:
+class Order:
+    def __init__(self, unit_price: float, quantity: int, tax_rate: float = 0.0):
+        self.unit_price = unit_price
+        self.quantity = quantity
+        self.tax_rate = tax_rate
+
+    def subtotal(self) -> float:
+        return self.unit_price * self.quantity
+
+    def total(self) -> float:
+        return self.subtotal() * (1.0 + self.tax_rate)
+---NEW:
+from decimal import Decimal
+
+
+class Order:
+    def __init__(self, unit_price: float, quantity: int, tax_rate: float = 0.0):
+        self.unit_price = unit_price
+        self.quantity = quantity
+        self.tax_rate = tax_rate
+
+    def subtotal(self) -> Decimal:
+        return Decimal(str(self.unit_price)) * Decimal(str(self.quantity))
+
+    def total(self) -> Decimal:
+        return self.subtotal() * Decimal(str(1.0 + self.tax_rate))
+
+>>> str_replace /workspace/repo/src/reports/summary.py
+OLD:
+from orders.order import Order
+
+
+def format_total(order: Order) -> str:
+    return f"total={order.total():.2f}"
+---NEW:
+from orders.order import Order
+from decimal import Decimal
+
+
+def format_total(order: Order) -> str:
+    total = order.total()
+    # Convert to Decimal for proper formatting
+    if isinstance(total, Decimal):
+        return f"total={total:.2f}"
+    else:
+        return f"total={total:.2f}"
+
+
+
+================================================================================
+TASK: coder-full-02-bug-hunt-cross-module
+verdict=pass source=verify wall=13.4s
+================================================================================
+turns=13 cap=False err=0
+mode=rubric_only_with_immutable_check
+expected_seq=['execute_bash', 'read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred=['str_replace_editor', 'execute_bash'] dispreferred=['write_file']
+smoke_exit=0
+smoke_stdout: ...                                                                      [100%]
+3 passed in 0.00s
+
+actual_seq (13): ['file_editor', 'terminal', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'file_editor', 'terminal', 'terminal', 'terminal', 'terminal', 'think', 'finish']
+finish_present: True
+
+--- FINISH.MESSAGE (1038 chars) ---
+I have successfully fixed the bug in the discount calculation system.
+
+**Problem**: In `/workspace/repo/src/pricing/discount.py`, the `_percent_to_multiplier` function had incorrect logic that treated percentage values directly as decimals instead of converting them properly.
+
+**Root Cause**: The function `return 1.0 - percent` was calculating 20% as `1.0 - 20 = -19` instead of the correct `1.0 - (20/100) = 0.8`.
+
+**Fix Applied**: Modified the function to correctly convert percentage to decimal:
+```python
+def _percent_to_multiplier(percent: float) -> float:
+    # Convert percent to decimal and subtract from 1.0
+    return 1.0 - (percent / 100.0)
+```
+
+**Verification**: 
+- The failing test `test_apply_discount_percent` now passes
+- All discount tests pass: `test_apply_discount_zero`, `test_apply_discount_percent`, `test_apply_discount_full`  
+- Running `python -m pytest tests/ -q` exits with code 0
+
+The fix is minimal, targeted, and resolves the issue without modifying any test files or affecting other function...<truncated>
+
+--- FILE EDITS (1) ---
+>>> str_replace /workspace/repo/src/pricing/discount.py
+OLD:
+def _percent_to_multiplier(percent: float) -> float:
+    # BUG: subtracts percent instead of (percent/100) from 1.0
+    return 1.0 - percent
+---NEW:
+def _percent_to_multiplier(percent: float) -> float:
+    # Convert percent to decimal and subtract from 1.0
+    return 1.0 - (percent / 100.0)
+
+
+
+================================================================================
+TASK: coder-full-03-feature-add-read-first-unfamiliar
+verdict=pass source=verify wall=7.0s
+================================================================================
+turns=7 cap=False err=0
+mode=rubric_only_with_immutable_check
+expected_seq=['read_file', 'str_replace_editor', 'execute_bash']
+preferred=['str_replace_editor'] dispreferred=['write_file']
+smoke_exit=0
+smoke_stdout: ...                                                                      [100%]
+3 passed in 0.00s
+
+actual_seq (7): ['file_editor', 'file_editor', 'file_editor', 'terminal', 'file_editor', 'terminal', 'finish']
+finish_present: True
+
+--- FINISH.MESSAGE (862 chars) ---
+I have successfully implemented the `peek()` method for the LRUCache class as requested. 
+
+The new `peek(key)` method:
+- Returns the value associated with the key if present
+- Returns None if the key is absent 
+- Does NOT update the recency of the item (unlike `get()`)
+- Maintains all existing functionality without any modifications to existing methods
+
+The implementation correctly handles:
+1. Looking up existing keys and returning their values
+2. Returning None for missing keys  
+3. Not affecting the LRU ordering (recency tracking)
+4. Working properly with the existing cache eviction logic
+
+All tests pass:
+- Existing tests continue to pass
+- The new peek tests in test_lru.py now pass
+- The comprehensive test suite exits with code 0
+
+The changes were minimal and focused, adding only the required functionality without disrupting any existing behavior.
+
+--- FILE EDITS (1) ---
+>>> str_replace /workspace/repo/src/cache/lru.py
+OLD:
+    def get(self, key: Any) -> Optional[Any]:
+        if key not in self._data:
+            return None
+        self._data.move_to_end(key)
+        return self._data[key]
+
+    def put(self, key: Any, value: Any) -> None:
+        if key in self._data:
+            self._data.move_to_end(key)
+        elif len(self._data) >= self.capacity:
+            self._data.popitem(last=False)
+        self._data[
+---NEW:
+    def get(self, key: Any) -> Optional[Any]:
+        if key not in self._data:
+            return None
+        self._data.move_to_end(key)
+        return self._data[key]
+
+    def peek(self, key: Any) -> Optional[Any]:
+        if key not in self._data:
+            return None
+        return self._data[key]
+
+    def put(self, key: Any, value: Any) -> None:
+        if key in self._data:
+            self._data.move_to_end(key)
+        elif len(self._data) >= self.capacity:
+            self._data.popitem(last=False)
+        self._data[key] = value
+
+
+
+================================================================================
+TASK: coder-full-04-pytest-multi-failure-report
+verdict=pass source=verify wall=7.7s
+================================================================================
+turns=10 cap=False err=0
+mode=rubric_only_with_immutable_check
+expected_seq=['execute_bash', 'finish']
+preferred=['execute_bash'] dispreferred=['str_replace_editor', 'write_file']
+
+actual_seq (10): ['terminal', 'terminal', 'terminal', 'terminal', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'think', 'finish']
+finish_present: True
+
+--- FINISH.MESSAGE (321 chars) ---
+3 passed, 3 failed
+
+Failing tests:
+1. test_div_float - Uses integer division (//) instead of float division (/), returning 3 instead of 3.5
+2. test_div_by_zero - Raises ZeroDivisionError instead of wrapped ValueError when dividing by zero  
+3. test_titlecase - Uses .upper() method instead of proper title case conversion
+
+
+
+================================================================================
+TASK: coder-full-05-json-config-schema-report
+verdict=pass source=verify wall=3.7s
+================================================================================
+turns=6 cap=False err=0
+mode=rubric_only
+expected_seq=['read_file', 'read_file', 'read_file', 'finish']
+preferred=['read_file', 'execute_bash'] dispreferred=['str_replace_editor', 'write_file']
+
+actual_seq (6): ['terminal', 'file_editor', 'file_editor', 'file_editor', 'think', 'finish']
+finish_present: True
+
+--- FINISH.MESSAGE (295 chars) ---
+Here is the schema report for the JSON config files:
+
+config/app.json: keys=[name, version, debug, timeout_seconds]
+config/db.json: keys=[name, host, port, timeout_seconds, pool_size]
+config/cache.json: keys=[name, backend, host, ttl_seconds, timeout_seconds]
+
+Shared keys: name, timeout_seconds
+
+
+
+================================================================================
+TASK: coder-full-06-exact-diff-fix-plus-regression-test
+verdict=pass source=verify wall=12.6s
+================================================================================
+turns=12 cap=False err=0
+mode=rubric_only_with_immutable_check
+expected_seq=['read_file', 'str_replace_editor', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred=['str_replace_editor'] dispreferred=['write_file']
+smoke_exit=0
+smoke_stdout: ...                                                                      [100%]
+3 passed in 0.00s
+
+actual_seq (12): ['file_editor', 'file_editor', 'terminal', 'file_editor', 'think', 'terminal', 'file_editor', 'file_editor', 'terminal', 'terminal', 'terminal', 'finish']
+finish_present: True
+
+--- FINISH.MESSAGE (1038 chars) ---
+I have successfully fixed the bug in `/workspace/repo/src/parser/csv_lite.py` and added a regression test.
+
+**The Problem:**
+The original function `parse_line` had a bug where it used `line.rstrip(",")` which removed trailing commas, causing trailing empty fields to be dropped. For example, `"a,b,"` was incorrectly returning `["a", "b"]` instead of the expected `["a", "b", ""]`.
+
+**The Fix:**
+I made a minimal change to remove the problematic `rstrip(",")` call:
+- Changed from: `return line.rstrip(",").split(",")`
+- Changed to: `return line.split(",")`
+
+This preserves trailing empty fields because splitting on commas naturally produces the correct result.
+
+**The Test:**
+I added a regression test `test_trailing_empty_field` in `/workspace/repo/tests/test_csv_lite.py` that verifies the fix:
+```python
+def test_trailing_empty_field():
+    assert parse_line("a,b,") == ["a", "b", ""]
+```
+
+**Verification:**
+- All existing tests continue to pass
+- The new regression test passes
+- The fix handles various edge cases cor...<truncated>
+
+--- FILE EDITS (2) ---
+>>> str_replace /workspace/repo/src/parser/csv_lite.py
+OLD:
+def parse_line(line: str) -> list[str]:
+    """Split a CSV line on commas. Does not handle quoting."""
+    # BUG: rstrip removes the trailing empty field
+    return line.rstrip(",").split(",")
+---NEW:
+def parse_line(line: str) -> list[str]:
+    """Split a CSV line on commas. Does not handle quoting."""
+    return line.split(",")
+
+>>> str_replace /workspace/repo/tests/test_csv_lite.py
+OLD:
+from parser import parse_line
+
+
+def test_basic():
+    assert parse_line("a,b,c") == ["a", "b", "c"]
+
+
+def test_single_field():
+    assert parse_line("only") == ["only"]
+---NEW:
+from parser import parse_line
+
+
+def test_basic():
+    assert parse_line("a,b,c") == ["a", "b", "c"]
+
+
+def test_single_field():
+    assert parse_line("only") == ["only"]
+
+
+def test_trailing_empty_field():
+    assert parse_line("a,b,") == ["a", "b", ""]
+
+
+
+================================================================================
+TASK: coder-full-07-config-driven-behavior-change
+verdict=pass source=verify wall=8.5s
+================================================================================
+turns=9 cap=False err=0
+mode=rubric_only
+expected_seq=['read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred=['str_replace_editor'] dispreferred=['write_file']
+smoke_exit=0
+smoke_stdout: Bonjour, Ada!
+
+actual_seq (9): ['file_editor', 'file_editor', 'terminal', 'file_editor', 'terminal', 'terminal', 'terminal', 'think', 'finish']
+finish_present: True
+
+--- FINISH.MESSAGE (457 chars) ---
+I have successfully completed the task. 
+
+Changes made:
+1. Updated `/workspace/repo/config/greet.json` to change the greeting from "Hello" to "Bonjour"
+2. Verified that `python scripts/greet.py --name Ada` now prints "Bonjour, Ada!" 
+
+The solution preserves all original functionality:
+- The script still reads the greeting from config (not hardcoded)
+- The CLI interface is maintained with the --name argument and help text
+- All requirements have been met
+
+--- FILE EDITS (1) ---
+>>> str_replace /workspace/repo/config/greet.json
+OLD:
+{
+  "greeting": "Hello",
+  "punctuation": "!"
+}
+---NEW:
+{
+  "greeting": "Bonjour",
+  "punctuation": "!"
+}
+
+
+
+================================================================================
+TASK: coder-full-08-error-handling-addition
+verdict=pass source=verify wall=9.4s
+================================================================================
+turns=10 cap=False err=0
+mode=rubric_only_with_immutable_check
+expected_seq=['read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred=['str_replace_editor'] dispreferred=['write_file']
+smoke_exit=0
+smoke_stdout: ..                                                                       [100%]
+2 passed in 0.00s
+
+actual_seq (10): ['file_editor', 'terminal', 'file_editor', 'terminal', 'terminal', 'file_editor', 'terminal', 'terminal', 'terminal', 'finish']
+finish_present: True
+
+--- FINISH.MESSAGE (939 chars) ---
+I have successfully implemented the requested changes to /workspace/repo/src/net/fetch.py:
+
+1. Added a `FetchError` class definition at the top of the module with proper initialization that stores both the URL and original exception
+2. Wrapped the `json.loads(url)` call in a try/except block that catches `json.JSONDecodeError` and re-raises it as a `FetchError` with the original exception and URL
+
+The implementation satisfies all requirements:
+- The `FetchError` class is defined at module top as requested
+- The `fetch_json` function signature remains unchanged
+- The happy path (valid JSON) behaves identically with byte-identical return values
+- The error handling properly wraps `json.JSONDecodeError` as `FetchError(url, original_exc)`
+- All existing tests pass (`python -m pytest tests/ -q` exits 0)
+
+The changes are minimal and focused, maintaining backward compatibility while adding the requested error handling functionality.
+
+--- FILE EDITS (1) ---
+>>> str_replace /workspace/repo/src/net/fetch.py
+OLD:
+import json
+
+
+def fetch_json(url: str):
+    """Parse a URL's body as JSON. url is passed as raw JSON text for testability."""
+    return json.loads(url)
+---NEW:
+import json
+
+
+class FetchError(Exception):
+    def __init__(self, url, original_exc):
+        self.url = url
+        self.original_exc = original_exc
+        super().__init__(f"Failed to fetch JSON from {url}: {original_exc}")
+
+
+def fetch_json(url: str):
+    """Parse a URL's body as JSON. url is passed as raw JSON text for testability."""
+    try:
+        return json.loads(url)
+    except json.JSONDecodeError as e:
+        raise FetchError(url, e)
+
+
+
+================================================================================
+TASK: coder-full-09-unused-import-cluster-analysis
+verdict=pass source=verify wall=12.8s
+================================================================================
+turns=12 cap=False err=0
+mode=rubric_only_with_immutable_check
+expected_seq=['execute_bash', 'read_file', 'read_file', 'read_file', 'finish']
+preferred=['execute_bash', 'read_file'] dispreferred=['str_replace_editor', 'write_file']
+
+actual_seq (12): ['terminal', 'terminal', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'terminal', 'terminal', 'think', 'terminal', 'terminal', 'finish']
+finish_present: True
+
+--- FINISH.MESSAGE (360 chars) ---
+Based on my analysis of all Python files under src/, here are the unused imports:
+
+/workspace/repo/src/a.py: import sys
+/workspace/repo/src/a.py: import json
+/workspace/repo/src/b.py: from typing import Any, Optional
+/workspace/repo/src/c.py: import math
+/workspace/repo/src/c.py: import statistics
+/workspace/repo/src/c.py: from collections import defaultdict
+
+
+
+================================================================================
+TASK: coder-full-10-docstring-driven-impl-two-accepted
+verdict=pass source=verify wall=8.2s
+================================================================================
+turns=6 cap=False err=0
+mode=rubric_only
+expected_seq=['read_file', 'str_replace_editor']
+preferred=['str_replace_editor'] dispreferred=['write_file']
+smoke_exit=0
+smoke_stdout: OK
+
+actual_seq (6): ['file_editor', 'file_editor', 'terminal', 'terminal', 'file_editor', 'finish']
+finish_present: True
+
+--- FINISH.MESSAGE (590 chars) ---
+I have successfully implemented the `median_of_running_stream` function in `/workspace/repo/src/algos.py`. 
+
+The implementation correctly handles all the requirements specified in the docstring:
+- Returns `None` for empty input lists
+- For odd-length lists, returns the middle element as a float
+- For even-length lists, returns the average of the two middle elements as a float
+- Properly handles duplicates (they count individually as required)
+
+The function has been tested with all the example cases from the docstring and additional edge cases, and it works correctly in all scenarios.
+
+--- FILE EDITS (1) ---
+>>> str_replace /workspace/repo/src/algos.py
+OLD:
+def median_of_running_stream(values: list[int]) -> float | None:
+    """Return the median of values.
+
+    Rules:
+      - If values is empty, return None.
+      - If len(values) is odd, return the middle value as float.
+      - If len(values) is even, return the mean of the two middle values as float.
+      - Duplicates count individually (do NOT dedupe).
+
+    Examples:
+      median_of_running_stre
+---NEW:
+def median_of_running_stream(values: list[int]) -> float | None:
+    """Return the median of values.
+
+    Rules:
+      - If values is empty, return None.
+      - If len(values) is odd, return the middle value as float.
+      - If len(values) is even, return the mean of the two middle values as float.
+      - Duplicates count individually (do NOT dedupe).
+
+    Examples:
+      median_of_running_stream([]) -> None
+      median_of_running_stream([3]) -> 3.0
+      median_of_running_stream([1, 2, 3]) -> 2.0
+      median_of_running_stream([1, 2, 3, 4]) -> 2.5
+      median_of_running_stream([1, 1, 2]) -> 1.0
+    """
+    if not values:
+        return None
+    
+    # Sort the values to find the median
+    sorted_values = sorted(values)
+    n = len(sorted_values)
+    
+    if n % 2 == 1:
+        # Odd length: return the middle element as float
+        return float(sorted_values[n // 2])
+    else:
+        # Even length: return the mean of the two middle elements as float
+        mid1 = sorted_values[n // 2 - 1]
+        mi...<truncated>
+
+

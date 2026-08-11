@@ -1428,3 +1428,23 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Stop-condition status:** gate-3 DoD step 4 (fixture lock + verification) COMPLETE. Ready to execute pre-flight then probes on Colossus.
 
 ---
+
+## 2026-08-11 12:46 EDT — Phase 0.3 gate-3 verdict: CONFIRM AWQ (ADR-0029 filed)
+
+- **Stage / plugin / port:** Phase 0.3 gate-3 · coder role selection · bench harness (Full-tier multi-turn) — GATE-3 CLOSED
+- **What changed:** Scored both Full-tier probes (`bench/scoring/full-coder/probes/{awq,35b}.probe.json`, committed 7a03d49) against locked gold in `bench/gold/coder-full-multi-turn/*.md` per rubric `bench/rubrics/full-scored.json` (post_hoc_edit_locked). Per-task 0-100 scoring on all 20 (2 candidates × 10 tasks) recorded in `bench/scoring/full-coder/SCORING_20260811.md`. Macro: AWQ 88.1, 35b 66.0 (Δ −22.1). 35b omitted FinishAction on **all 3** report-style tasks (F04, F05, F09), collapsing them to functional zero — the exact failure mode ADR-0027's post-medium probe predicted. Applied ADR-0028's pre-locked reversal criteria mechanically: `flip_to_35b_a3b_q4kxl_if` fails all 3 sub-clauses; `confirm_awq_if` fires on all 3 clauses independently. Verdict: CONFIRM AWQ. Filed ADR-0029 recording per-task scores, mechanical reversal-criterion evaluation, failure-mode analysis, and alternatives-considered. Extractor evolution logged (Kosmos DEBUG_LOG discipline): initial dump script assumed `raw_content` carried the JSON payload; actual shape is `detail: str` (JSON-serialized) with per-task `tool_trace[]` where `finish` actions carry the report content in `args.message` — extractor v2 handles this correctly.
+- **Files touched:**
+  - `adrs/ADR-0029-phase-0-3-gate-3-coder-verdict-confirm-awq.md` (created; ratified)
+  - `adrs/README.md` (row 0029 appended)
+  - `bench/scoring/full-coder/SCORING_20260811.md` (per-task scoring rationale)
+  - `bench/scoring/full-coder/extract_deliverables.py` (v1 extractor — preserved, not deleted)
+  - `bench/scoring/full-coder/extract_v2.py` (v2 extractor with finish.message + edits)
+  - `bench/scoring/full-coder/probes/{awq,35b}_deliverables.txt` (v1 output — preserved)
+  - `bench/scoring/full-coder/probes/{awq,35b}_v2.txt` (v2 output — used for scoring)
+  - `SESSION_HANDOFF.md` (will overwrite to reflect gate-3 CLOSED)
+  - `BUILD_LOG.md` (this entry)
+- **Ports / adapters affected:** none (verdict-only ADR; production coder unchanged from ADR-0027).
+- **PORTING_LEDGER / ADR updated:** ADR-0029 filed (Ratified). ADR-0028 gate-3 DoD steps 5-7 now complete.
+- **Stop-condition status:** **Phase 0.3 gate-3 CLOSED.** All DoD met: task-set + rubric + gold + reversal criteria locked (steps 1-4); both probes executed with real SDK+Docker path (step 5); scored against gold with reasoning (step 6); verdict ADR filed (step 7). Next: Phase 0.4 embedder Full-tier re-eval.
+
+---

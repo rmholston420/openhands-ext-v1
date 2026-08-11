@@ -1,0 +1,228 @@
+# bench/scoring/full-coder/probes/35b.probe.json
+# role: coder  notes: harness=v1 sdk=openhands-sdk max_iter=20 ws_boot=4.39s image=ghcr.io/openhands/agent-server:latest-python
+
+============================================================================
+TASK: coder-full-01-multifile-refactor-with-invariant
+verdict=pass source=verify wall=20.6s
+============================================================================
+turn_count=16 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only
+expected_tool_sequence=['read_file', 'read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred_tools=['str_replace_editor']
+dispreferred_tools=['write_file']
+run_error: None
+smoke_exit=0
+smoke_stdout (98 chars):
+...                                                                      [100%]
+3 passed in 0.00s
+
+
+actual_tool_sequence (16): ['file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'terminal', 'terminal']
+finish_in_tools=False
+
+--- terminal outputs (3) ---
+$ cd /workspace/repo && python -m pytest tests/ -q
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '/usr/local/bin/python: No module named pytest'}], 'is_error': False, 'command': 'cd /workspace/repo && python -m pytest tests/ -q', 'exit_code': 1, 'timeout': False, 'metadata': {'exit_code': 1, 'pid': -1, 'username': 'openhands', 'hostname': '294cdbadd34f', 'working_dir': '/workspace/repo', 'py_interpreter_path': '/usr/local/bin/python', 'prefix': '', 'suffix': '\n[The command completed with exit code 1.]'}, 'full_output_save_dir': 'workspace/conversations/aec5ca264eba45299fe34f5878b1fafe/observations', 'kind': 'TerminalObservation'}
+
+$ cd /workspace/repo && pip install pytest -q
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': "WARNING: The script pygmentize is installed in '/home/openhands/.local/bin' which is not on PATH.\n  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.\n  WARNING: The scripts py.test and pytest are installed in '/home/openhands/.local/bin' which is not on PATH.\n  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.\n\n[notice] A new release of pip is available: 26.1.2 -> 26.2.1\n[notice] To update, run: pip install --upgrade pip"}], 'is_error': False, 'command': 'cd /workspace/repo && pip install pytest -q', 'exit_code': 0, 'timeout': False, 'metadata': {'exit_code': 0, 'pid': -1, 'username': 'openhands', 'hostname': '294cdbadd34f', 'working_dir': '/workspace/repo', 'py_interpreter_path': '/usr/local/bin/python', 'prefix': '', 'suffix': '\n[The command completed with exit code 0.]'}, 'full_output_save_dir': 'workspace/conversations/aec5ca264eba45299fe34f5878b1fafe/observations', 'kind': 'TerminalObservation'}
+
+$ cd /workspace/repo && python -m pytest tests/ -q
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '...                                                                                                                                                                                                                                                      [100%]\n3 passed in 0.01s'}], 'is_error': False, 'command': 'cd /workspace/repo && python -m pytest tests/ -q', 'exit_code': 0, 'timeout': False, 'metadata': {'exit_code': 0, 'pid': -1, 'username': 'openhands', 'hostname': '294cdbadd34f', 'working_dir': '/workspace/repo', 'py_interpreter_path': '/usr/local/bin/python', 'prefix': '', 'suffix': '\n[The command completed with exit code 0.]'}, 'full_output_save_dir': 'workspace/conversations/aec5ca264eba45299fe34f5878b1fafe/observations', 'kind': 'TerminalObservation'}
+
+
+
+============================================================================
+TASK: coder-full-02-bug-hunt-cross-module
+verdict=pass source=verify wall=9.0s
+============================================================================
+turn_count=10 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only_with_immutable_check
+expected_tool_sequence=['execute_bash', 'read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred_tools=['str_replace_editor', 'execute_bash']
+dispreferred_tools=['write_file']
+run_error: None
+smoke_exit=0
+smoke_stdout (98 chars):
+...                                                                      [100%]
+3 passed in 0.00s
+
+
+actual_tool_sequence (10): ['file_editor', 'terminal', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'terminal']
+finish_in_tools=False
+
+--- terminal outputs (2) ---
+$ cd /workspace/repo && python -m pytest tests/test_discount.py -q 2>&1
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '.FF                                                                                                                                                                                                                                                      [100%]\n=========================================================================================================================== FAILURES ===========================================================================================================================\n_________________________________________________________________________________________________________________ test_apply_discount_percent __________________________________________________________________________________________________________________\n\n    def test_apply_discount_percent():\n        # 20% off 100 should be 80\n>       assert apply_discount(100.0, 20) == 80.0\nE       assert -1900.0 == 80.0\nE        +  where -1900.0 = apply_discount(100.0, 20)\n\ntests/test_discount.py:10: AssertionError\n___________________________________________________________________________________________________________________ test_apply_discount_full ___________________________________________________________________________________________________________________\n\n    def test_apply_discount_full():\n        # 100% off should be 0\n>       assert apply_discount(100.0, 100) == 0.0\nE       assert -9900.0 == 
+
+$ cd /workspace/repo && python -m pytest tests/ -q 2>&1
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '...                                                                                                                                                                                                                                                      [100%]\n3 passed in 0.00s'}], 'is_error': False, 'command': 'cd /workspace/repo && python -m pytest tests/ -q 2>&1', 'exit_code': 0, 'timeout': False, 'metadata': {'exit_code': 0, 'pid': -1, 'username': 'openhands', 'hostname': '294cdbadd34f', 'working_dir': '/workspace/repo', 'py_interpreter_path': '/usr/local/bin/python', 'prefix': '', 'suffix': '\n[The command completed with exit code 0.]'}, 'full_output_save_dir': 'workspace/conversations/b0334387d1db405aaef03be7d3a53a24/observations', 'kind': 'TerminalObservation'}
+
+
+
+============================================================================
+TASK: coder-full-03-feature-add-read-first-unfamiliar
+verdict=pass source=verify wall=9.1s
+============================================================================
+turn_count=5 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only_with_immutable_check
+expected_tool_sequence=['read_file', 'str_replace_editor', 'execute_bash']
+preferred_tools=['str_replace_editor']
+dispreferred_tools=['write_file']
+run_error: None
+smoke_exit=0
+smoke_stdout (98 chars):
+...                                                                      [100%]
+3 passed in 0.00s
+
+
+actual_tool_sequence (5): ['file_editor', 'file_editor', 'file_editor', 'terminal', 'finish']
+finish_in_tools=True
+
+--- terminal outputs (1) ---
+$ cd /workspace/repo && python -m pytest tests/ -q
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '...                                                                                                                                                                                                                                                      [100%]\n3 passed in 0.01s'}], 'is_error': False, 'command': 'cd /workspace/repo && python -m pytest tests/ -q', 'exit_code': 0, 'timeout': False, 'metadata': {'exit_code': 0, 'pid': -1, 'username': 'openhands', 'hostname': '294cdbadd34f', 'working_dir': '/workspace/repo', 'py_interpreter_path': '/usr/local/bin/python', 'prefix': '', 'suffix': '\n[The command completed with exit code 0.]'}, 'full_output_save_dir': 'workspace/conversations/d4e19d0266eb49d7a0db81ab06e7012a/observations', 'kind': 'TerminalObservation'}
+
+
+
+============================================================================
+TASK: coder-full-04-pytest-multi-failure-report
+verdict=pass source=verify wall=5.5s
+============================================================================
+turn_count=2 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only_with_immutable_check
+expected_tool_sequence=['execute_bash', 'finish']
+preferred_tools=['execute_bash']
+dispreferred_tools=['str_replace_editor', 'write_file']
+run_error: None
+
+actual_tool_sequence (2): ['file_editor', 'terminal']
+finish_in_tools=False
+
+--- terminal outputs (1) ---
+$ cd /workspace/repo && python -m pytest tests/ -v 2>&1
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '===================================================================================================================== test session starts ======================================================================================================================\nplatform linux -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python\ncachedir: .pytest_cache\nrootdir: /workspace/repo\ncollected 5 items\n\ntests/test_mathx.py::test_add PASSED                                                                                                                                                                                                                     [ 20%]\ntests/test_mathx.py::test_mul PASSED                                                                                                                                                                                                                     [ 40%]\ntests/test_mathx.py::test_div_float FAILED                                                                                                                                                                                                               [ 60%]\ntests/test_mathx.py::test_div_by_zero FAILED                                                                                                                                                                                                             [
+
+
+
+============================================================================
+TASK: coder-full-05-json-config-schema-report
+verdict=pass source=verify wall=4.6s
+============================================================================
+turn_count=4 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only
+expected_tool_sequence=['read_file', 'read_file', 'read_file', 'finish']
+preferred_tools=['read_file', 'execute_bash']
+dispreferred_tools=['str_replace_editor', 'write_file']
+run_error: None
+
+actual_tool_sequence (4): ['file_editor', 'file_editor', 'file_editor', 'file_editor']
+finish_in_tools=False
+
+
+
+============================================================================
+TASK: coder-full-06-exact-diff-fix-plus-regression-test
+verdict=pass source=verify wall=7.7s
+============================================================================
+turn_count=7 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only_with_immutable_check
+expected_tool_sequence=['read_file', 'str_replace_editor', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred_tools=['str_replace_editor']
+dispreferred_tools=['write_file']
+run_error: None
+smoke_exit=0
+smoke_stdout (98 chars):
+...                                                                      [100%]
+3 passed in 0.00s
+
+
+actual_tool_sequence (7): ['file_editor', 'file_editor', 'think', 'file_editor', 'file_editor', 'terminal', 'finish']
+finish_in_tools=True
+
+--- terminal outputs (1) ---
+$ cd /workspace/repo && python -m pytest tests/ -q
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '...                                                                                                                                                                                                                                                      [100%]\n3 passed in 0.00s'}], 'is_error': False, 'command': 'cd /workspace/repo && python -m pytest tests/ -q', 'exit_code': 0, 'timeout': False, 'metadata': {'exit_code': 0, 'pid': -1, 'username': 'openhands', 'hostname': '294cdbadd34f', 'working_dir': '/workspace/repo', 'py_interpreter_path': '/usr/local/bin/python', 'prefix': '', 'suffix': '\n[The command completed with exit code 0.]'}, 'full_output_save_dir': 'workspace/conversations/ae0c2396d3304b34ada60859e32229c8/observations', 'kind': 'TerminalObservation'}
+
+
+
+============================================================================
+TASK: coder-full-07-config-driven-behavior-change
+verdict=pass source=verify wall=7.1s
+============================================================================
+turn_count=6 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only
+expected_tool_sequence=['read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred_tools=['str_replace_editor']
+dispreferred_tools=['write_file']
+run_error: None
+smoke_exit=0
+smoke_stdout (14 chars):
+Bonjour, Ada!
+
+
+actual_tool_sequence (6): ['file_editor', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'finish']
+finish_in_tools=True
+
+
+
+============================================================================
+TASK: coder-full-08-error-handling-addition
+verdict=pass source=verify wall=12.3s
+============================================================================
+turn_count=8 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only_with_immutable_check
+expected_tool_sequence=['read_file', 'read_file', 'str_replace_editor', 'execute_bash']
+preferred_tools=['str_replace_editor']
+dispreferred_tools=['write_file']
+run_error: None
+smoke_exit=0
+smoke_stdout (98 chars):
+..                                                                       [100%]
+2 passed in 0.00s
+
+
+actual_tool_sequence (8): ['file_editor', 'terminal', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'file_editor', 'terminal']
+finish_in_tools=False
+
+--- terminal outputs (1) ---
+$ cd /workspace/repo && python -m pytest tests/ -q
+{'content': [{'cache_prompt': False, 'type': 'text', 'text': '..                                                                                                                                                                                                                                                       [100%]\n2 passed in 0.00s'}], 'is_error': False, 'command': 'cd /workspace/repo && python -m pytest tests/ -q', 'exit_code': 0, 'timeout': False, 'metadata': {'exit_code': 0, 'pid': -1, 'username': 'openhands', 'hostname': '294cdbadd34f', 'working_dir': '/workspace/repo', 'py_interpreter_path': '/usr/local/bin/python', 'prefix': '', 'suffix': '\n[The command completed with exit code 0.]'}, 'full_output_save_dir': 'workspace/conversations/fb056d709f5143569ec0417cfb07f434/observations', 'kind': 'TerminalObservation'}
+
+
+
+============================================================================
+TASK: coder-full-09-unused-import-cluster-analysis
+verdict=pass source=verify wall=14.7s
+============================================================================
+turn_count=7 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only_with_immutable_check
+expected_tool_sequence=['execute_bash', 'read_file', 'read_file', 'read_file', 'finish']
+preferred_tools=['execute_bash', 'read_file']
+dispreferred_tools=['str_replace_editor', 'write_file']
+run_error: None
+
+actual_tool_sequence (7): ['terminal', 'file_editor', 'file_editor', 'file_editor', 'terminal', 'think', 'terminal']
+finish_in_tools=False
+
+
+
+============================================================================
+TASK: coder-full-10-docstring-driven-impl-two-accepted
+verdict=pass source=verify wall=14.0s
+============================================================================
+turn_count=3 hit_iteration_cap=False agent_error_count=0
+expected_final_state_mode=rubric_only
+expected_tool_sequence=['read_file', 'str_replace_editor']
+preferred_tools=['str_replace_editor']
+dispreferred_tools=['write_file']
+run_error: None
+smoke_exit=0
+smoke_stdout (3 chars):
+OK
+
+
+actual_tool_sequence (3): ['file_editor', 'file_editor', 'terminal']
+finish_in_tools=False
+
+
