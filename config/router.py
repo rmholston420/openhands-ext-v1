@@ -107,7 +107,9 @@ class CoderPlannerRouter(RouterLLM):
                 logger.info("CoderPlannerRouter: metadata role=coder → coder")
                 return self.CODER_KEY
 
-        # Fallback path (option 6b): message-content heuristic
+        # Fallback path (option 6b): message-content heuristic.
+        # SDK 1.41 Message.content is list[TextContent | ImageContent | ...];
+        # older shapes may be a bare str. Handle both.
         if self.fallback_message_heuristic and messages:
             last_user = None
             for m in reversed(messages):
@@ -116,7 +118,13 @@ class CoderPlannerRouter(RouterLLM):
                     break
             if last_user is not None:
                 content = getattr(last_user, "content", "") or ""
-                if isinstance(content, str) and "[role:planner]" in content:
+                if isinstance(content, list):
+                    text = "".join(
+                        str(getattr(block, "text", "") or "") for block in content
+                    )
+                else:
+                    text = str(content)
+                if "[role:planner]" in text:
                     logger.info(
                         "CoderPlannerRouter: fallback heuristic matched → planner"
                     )

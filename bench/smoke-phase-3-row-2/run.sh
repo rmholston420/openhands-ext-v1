@@ -61,7 +61,6 @@ from config.agent import (
     _load_max_output_tokens,
 )
 from config.router import CoderPlannerRouter
-from openhands.sdk.llm.llm import LLMCallContext
 from openhands.sdk.llm.message import Message, TextContent
 
 # Extract the verbatim prompt (same pattern as row-1)
@@ -78,19 +77,27 @@ coder = build_coder_llm(mot["coder"])
 planner = build_planner_llm(mot["planner"])
 router = build_router(coder=coder, planner=planner)
 
-# Sanity: routing decision alone (no network)
-messages = [Message(role="user", content=[TextContent(text=PROMPT)])]
-ctx = LLMCallContext(metadata={"role": "planner"})
-selected = router.select_llm(messages, ctx)
-print(f"select_llm(planner-ctx) → {selected!r}")
+# Path B (ADR-0033 amend #5): route via [role:planner] marker in user content.
+# PROMPT extracted from task.md already contains the marker.
+messages_marker = [Message(role="user", content=[TextContent(text=PROMPT)])]
+messages_control = [
+    Message(
+        role="user",
+        content=[TextContent(text="Write a hello world function in Python.")],
+    )
+]
 
-# Also verify default (no ctx) goes to coder
-selected_default = router.select_llm(messages, None)
-print(f"select_llm(no-ctx)      → {selected_default!r}")
+# Sanity: routing decisions alone (no network)
+selected_marker = router.select_llm(messages_marker, None)
+print(f"select_llm(marker)   → {selected_marker!r}")
 
+selected_control = router.select_llm(messages_control, None)
+print(f"select_llm(control)  → {selected_control!r}")
+
+# Real completion with the marker payload
 t0 = time.time()
 try:
-    response = router.completion(messages=messages, call_context=ctx)
+    response = router.completion(messages=messages_marker)
     err = None
 except Exception as e:
     response = None
@@ -116,8 +123,8 @@ if response is not None:
 
 verdict = {
     "wall_seconds": round(wall, 2),
-    "select_llm_planner_ctx": selected,
-    "select_llm_no_ctx": selected_default,
+    "select_llm_marker": selected_marker,
+    "select_llm_control": selected_control,
     "planner_base_url": planner_url,
     "coder_base_url": coder_url,
     "active_llm_base_url_after_completion": active_url,
@@ -127,8 +134,8 @@ verdict = {
     "error": err,
     "under_30s": wall < 30,
     "pass": all([
-        selected == "planner",
-        selected_default == "coder",
+        selected_marker == "planner",
+        selected_control == "coder",
         routed_to_planner,
         err is None,
         len(response_text) > 0,

@@ -1680,3 +1680,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** LLMPort (RouterLLM→CoderPlannerRouter→vLLM coder), ToolPort (TerminalTool, FileEditorTool via `get_default_tools`).
 - **PORTING_LEDGER / ADR updated:** ADR-0033 amend #3 (17:47 EDT).
 - **Stop-condition status:** Phase 3 row-1 DoD MET. Row 2 (planner routing via `LLMCallContext.metadata["role"]="planner"`) is next.
+
+## 2026-08-11 18:01 EDT — ADR-0033 amend #5: Path B (marker heuristic) selected
+
+- **Stage / plugin / port:** Phase 2.4 · CoderPlannerRouter · Phase 3 row-2 verification
+- **What changed:** Switched planner-routing implementation from Path A (metadata) to Path B (message-content marker) after SDK inspection revealed `LLMCallContext` has no `metadata` field.
+- **Files touched:** `config/agent.py`, `config/router.py`, `bench/smoke-phase-3-row-2/task.md`, `bench/smoke-phase-3-row-2/run.sh`, `adrs/ADR-0033-phase-2-4-config-surface-python-not-toml.md`, `DEBUG_LOG.md`
+- **Ports / adapters affected:** CoderPlannerRouter (message-content heuristic now primary; metadata path retained as forward-compat)
+- **PORTING_LEDGER / ADR updated:** ADR-0033 amend #5
+- **Stop-condition status:** in-progress — row-2 verdict pending re-run

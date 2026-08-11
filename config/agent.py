@@ -168,7 +168,17 @@ def build_embedder_llm() -> LLM:
 
 
 def build_router(coder: LLM, planner: LLM) -> CoderPlannerRouter:
-    """CoderPlannerRouter dispatching via LLMCallContext.metadata['role']."""
+    """CoderPlannerRouter with Path B message-marker routing (ADR-0033 amend #5).
+
+    SDK 1.41's ``LLMCallContext`` is a frozen dataclass exposing only
+    ``prompt_cache_key`` and ``session_id`` — no ``metadata`` field. Option 6c
+    (metadata-based routing) is not implementable without forking the SDK.
+    Amend #5 (2026-08-11 18:01 EDT) formally selects Path B (option 6b):
+    ``fallback_message_heuristic=True`` inspects the last user message for a
+    ``[role:planner]`` marker. Path A's ``completion()`` override remains in
+    place as forward-compatibility — no-op today, active if the SDK later
+    exposes ``metadata`` on ``LLMCallContext``.
+    """
     return CoderPlannerRouter(
         model="openai/coder-planner-router",  # placeholder; router intercepts
         api_key=_LOCAL_API_KEY,
@@ -177,6 +187,7 @@ def build_router(coder: LLM, planner: LLM) -> CoderPlannerRouter:
             CoderPlannerRouter.CODER_KEY: coder,
             CoderPlannerRouter.PLANNER_KEY: planner,
         },
+        fallback_message_heuristic=True,
     )
 
 

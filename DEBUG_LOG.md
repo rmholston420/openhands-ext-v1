@@ -648,3 +648,16 @@ Entry format:
 - **Fix applied:** `LLMSummarizingCondenser.max_tokens=30000` (safety-net trigger, well above system prompt overhead). Spec §2.4's "1024" intent moved to `LLM.max_output_tokens=1024` on the condenser LLM (caps SUMMARY TEXT length, which is the actual semantic intent). See ADR-0033 STATUS AMENDMENT 2026-08-11 17:47 EDT.
 - **Files changed:** `config/agent.py`, `adrs/ADR-0033-phase-2-4-config-surface-python-not-toml.md`.
 - **Supersedes:** 2026-08-11 17:25 EDT (previous amend that mis-identified `max_tokens` as a summary output cap).
+
+## 2026-08-11 18:01 EDT — LLMCallContext has no `metadata` field in SDK 1.41
+
+- **Symptom:** `TypeError: LLMCallContext.__init__() got an unexpected keyword argument 'metadata'` when row-2 smoke tried `LLMCallContext(metadata={"role": "planner"})`.
+- **Affected stage / plugin / port:** Phase 3 verification · CoderPlannerRouter (`config/router.py`) · `build_router` (`config/agent.py`)
+- **Root cause:** ADR-0033 option 6c (route via `LLMCallContext.metadata["role"]`) was authored without inspecting the SDK. Direct inspection of `openhands.sdk.llm.llm.LLMCallContext` (line 189) shows it is a `@dataclass(frozen=True)` with only two fields: `prompt_cache_key: str | None` and `session_id: str | None`. No `metadata` field exists in SDK 1.41. The base class `RouterLLM.completion()` still accepts and forwards `call_context`, but there is no way to attach role information to it. Path A (amend #4) was built on an incorrect model of the SDK — it works mechanically (the completion override does run), but there is no metadata to route on, so it always falls through to the coder default.
+- **Fix applied:**
+  1. `config/agent.py::build_router` now sets `fallback_message_heuristic=True`, activating Path B (option 6b).
+  2. `config/router.py::CoderPlannerRouter.select_llm` fallback path fixed to handle `content: list[TextContent]` (SDK 1.41 shape), not just `content: str`.
+  3. ADR-0033 amended (amend #5) to record option 6c is unreachable and Path B is now primary.
+  4. Path A's `completion()` override retained as forward-compatibility: if a future SDK adds `metadata`, it activates automatically and Path B becomes dormant.
+- **Files changed:** `config/agent.py`, `config/router.py`, `bench/smoke-phase-3-row-2/task.md`, `bench/smoke-phase-3-row-2/run.sh`, `adrs/ADR-0033-phase-2-4-config-surface-python-not-toml.md`
+- **Related BUILD_LOG entry:** 2026-08-11 18:01 EDT
