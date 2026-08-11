@@ -585,3 +585,23 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
   - **Planner-fast:** met (2 survivors locked; spec-compliant).
   - **Embedder-fast:** met (6/6 pass).
   - Both roles ready for Medium-tier queue.
+
+
+## 2026-08-11 05:20 EDT — ADR-0014 filed; coder-fast pool reinstated from 2 → 4 cells
+
+- **Stage / plugin / port:** Phase 0.1 · Fast tier · coder pool
+- **What changed:**
+  - **ADR-0014 filed (Ratified).** Reverses prior coder-fast eliminations recorded at BUILD_LOG 2026-08-11 04:36 EDT (`qwen3-coder-30b-a3b-instruct-awq-4bit`) and 2026-08-11 04:45 EDT (`qwen3_6-27b-q6k-gguf`). Both eliminations were made under the same rubric-compliance bug fixed in commit `9d4f6b0` — the runner's `_apply_fast_rubric` promoted any single-task malformation to a full-cell fail via `verdict_from_probe`, contradicting the ratified rubric R2 threshold of ">1 malformed". Rubric text itself was NEVER edited (`post_hoc_edit_policy` honored). Rescore evidence via `scripts/summarize-fast-verdicts.py`: `qwen3_6-27b-q6k-gguf` 4/4 pass; `qwen3-coder-30b-a3b-instruct-awq-4bit` 1 pass + 1 fail (rubric-compliant reduction).
+  - **`bench/candidates/coder-fast-pool.json`** rewritten from 2 → 4 cells: thinker AWQ (vLLM, hermes+qwen3), coder-instruct AWQ (vLLM, qwen3_coder), 27B Q6_K (llama.cpp), 35B Q4_K_XL (llama.cpp). No re-run required — rescored `.json` files stamped with harness commit are authoritative.
+  - **ADR-0011 amendment** prepended: AMENDMENT 3 partially reversed by ADR-0014 (parser-per-cell plumbing untouched).
+  - **`adrs/README.md`** updated with ADR-0014 row and ADR-0011 status annotation.
+- **Files touched:**
+  - `adrs/ADR-0014-coder-fast-pool-reinstate-r2-warning-survivors.md` (new)
+  - `adrs/ADR-0011-fast-tier-coder-tool-call-parser-hermes.md` (STATUS AMENDMENT prepended)
+  - `adrs/README.md` (index row + ADR-0011 status)
+  - `bench/candidates/coder-fast-pool.json` (2 → 4 cells)
+  - `scripts/summarize-fast-verdicts.py` (already committed at `b0d44c3` — informed this decision)
+  - `BUILD_LOG.md`, `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0014 Ratified; ADR-0011 amended (status annotation, not content).
+- **Stop-condition status:** met — coder-fast pool restored to 4 cells based on the ratified rubric applied to persisted probe evidence. All three roles' Fast-tier pools now locked: coder = 4, planner = 2, embedder = 6. Ready for Phase 0.2 Medium-tier authoring.

@@ -1,49 +1,44 @@
-# Kosmos Session Handoff — 2026-08-11 05:15 EDT
+# Kosmos Session Handoff — 2026-08-11 05:20 EDT
 
 ## Current build-sequencing position
-- **Stage / phase:** Phase 0.1 · Fast tier · **complete for planner and embedder**
-- **Next slice:** Phase 0.1 · Fast-tier confirmation smoke (optional) OR move to Phase 0.2 Medium tier queue.
-- **Port(s) in progress:** none.
+- **Stage / phase:** Phase 0.1 · Fast tier · **complete for all three roles**
+- **Next slice:** Phase 0.2 Medium tier authoring
+- **Port(s) in progress:** none
+
+## Fast-tier pools locked
+
+| Role | Cells | Members |
+|---|---:|---|
+| Coder | 4 | thinker-2507-awq (vllm/gpu), coder-30b-a3b-instruct-awq-4bit (vllm/gpu), qwen3_6-27b-q6k-gguf (llama.cpp/gpu), qwen3_6-35b-a3b-q4kxl-gguf (llama.cpp/gpu) |
+| Planner | 2 | qwen3_6-27b-q6k-gguf (llama.cpp/gpu), qwen3_6-35b-a3b-q4kxl-gguf (llama.cpp/gpu) |
+| Embedder | 6 | 0.6B bf16 vllm/gpu, 0.6B Q8 llama.cpp gpu+cpu, 4B bf16 vllm/gpu, 4B Q8 llama.cpp gpu+cpu |
 
 ## Completed this session
-- Coder-fast pool 4 → 3 → 2 (commits `951f580`, `eeb4a1c`) with confirmation smoke 2/2 pass.
-- Planner-fast POOL executed (harness `35382dd`); rescored under `3022385` after harness rubric-compliance fix. **Locked at 2 survivors:**
-  - `qwen3_6-27b-q6k-gguf` (llama.cpp/gpu)
-  - `qwen3_6-35b-a3b-q4kxl-gguf` (llama.cpp/gpu)
-  - Eliminated: `qwen3-30b-a3b-thinking-2507-awq` (vLLM/gpu) — R2 (2 malformed), legitimate on merit; Thinking-2507 checkpoint cannot honor `enable_thinking=false` at 4096-token budget.
-- Embedder-fast POOL: **6/6 pass, locked.**
-- Rubric-compliance harness fix committed (`9d4f6b0` + `3022385`) with rescore tool.
-- BUILD_LOG appended (three entries this session); DEBUG_LOG appended (rubric-compliance bug + Thinking-2507 unfit); rescore tool ergonomic fix.
-
-## Fast-tier survivors (both roles)
-
-| Role | Survivor | Runtime | Median wall | tok/s | VRAM peak |
-|---|---|---|---|---|---|
-| Planner | qwen3_6-27b-q6k-gguf | llama.cpp/gpu | 4.44s | 60 | 24135 MiB |
-| Planner | qwen3_6-35b-a3b-q4kxl-gguf | llama.cpp/gpu | 0.86s | 255 | 23266 MiB |
-| Embedder | qwen3-embedding:0.6b bf16 | vllm/gpu | — | — | small |
-| Embedder | qwen3-embedding:0.6b Q8 | llama.cpp/gpu | — | — | small |
-| Embedder | qwen3-embedding:0.6b Q8 | llama.cpp/cpu | — | — | — |
-| Embedder | qwen3-embedding:4b bf16 | vllm/gpu | — | — | ≤6708 MiB |
-| Embedder | qwen3-embedding:4b Q8 | llama.cpp/gpu | — | — | ≤6708 MiB |
-| Embedder | qwen3-embedding:4b Q8 | llama.cpp/cpu | — | — | — |
+- Coder-fast (early): pool built 4 → prior lock 2 (04:36 + 04:45 EDT).
+- Planner-fast POOL run (04:57–04:59 EDT); embedder-fast POOL run (04:59–05:03 EDT). Embedder 6/6 pass.
+- Diagnosed rubric-compliance bug in `_apply_fast_rubric`: single-task-malformed was being flipped to full-cell fail via `verdict_from_probe`, contradicting ratified rubric R2 (">1 malformed → eliminate"). Rubric text untouched.
+- Fixed harness (commit `9d4f6b0`) + rescore tool (`scripts/rescore-fast-verdicts.py`) + import fix (`3022385`) + probe-sidecar-skip (`abefe9c`) + summarizer (`b0d44c3`).
+- Rescored on Colossus. Planner-fast pool locked at 2 (27B Q6_K + 35B Q4_K_XL). Thinker-2507 legitimately eliminated on planner (R2 fail on merit: cannot honor `enable_thinking=false` at 4096-token budget).
+- **Wider rescore revealed both prior coder-fast eliminations (04:36, 04:45) were made under the same rubric bug.** Rescore evidence shows `qwen3_6-27b-q6k-gguf` 4/4 pass and `qwen3-coder-30b-a3b-instruct-awq-4bit` 1 pass + 1 fail. Filed **ADR-0014**: coder-fast pool reinstated from 2 → 4 cells. ADR-0011 amended (AMENDMENT 3 partially reversed).
 
 ## Remaining before current Definition of Done
-- Nothing spec-blocking for planner-fast or embedder-fast — both stop conditions met.
-- Optional Fast-tier confirmation smoke on planner (`--smoke` mode) to catch any regression under fresh cold-starts. Not required by spec.
+- Nothing spec-blocking. All Fast-tier pools locked.
 
 ## Open questions / awaiting user answer
-- Confirmation smoke: run one, or move directly to Medium-tier queue?
-- Medium-tier task-set authoring: which role first — planner or embedder?
+- Medium-tier authoring order: coder, planner, or embedder first?
+- Whether to run an optional Fast-tier confirmation smoke on the reinstated 27B Q6_K + coder-instruct AWQ (spec does NOT require it; rescored evidence is authoritative). If chosen, run against the 4-cell pool file to also re-verify the two survivors.
 
 ## Exact next action
 
 ```bash
 cd ~/dev/openhands-ext-v1 && git fetch origin && git reset --hard origin/main
 
-# Sanity: re-run the rescore glob now that .probe.json is silently skipped —
-# should show only real result rows, no [ERR] lines.
-python3 scripts/rescore-fast-verdicts.py bench/results/phase-0-fast-*.json
-```
+# Verify the 4-cell coder-fast pool file is valid and matches ADR-0014:
+python3 -c "import json,sys; d=json.load(open('bench/candidates/coder-fast-pool.json')); print(f'cells={len(d)}'); [print(f'  {c[\"model\"]}  {c[\"runtime\"]}/{c[\"device\"]}') for c in d]"
 
-Then decide: confirmation smoke or Medium-tier authoring.
+# Optional confirmation smoke on the 4-cell pool (spec-optional):
+# .venv/bin/python scripts/benchmark-tier-runner.py --tier fast --role coder \
+#   --task-set bench/tasks/coder-fast.json \
+#   --rubric bench/rubrics/fast-elimination.json \
+#   --candidate-file bench/candidates/coder-fast-pool.json --smoke
+```
