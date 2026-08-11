@@ -2,7 +2,9 @@
 
 > **STATUS AMENDMENT (2026-08-11):** Retired. Superseded by [ADR-0006](ADR-0006-flashinfer-jit-cache-cu129.md), which installs `flashinfer-jit-cache==0.6.16.post3+cu129` and removes the need for the sampler override. The `scripts/smoke-test-vllm.sh` unconditional export has been removed; a comment in that file now points to ADR-0006 with instructions for temporary re-enable if the JIT cache pairing breaks in a future upgrade. Original decision text preserved below for historical record.
 
-**Status:** Amended · superseded by ADR-0006
+> **STATUS AMENDMENT (2026-08-11 02:26 EDT):** **Reinstated (partial) for the sampler path.** ADR-0006's cu129 JIT cache fixes attention on SM_120, but its `sampling.so` still calls `flashinfer.jit.core.check_cuda_arch()` on every invocation, which fails on SM_120 because the JIT-side capability probe is broken. Verified 2026-08-11 by direct `top_k_top_p_sampling_from_logits` call outside vLLM. `VLLM_USE_FLASHINFER_SAMPLER=0` is now baked into `bench/runner/main.py` VLLMServer env dict. Remains active until flashinfer >0.6.16.post3 ships a fixed capability probe.
+
+**Status:** Ratified (reinstated 2026-08-11 02:26 EDT for sampler path) · ADR-0006 remains authoritative for attention
 **Lock-in phase:** Phase -1 §-1.5
 **Supersedes:** —
 

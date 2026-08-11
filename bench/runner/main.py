@@ -399,6 +399,16 @@ def _make_server(
             served_name=cand.slug,
             progress=progress,
             log_dir=log_dir,
+            env={
+                # ADR-0005 sampler escape hatch (see ADR-0006 amendment).
+                # flashinfer 0.6.16.post3 sampling.so still gates on
+                # check_cuda_arch() which fails on SM_120 despite cu129
+                # AOT install. Route sampling through native torch top-k/top-p.
+                # Verified 2026-08-11: direct call to
+                # top_k_top_p_sampling_from_logits fails identically to vLLM's
+                # EngineCore crash. AOT install fixed attention but not sampling.
+                "VLLM_USE_FLASHINFER_SAMPLER": "0",
+            },
         )
 
     if cand.runtime == "llama.cpp":

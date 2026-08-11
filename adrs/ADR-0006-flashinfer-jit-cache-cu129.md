@@ -1,8 +1,10 @@
 # ADR-0006 — flashinfer SM_120 support via `flashinfer-jit-cache==0.6.16.post3+cu129`
 
-**Status:** Ratified
+> **STATUS AMENDMENT (2026-08-11 02:26 EDT):** Original ratification covered only the attention path. Phase 0.1 runner's first sampler-exercising smoke revealed that `sampling.so` (shipped in the cu129 JIT cache) still gates every call on `flashinfer.jit.core.check_cuda_arch()`, which fails on SM_120 because a separate broken device-capability probe returns a sub-sm75 stub. The 00:50 EDT verification record was empty (`probes: []`, `verdict: None`) — it validated `/v1/models` health only, never sampling. **ADR-0005 sampler escape hatch (`VLLM_USE_FLASHINFER_SAMPLER=0`) is reinstated as active** for the sampler path and baked into `bench/runner/main.py`. Attention path from this ADR remains correct. See DEBUG_LOG 2026-08-11 02:26 EDT for the direct-call verification.
+
+**Status:** Ratified · Amended (sampler path deferred to ADR-0005)
 **Lock-in phase:** Phase -1 §-1.5 (retroactive) → Phase 0 prerequisite
-**Supersedes:** ADR-0005 (workaround `VLLM_USE_FLASHINFER_SAMPLER=0`)
+**Supersedes:** ADR-0005 (workaround `VLLM_USE_FLASHINFER_SAMPLER=0`) — **partially rescinded 2026-08-11 02:26 EDT**; ADR-0005 remains active for sampler until flashinfer >0.6.16.post3 ships a fixed `check_cuda_arch()` or JIT-time capability probe.
 
 ## Context
 

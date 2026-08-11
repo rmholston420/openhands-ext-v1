@@ -161,3 +161,13 @@ Entry format:
 - **Fix applied:** Kill stray vLLM + stop Ollama before real runs. Documented as a pre-run checklist item; not a code fix.
 - **Files changed:** none.
 - **Related BUILD_LOG entry:** —.
+
+## 2026-08-11 02:26 EDT — flashinfer sampler still fails on SM_120 despite cu129 JIT cache (ADR-0006 verification gap)
+
+- **Symptom:** vLLM 0.27.0 EngineCore crashes during Phase 0.1 smoke at `profile_run → _dummy_sampler_run → topk_topp_sampler.forward_cuda → flashinfer_sample → top_k_top_p_sampling_from_logits → check_cuda_arch` with `RuntimeError: FlashInfer requires GPUs with sm75 or higher`. Preceded by `Failed to get device capability: SM 12.x requires CUDA >= 12.9.`
+- **Affected stage / plugin / port:** Phase 0.1 · Fast-tier runner · vLLM cells (all).
+- **Root cause:** ADR-0006 installed `flashinfer-jit-cache==0.6.16.post3+cu129` which shipped attention AOT kernels and `sampling.so` — but `sampling.so` still gates on `flashinfer.jit.core.check_cuda_arch()` on every call. That gate uses a broken device-capability probe (emits `Failed to get device capability`) that falls through to a stub returning `<sm75`, rejecting SM_120. Direct call verified: `top_k_top_p_sampling_from_logits(...)` fails identically outside vLLM. Meanwhile `flashinfer.utils.get_compute_capability` returns `(12, 0)` cleanly — two capability probes exist, only one is broken. ADR-0006's verification smoke (`phase-neg-1-smoke-vllm-20260811T044948Z.json`) had empty `probes: []` and `verdict: None` — it validated startup only, never exercised sampling, so the gap was undetected.
+- **Fix applied:** Reinstated ADR-0005 sampler escape hatch — `VLLM_USE_FLASHINFER_SAMPLER=0` baked into `VLLMServer` env dict in `bench/runner/main.py`. Routes top-k/top-p through native torch sampler. Attention still uses AOT cu129 kernels from ADR-0006 (verified working). Amended ADR-0006 to acknowledge the verification gap and reinstate ADR-0005 as active for the sampler path.
+- **Files changed:** `bench/runner/main.py`, `adrs/ADR-0006-flashinfer-jit-cache-cu129.md`.
+- **Related BUILD_LOG entry:** 2026-08-11 02:26 EDT
+- **Supersedes:** 2026-08-11 00:50 EDT (for the sampler subset only — attention path from that entry remains correct).

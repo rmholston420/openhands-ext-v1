@@ -298,3 +298,12 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** none. Spec §0.0b guard remains the default; bypass is opt-in and self-labels its outputs.
 - **Stop-condition status:** verified via dry-run — normal run still emits `phase-0-*.json`; `--smoke --candidate-file` on a 1-element list bypasses guard and emits `smoke-*.json`.
+
+## 2026-08-11 02:26 EDT — Reinstate flashinfer sampler workaround for SM_120
+
+- **Stage / plugin / port:** Phase 0.1 · Fast-tier runner · VLLMServer env.
+- **What changed:** Added `VLLM_USE_FLASHINFER_SAMPLER=0` to `VLLMServer` env dict. Amended ADR-0006 to document sampler verification gap. Appended DEBUG_LOG entry.
+- **Files touched:** `bench/runner/main.py`, `adrs/ADR-0006-flashinfer-jit-cache-cu129.md`, `DEBUG_LOG.md`.
+- **Ports / adapters affected:** vLLM launcher only. llama.cpp path unchanged.
+- **PORTING_LEDGER / ADR updated:** ADR-0006 amendment.
+- **Stop-condition status:** in-progress — Phase 0.1 smoke test unblocked pending re-run verification.
