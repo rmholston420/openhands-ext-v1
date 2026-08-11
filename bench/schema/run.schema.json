@@ -1,0 +1,261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rmholston420/openhands-ext-v1/bench/schema/run.schema.json",
+  "title": "OpenHands-Ext v1 Phase 0 Benchmark Run Record",
+  "description": "One JSON record per benchmark cell (candidate x role x runtime x device). Schema derives from integration-execution-plan-v16.md §0.0c. Fields marked 'nullable' may be null when the category does not apply to the role (e.g. cross-candidate contention is only populated for Phase 0.3). Any missing/inapplicable Category must be present with value null; do not omit keys.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_metadata",
+    "tool_call_behavior",
+    "task_outcome",
+    "gpu_envelope",
+    "cpu_envelope",
+    "latency",
+    "cross_candidate_contention"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Bump only via ADR."
+    },
+
+    "run_metadata": {
+      "type": "object",
+      "description": "Category 7. Present on every run.",
+      "required": [
+        "tier",
+        "role",
+        "candidate",
+        "task_set",
+        "started_at_utc",
+        "ended_at_utc",
+        "duration_seconds",
+        "harness_commit_sha",
+        "llama_cpp_build_tag",
+        "vllm_release_tag"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": ["fast", "medium", "full"],
+          "description": "Phase 0.1 / 0.2 / 0.3."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["coder", "planner", "embedder"],
+          "description": "Per §0.0b."
+        },
+        "candidate": {
+          "type": "object",
+          "required": ["model", "quant", "format", "runtime", "device"],
+          "additionalProperties": false,
+          "properties": {
+            "model": {"type": "string", "description": "e.g. Qwen3.6-27B, qwen3-embedding:4b"},
+            "quant": {"type": "string", "description": "e.g. Q6_K, Q4_K_XL, INT4-AutoRound, AWQ, Q8_0, fp16"},
+            "format": {"type": "string", "enum": ["gguf", "safetensors", "awq", "gptq", "autoround", "other"]},
+            "runtime": {"type": "string", "enum": ["llama.cpp", "vllm"]},
+            "device": {"type": "string", "enum": ["cpu", "gpu"]}
+          }
+        },
+        "task_set": {
+          "type": "object",
+          "required": ["identity", "version", "task_count"],
+          "additionalProperties": false,
+          "properties": {
+            "identity": {"type": "string", "description": "e.g. coder-fast, planner-medium, embedder-corpus"},
+            "version": {"type": "string", "description": "Semantic version of the task set."},
+            "task_count": {"type": "integer", "minimum": 1}
+          }
+        },
+        "started_at_utc": {"type": "string", "format": "date-time"},
+        "ended_at_utc": {"type": "string", "format": "date-time"},
+        "duration_seconds": {"type": "number", "minimum": 0},
+        "harness_commit_sha": {"type": "string", "minLength": 7, "description": "openhands-ext-v1 SHA at the time of the run."},
+        "llama_cpp_build_tag": {
+          "type": ["string", "null"],
+          "description": "Exact llama.cpp build tag (e.g. b6784). Null if run did not use llama.cpp."
+        },
+        "vllm_release_tag": {
+          "type": ["string", "null"],
+          "description": "Exact vLLM release tag (e.g. v0.11.0). Null if run did not use vLLM."
+        },
+        "rubric": {
+          "type": "object",
+          "description": "For roles that use a fixed rubric (planner). Timestamp locks pre-first-scored-output.",
+          "required": ["identity", "version", "locked_at_utc"],
+          "additionalProperties": false,
+          "properties": {
+            "identity": {"type": "string"},
+            "version": {"type": "string"},
+            "locked_at_utc": {"type": "string", "format": "date-time"}
+          }
+        },
+        "notes": {"type": "string"}
+      }
+    },
+
+    "tool_call_behavior": {
+      "description": "Category 1. Coder/Planner only. null for Embedder. Captured from SDK ActionEvent/ObservationEvent stream, not re-parsed text.",
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": [
+            "attempts",
+            "successes",
+            "malformed",
+            "missing_tool_call",
+            "wrong_tool_selected",
+            "argument_errors",
+            "loop_repetitions",
+            "retries"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "attempts": {"type": "integer", "minimum": 0},
+            "successes": {"type": "integer", "minimum": 0},
+            "malformed": {"type": "integer", "minimum": 0, "description": "MUST remain in rate-metric denominators (§0.0a denominator-exclusion guard)."},
+            "missing_tool_call": {"type": "integer", "minimum": 0},
+            "wrong_tool_selected": {"type": "integer", "minimum": 0},
+            "argument_errors": {"type": "integer", "minimum": 0},
+            "loop_repetitions": {"type": "integer", "minimum": 0},
+            "retries": {"type": "integer", "minimum": 0}
+          }
+        }
+      ]
+    },
+
+    "task_outcome": {
+      "description": "Category 2. Coder/Planner. null for Embedder. Verdict via deterministic ordered reduction.",
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": ["verdict", "verdict_source", "context_budget_skip", "truncated"],
+          "additionalProperties": false,
+          "properties": {
+            "verdict": {
+              "type": "string",
+              "enum": ["pass", "fail", "timeout", "unknown"],
+              "description": "Ordered reduction: timeout > verify-verdict > trajectory-status > transport-status."
+            },
+            "verdict_source": {
+              "type": "string",
+              "enum": ["timeout", "verify", "trajectory", "transport"],
+              "description": "Which layer of the reduction produced the verdict."
+            },
+            "context_budget_skip": {"type": "boolean"},
+            "truncated": {"type": "boolean"},
+            "rubric_score": {
+              "type": ["number", "null"],
+              "description": "Planner rubric score. Null for coder or when rubric not applicable."
+            }
+          }
+        }
+      ]
+    },
+
+    "gpu_envelope": {
+      "description": "Category 3. All GPU-resident cells. null for CPU-only cells.",
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": [
+            "vram_peak_mib",
+            "vram_avg_mib",
+            "vram_usable_mib",
+            "temp_peak_c",
+            "temp_avg_c",
+            "power_peak_w",
+            "power_avg_w",
+            "util_avg_pct",
+            "nvml_coverage_pct",
+            "throttle_events",
+            "cuda_oom_events"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "vram_peak_mib": {"type": "number", "minimum": 0},
+            "vram_avg_mib": {"type": "number", "minimum": 0},
+            "vram_usable_mib": {"type": "number", "minimum": 0, "description": "~32607 MiB on RTX 5090."},
+            "temp_peak_c": {"type": "number"},
+            "temp_avg_c": {"type": "number"},
+            "throttle_ceiling_c": {"type": "number", "description": "Re-verify per candidate against 83C ceiling."},
+            "power_peak_w": {"type": "number", "minimum": 0},
+            "power_avg_w": {"type": "number", "minimum": 0},
+            "util_avg_pct": {"type": "number", "minimum": 0, "maximum": 100},
+            "nvml_coverage_pct": {"type": "number", "minimum": 0, "maximum": 100},
+            "throttle_events": {"type": "integer", "minimum": 0},
+            "cuda_oom_events": {"type": "integer", "minimum": 0, "description": "Nonzero disqualifies the cell."}
+          }
+        }
+      ]
+    },
+
+    "cpu_envelope": {
+      "description": "Category 4. CPU-resident embedder cells. null for GPU-only cells.",
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": ["proc_cpu_pct_avg", "system_ram_peak_mib", "avx512_confirmed"],
+          "additionalProperties": false,
+          "properties": {
+            "proc_cpu_pct_avg": {"type": "number", "minimum": 0, "description": "Isolated to the serving process, not systemwide."},
+            "system_ram_peak_mib": {"type": "number", "minimum": 0},
+            "avx512_confirmed": {"type": "boolean", "description": "One-time confirmation for the vLLM CPU backend."}
+          }
+        }
+      ]
+    },
+
+    "latency": {
+      "description": "Category 5. All roles/tiers. Every value must be measured, never estimated.",
+      "type": "object",
+      "required": [
+        "per_call_warm_ms_p50",
+        "per_call_warm_ms_p95",
+        "cold_start_ms",
+        "per_task_wall_seconds_p50",
+        "repeats"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "per_call_warm_ms_p50": {"type": "number", "minimum": 0},
+        "per_call_warm_ms_p95": {"type": "number", "minimum": 0},
+        "per_call_warm_ms_max": {"type": "number", "minimum": 0},
+        "cold_start_ms": {"type": "number", "minimum": 0},
+        "per_task_wall_seconds_p50": {"type": "number", "minimum": 0},
+        "per_task_wall_seconds_p95": {"type": "number", "minimum": 0},
+        "repeats": {"type": "integer", "minimum": 1, "description": "3+ for Full tier."},
+        "variance_note": {"type": "string"}
+      }
+    },
+
+    "cross_candidate_contention": {
+      "description": "Category 6. Populated ONLY for Phase 0.3 (Full tier). null otherwise.",
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": [
+            "latency_delta_with_embedder_ms",
+            "error_rate_delta_with_embedder",
+            "swap_cost_ms"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "latency_delta_with_embedder_ms": {"type": "number", "description": "Warm p50 delta: coder/planner run with vs. without concurrent GPU-resident embedder."},
+            "error_rate_delta_with_embedder": {"type": "number", "description": "Change in error rate (absolute, 0.0-1.0) under contention."},
+            "swap_cost_ms": {"type": "number", "minimum": 0, "description": "Model reload cost when swapping candidates."}
+          }
+        }
+      ]
+    }
+  }
+}
