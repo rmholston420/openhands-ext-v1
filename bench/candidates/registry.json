@@ -4,6 +4,16 @@
   "roles": {
     "coder": [
       {
+        "slug": "qwen3-30b-a3b-thinking-2507-awq",
+        "hf_repo": "cpatonn/Qwen3-30B-A3B-Thinking-2507-AWQ-4bit",
+        "hf_files": [],
+        "format": "safetensors",
+        "runtime": "vllm",
+        "role_pool": ["coder", "planner"],
+        "approx_size_gib": 18,
+        "notes": "30B-A3B MoE thinker (AWQ-4bit). Dual-role per ADR-0012 after coder-fast smoke PASS 5/5 (2026-08-11 03:18 EDT). Hermes tool-call flavor."
+      },
+      {
         "slug": "qwen3_6-27b-q6k-gguf",
         "hf_repo": "unsloth/Qwen3.6-27B-GGUF",
         "hf_files": ["Qwen3.6-27B-Q6_K.gguf"],
@@ -61,9 +71,9 @@
         "hf_files": [],
         "format": "safetensors",
         "runtime": "vllm",
-        "role_pool": ["planner"],
+        "role_pool": ["coder", "planner"],
         "approx_size_gib": 18,
-        "notes": "30B-A3B MoE thinking model, AWQ-4bit by cpatonn. The 235B thinking variant does NOT fit 32 GiB VRAM. Size calibrated from manifest 2026-08-11."
+        "notes": "30B-A3B MoE thinker (AWQ-4bit). Dual-role per ADR-0012 (coder + planner). Size calibrated from manifest 2026-08-11."
       }
     ],
     "embedder": [

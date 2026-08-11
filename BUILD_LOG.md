@@ -410,3 +410,16 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** none. ADR-0011 status remains Ratified (verification does not amend).
 - **Stop-condition status:** met for the single-candidate coder-fast smoke. Next: expand `/tmp/single-coder.json` (or the tier's real candidate list) to the full coder pool and repeat, OR pivot to planner-fast full-matrix.
+
+## 2026-08-11 03:22 EDT — ADR-0012 + registry amend + coder-fast vLLM pool file
+
+- **Stage / plugin / port:** Phase 0.1 · Fast tier · coder pool §0.0b candidate registry.
+- **What changed:** Amended `bench/candidates/registry.json` — `qwen3-30b-a3b-thinking-2507-awq` now `role_pool: ["coder","planner"]` (dual-role) with a mirror entry under `roles.coder`. Filed ADR-0012 (Ratified). Wrote `bench/candidates/coder-fast-vllm.json` — 3 vLLM coder candidates for the pool smoke: qwen3-30b-a3b-thinking-2507-awq (verified PASS), qwen3_6-27b-int4-autoround (17.69 GiB weights), qwen3_6-35b-a3b-awq (23.71 GiB, may self-eliminate R1 at default max_model_len). `qwen3_6-27b-bf16` excluded (registry self-declares OOM). GGUF candidates deferred to a separate llama.cpp smoke.
+- **Files touched:**
+  - `bench/candidates/registry.json` (amendment).
+  - `bench/candidates/coder-fast-vllm.json` (new).
+  - `adrs/ADR-0012-registry-dual-role-30b-thinker.md` (new).
+  - `adrs/README.md` (index row).
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0012 Ratified.
+- **Stop-condition status:** ready to run `scripts/benchmark-tier-runner.py --tier fast --role coder --task-set bench/tasks/coder-fast.json --rubric bench/rubrics/fast-elimination.json --candidate-file bench/candidates/coder-fast-vllm.json` (no `--smoke`; §0.0b guard passes with 3 candidates).
