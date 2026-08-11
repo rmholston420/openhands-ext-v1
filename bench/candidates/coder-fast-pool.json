@@ -8,7 +8,20 @@
     "role": "coder",
     "quant": "awq-4bit",
     "approx_size_gib": 18,
-    "notes": "vLLM cell. Passed coder-fast POOL 2026-08-11 07:29 UTC (5/5 tool_calls). Re-run in this combined pool to give the guard min_pool=3."
+    "tool_call_parser": "hermes",
+    "notes": "vLLM cell. Passed coder-fast POOL 2026-08-11 03:52 EDT (5/5 tool_calls). Parser explicit per ADR-0011 amendment."
+  },
+  {
+    "model": "qwen3-coder-30b-a3b-instruct-awq-4bit",
+    "hf_repo": "cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit",
+    "format": "safetensors",
+    "runtime": "vllm",
+    "device": "gpu",
+    "role": "coder",
+    "quant": "awq-4bit",
+    "approx_size_gib": 17,
+    "tool_call_parser": "qwen3_coder",
+    "notes": "Purpose-built coder-instruct (non-thinking). Qwen3-Coder XML wire format verified via chat_template.jinja 2026-08-11 04:06 EDT (outer <tool_call> wrapping <function=name><parameter=arg>value</parameter></function>). Parser MUST be qwen3_coder per ADR-0011 amendment."
   },
   {
     "model": "qwen3_6-27b-q6k-gguf",

@@ -1,8 +1,38 @@
 # ADR-0011 — Fast-tier coder `--tool-call-parser` = `hermes` (Qwen3-Thinking-2507)
 
-**Status:** Ratified
+**Status:** Amended (2026-08-11 04:07 EDT) — hermes is the **default**; per-cell override supported.
 **Lock-in phase:** Phase 0.1 · Fast tier
 **Supersedes:** — (amends ADR-0010's `ROLE_FLAGS["coder"]` value only; the mechanism from ADR-0010 stands)
+
+> **STATUS AMENDMENT (2026-08-11 04:07 EDT):** Parser is now **per-cell**, not global. The class-level default in `VLLMServer.ROLE_FLAGS["coder"]` remains `hermes` (correct for Qwen3-Thinking-2507 and any other model whose chat template emits `<tool_call>{json}</tool_call>` blocks). Candidates whose chat template emits a different wire format MUST declare `tool_call_parser` in their registry entry; the runner appends `--tool-call-parser <value>` after `ROLE_FLAGS` so vLLM argparse honors last-value-wins.
+>
+> **Ratified additions:**
+>
+> - `bench/candidates/registry.json` entries MAY include an optional `"tool_call_parser"` field. When present, it overrides the role default for that candidate; when absent, the role default applies.
+> - `bench/candidates/*.json` pool files MAY include `"tool_call_parser"` per row with the same semantics.
+> - `ExpandedCandidate` gained a `tool_call_parser: Optional[str] = None` field, propagated by `expand_for_role()` (registry path) and `_from_candidate_dict()` (candidate-file path).
+> - `_make_server()` builds `extra_flags=["--tool-call-parser", cand.tool_call_parser]` when the field is set for coder cells and passes it to `VLLMServer(extra_flags=...)`. Role flags come first, override comes after — last-value-wins.
+>
+> **Registry-authoring rule (locks in with ADR-0013's architectures rule):** before adding any vLLM coder candidate to the registry, verify its `chat_template.jinja` (or `tokenizer_config.json.chat_template`) tool-call marker signature:
+>
+> | Wire format | Marker signature | Required parser |
+> |---|---|---|
+> | Hermes | `<tool_call>{json}</tool_call>`; no `<function=` | `hermes` |
+> | Qwen3-Coder XML | outer `<tool_call>` wrapping inner `<function=name><parameter=arg>value</parameter></function>` | `qwen3_coder` |
+> | Qwen3 XML (Instruct family, non-coder) | `<function>...</function>` without `<tool_call>` wrapper | `qwen3_xml` |
+> | Qwen3 native | `<|tool_call|>` sentinel token | `qwen3` |
+>
+> Wrong parser → `tool_calls: []` with the raw call left in `message.content` → R2/R3 fail with `no tool_calls (finish='stop')` even though the model emitted a well-formed call.
+>
+> **First locked-in override:** `qwen3-coder-30b-a3b-instruct-awq-4bit` uses `tool_call_parser="qwen3_coder"`. Verified 2026-08-11 04:06 EDT via chat template inspection (3× `<tool_call>`, 3× `<function=`, 2× `arguments`, 0× `name=`).
+>
+> **Consequences of amendment:**
+> - `bench/runner/candidates.py`: `ExpandedCandidate` gains optional `tool_call_parser` field.
+> - `bench/runner/main.py::_from_candidate_dict`: reads `row.get("tool_call_parser")`.
+> - `bench/runner/main.py::_make_server`: passes per-cell `--tool-call-parser` via `extra_flags` for coder role only.
+> - `bench/runner/server.py`: **no change**. `VLLMServer` already accepted `extra_flags`; role-default hermes still applies to any candidate that omits the field.
+> - `PORTING_LEDGER.md`: no changes (no OSS component added).
+> - Amendment references BUILD_LOG entry at 2026-08-11 04:07 EDT for the plumbing patch.
 
 ## Context
 

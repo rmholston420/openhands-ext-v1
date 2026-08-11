@@ -456,3 +456,31 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **PORTING_LEDGER / ADR updated:** none this entry. Combined-pool authoring pattern (single file spanning runtimes to satisfy §0.0b) is idiomatic and does not need a new ADR — the guard's per-invocation scope was already clear from `main.py`.
 - **Stop-condition status:** **POOL CLOSED**. All 3 candidates advance to Phase 0.2 slow tier per ADR-0007. No R1 eliminations at fast tier for coder role. Note: this is the "no elimination" outcome; slow tier will do quality-based ranking rather than gate-based elimination.
 - **Next action:** pull `cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit` as a fourth coder candidate — purpose-built coder-instruct belongs in the pool alongside the thinker on principle, even with 3 survivors already. Registry entry + `pull-models.sh` invocation to follow.
+
+## 2026-08-11 04:07 EDT — Per-cell tool-call parser wired; ADR-0011 amended; Qwen3-Coder-Instruct added as 4th coder-fast pool cell
+
+- **Stage / plugin / port:** Phase 0.1 · Fast tier · coder role · vLLM launcher + registry authoring rules.
+- **What changed:**
+  - Pulled `cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit` (`4bd30395b72e`, rollup sha `1c0f6074f956`, 18115853370 bytes) via `scripts/pull-models.sh --role coder` (idempotent; 193s download for the new slug; all 4 other coder candidates skip-and-manifest-appended).
+  - Manifest §0.0a snapshot at 2026-08-11 04:05 EDT for all 5 coder candidates: qwen3-30b-a3b-thinking-2507-awq (rev efd3cf20fe71 sha 5a9f1ce0123e), qwen3-coder-30b-a3b-instruct-awq-4bit (rev 4bd30395b72e sha 1c0f6074f956), qwen3_6-27b-q6k-gguf (rev 82d411acf4a0 sha 93d060d3f0f4), qwen3_6-27b-bf16 (rev 6a9e13bd6fc8 sha ad324ae48c6a), qwen3_6-35b-a3b-q4kxl-gguf (rev a483e9e6cbd5 sha 97ef6ca443a5).
+  - Verified on-disk metadata for the new coder-instruct: `architectures=['Qwen3MoeForCausalLM']`, `model_type='qwen3_moe'`, `vision_config` absent — passes ADR-0013 authoring rule.
+  - Inspected `chat_template.jinja` (6211 chars, separate file per newer HF convention): outer `<tool_call>` wraps inner `<function=name><parameter=arg>value</parameter></function>` — Qwen3-Coder XML wire format. Marker counts 3× `<tool_call>`, 3× `<function=`, 0× `name=`, 2× `arguments`. Requires `--tool-call-parser qwen3_coder`; using default `hermes` would produce the DEBUG_LOG 2026-08-11 03:15 EDT failure mode.
+  - **ADR-0011 amended** with per-cell parser mechanism + registry-authoring rule (chat_template marker signature → required parser table).
+  - `bench/runner/candidates.py`: `ExpandedCandidate` gained `tool_call_parser: Optional[str] = None`; both `expand_for_role()` construction sites propagate it.
+  - `bench/runner/main.py`: `_from_candidate_dict` reads new field; `_make_server` appends `--tool-call-parser <value>` to `extra_flags` for vLLM coder cells when set (last-value-wins over ROLE_FLAGS default).
+  - `bench/runner/server.py`: NO change — already supported `extra_flags`.
+  - `bench/candidates/registry.json`: explicit `tool_call_parser` on both vLLM coder entries (`hermes` on thinker, `qwen3_coder` on coder-instruct).
+  - `bench/candidates/coder-fast-pool.json`: added 4th cell for `qwen3-coder-30b-a3b-instruct-awq-4bit` with `tool_call_parser=qwen3_coder`.
+  - `adrs/README.md`: ADR-0011 status → `Amended 2026-08-11`.
+- **Files touched:**
+  - `adrs/ADR-0011-fast-tier-coder-tool-call-parser-hermes.md` (amendment block prepended)
+  - `adrs/README.md` (status column)
+  - `bench/runner/candidates.py` (dataclass + 2 construction sites)
+  - `bench/runner/main.py` (`_make_server` + `_from_candidate_dict`)
+  - `bench/candidates/registry.json` (2 vLLM coder entries)
+  - `bench/candidates/coder-fast-pool.json` (2 existing rows + 1 new row)
+  - `BUILD_LOG.md`, `DEBUG_LOG.md`, `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none (runner internals only).
+- **PORTING_LEDGER / ADR updated:** ADR-0011 amended (per-cell parser). No PORTING_LEDGER entry (no OSS component added; the new candidate is vendored via the existing manifest flow which already records HF rev + sha256).
+- **Stop-condition status:** plumbing complete + syntax-verified (both .py files parse; both .json files valid). Ready for 4-cell coder-fast POOL re-run to verify the coder-instruct passes with qwen3_coder parser. Quality-over-speed reminder held: this candidate is a purpose-built coder-instruct; if slow tier scores it meaningfully higher than the thinker+GGUFs, it wins the router slot even if slower.
+- **Next action:** commit + push; then user runs `.venv/bin/python -m bench.runner.main --candidate-file bench/candidates/coder-fast-pool.json --tier fast --role coder --rubric bench/rubrics/fast-tier-coder-r1.json` (or equivalent — actual entry-point unchanged) to verify 4/4 pass including coder-instruct with correct parser.

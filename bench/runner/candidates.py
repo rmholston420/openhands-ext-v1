@@ -41,6 +41,13 @@ class ExpandedCandidate:
     local_model_dir: Path  # models/<slug>/
     local_gguf_file: Optional[str]  # relative filename for GGUF, else None
     notes: str = ""
+    # Per-cell vLLM --tool-call-parser override. When None, falls back to
+    # VLLMServer.ROLE_FLAGS[role] default ("hermes" for coder per ADR-0011).
+    # Amendment 2026-08-11 04:07 EDT: parser is per-cell, driven by the
+    # model's chat_template tool-call marker signature. Qwen3-Coder-Instruct
+    # family uses "qwen3_coder" (XML <function=name>/<parameter=...>);
+    # Qwen3-Thinking family uses "hermes" (<tool_call>{json}</tool_call>).
+    tool_call_parser: Optional[str] = None
 
 
 def _load_registry() -> dict:
@@ -124,6 +131,7 @@ def expand_for_role(role: str, *, include_oversized: bool = False,
                 local_model_dir=MODELS_DIR / slug,
                 local_gguf_file=gguf_file,
                 notes=entry.get("notes", ""),
+                tool_call_parser=entry.get("tool_call_parser"),
             )
             out.append(cand)
 
@@ -143,6 +151,7 @@ def expand_for_role(role: str, *, include_oversized: bool = False,
                 local_model_dir=c.local_model_dir,
                 local_gguf_file=c.local_gguf_file,
                 notes=c.notes + " (CPU cell)",
+                tool_call_parser=c.tool_call_parser,
             )
             cpu_variants.append(cpu)
         out = out + cpu_variants

@@ -394,6 +394,16 @@ def _make_server(
                 reason=LaunchFailReason.MISSING_BINARY,
                 detail="vLLM CPU cells require --device cpu build; not wired at Phase 0.1",
             )
+        # Per-cell --tool-call-parser override (ADR-0011 amendment 2026-08-11).
+        # When cand.tool_call_parser is set, append it AFTER ROLE_FLAGS so
+        # vLLM argparse honors last-value-wins and this parser supersedes
+        # the role default. Passed via extra_flags rather than mutating
+        # ROLE_FLAGS so the class-level default (hermes for coder) is
+        # preserved for candidates that don't specify an override.
+        extra_flags: list[str] = []
+        if cand.tool_call_parser is not None and role == Role.CODER:
+            extra_flags.extend(["--tool-call-parser", cand.tool_call_parser])
+
         return VLLMServer(
             cell_id=cell_id,
             model_dir=cand.local_model_dir,
@@ -402,6 +412,7 @@ def _make_server(
             role=role_str,
             progress=progress,
             log_dir=log_dir,
+            extra_flags=extra_flags or None,
             env={
                 # ADR-0005 sampler escape hatch (see ADR-0006 amendment).
                 # flashinfer 0.6.16.post3 sampling.so still gates on
@@ -736,4 +747,5 @@ def _from_candidate_dict(row: dict) -> ExpandedCandidate:
         local_model_dir=MODELS_DIR / slug,
         local_gguf_file=row.get("gguf_file"),
         notes=row.get("notes", ""),
+        tool_call_parser=row.get("tool_call_parser"),
     )

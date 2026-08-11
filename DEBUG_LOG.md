@@ -306,3 +306,42 @@ Entry format:
   - `bench/results/phase-0-fast-coder-qwen3_6-27b-int4-autoround-vllm-gpu-20260811T073011Z.json`
   - `bench/results/phase-0-fast-coder-qwen3_6-35b-a3b-awq-vllm-gpu-20260811T073355Z.json`
   - `bench/results/server-logs/coder_qwen3_6-27b-int4-autoround_vllm_gpu-*.log`
+
+## 2026-08-11 04:07 EDT — per-cell tool-call parser wired; Qwen3-Coder-Instruct requires qwen3_coder not hermes
+
+- **Symptom:** N/A — pre-emptive plumbing before running `qwen3-coder-30b-a3b-instruct-awq-4bit`. Without this change, using the current `ROLE_FLAGS["coder"]` default of `hermes` would produce the exact failure mode already documented at 2026-08-11 03:15 EDT (5/5 HTTP 200, `tool_calls=[]`, raw call in `message.content`) — because the coder-instruct's chat template emits Qwen3-Coder XML (`<function=name><parameter=arg>value</parameter></function>` inside `<tool_call>`), not Hermes JSON.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast tier · coder role · vLLM launcher.
+- **Search performed:** `grep -in "parser\|tool_call\|hermes\|qwen3_coder\|tool_calls: \[\]" DEBUG_LOG.md` — found 4 prior entries at 03:06, 03:15, 03:18 EDT. All resolved the hermes-vs-qwen3_coder question for Qwen3-Thinking-2507. None addressed per-cell override for models with a different template flavor. Extending the mechanism, not re-diagnosing.
+- **Root cause (design-level):** `VLLMServer.ROLE_FLAGS["coder"]` was hardcoded global. Correct default for Qwen3-Thinking-2507 (Hermes-emitting), but wrong for Qwen3-Coder-Instruct (XML-emitting). Any coder-instruct candidate whose template signature is Qwen3-Coder XML would silently regress to the 03:15 EDT failure mode.
+- **Chat template inspection (evidence):** `models/qwen3-coder-30b-a3b-instruct-awq-4bit/chat_template.jinja` (6211 chars, stored as separate file per newer HF convention — NOT in `tokenizer_config.json`). Marker counts: `<tool_call>` ×3, `</tool_call>` ×3, `<function=` ×3, `</function>` ×4, `<function_call>` ×0, `<|tool_call|>` ×0, `name=` ×0, `arguments` ×2, `<tool_response>` ×1. Template body confirms: assistant tool-call output wraps `<function=name>` (with `<parameter=arg>value</parameter>` children) inside an outer `<tool_call>` block. This is unambiguously Qwen3-Coder XML wire format.
+- **Fix applied:** Introduced per-cell `tool_call_parser` field. Chain:
+  - `bench/candidates/registry.json`: added `"tool_call_parser": "hermes"` to `qwen3-30b-a3b-thinking-2507-awq` (explicit); added `"tool_call_parser": "qwen3_coder"` to `qwen3-coder-30b-a3b-instruct-awq-4bit`.
+  - `bench/candidates/coder-fast-pool.json`: added same field to both vLLM rows.
+  - `bench/runner/candidates.py::ExpandedCandidate`: new `tool_call_parser: Optional[str] = None`. `expand_for_role()` propagates from registry (GPU + CPU-embedder cells).
+  - `bench/runner/main.py::_from_candidate_dict`: reads `row.get("tool_call_parser")`.
+  - `bench/runner/main.py::_make_server`: for vLLM coder cells, if `cand.tool_call_parser` is set, appends `["--tool-call-parser", <value>]` to `extra_flags`. VLLMServer already accepted `extra_flags` (line 370), so no server.py change required. argparse last-value-wins guarantees the override supersedes the ROLE_FLAGS default.
+- **Files changed:** `bench/runner/candidates.py`, `bench/runner/main.py`, `bench/candidates/registry.json`, `bench/candidates/coder-fast-pool.json`, `adrs/ADR-0011-fast-tier-coder-tool-call-parser-hermes.md` (amendment block), `adrs/README.md` (status update).
+- **Related BUILD_LOG entry:** 2026-08-11 04:07 EDT (this session).
+- **Registry-authoring rule locked in (ADR-0011 amendment):** any new vLLM coder candidate MUST have its chat_template.jinja tool-call marker signature verified before registry admission. Signatures → required parsers documented in ADR-0011 table.
+
+## 2026-08-11 03:52 EDT — verdict-print loop KeyError: 'run_metadata' (some result files lack the schema)
+
+- **Symptom:** Post-run inspection loop iterating `bench/results/*.json` with `d['run_metadata']['candidate']` crashed with `KeyError: 'run_metadata'` on line 432 and 439 of the paste. Not a runner failure — the 3-cell coder-fast POOL run itself completed cleanly with `RUN: complete exit_code=0`.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast tier · post-run tooling (not the runner itself).
+- **Search performed:** `grep -in "KeyError.*run_metadata\|verdict-print\|dump loop" DEBUG_LOG.md` — no prior hits. Fresh diagnosis.
+- **Root cause:** Not all files matching `bench/results/*.json` share the BenchRun schema. `.probe.json` sidecars have a different structure (probe dump, not full BenchRun). Older result files from prior methodology iterations may also predate the `run_metadata` key.
+- **Fix applied:** For future verdict-print loops, filter to non-probe result files AND use safe `.get()` chains: `d.get('run_metadata',{}).get('candidate',{}).get('slug','?')`. Example one-liner:
+
+  ```
+  for f in bench/results/phase-0-fast-*.json; do
+    [[ "$f" == *.probe.json ]] && continue
+    python3 -c "
+  import json,sys
+  d=json.load(open('$f'))
+  m=d.get('run_metadata',{})
+  print(m.get('candidate',{}).get('slug','?'), d.get('verdict','?'))
+  "
+  done
+  ```
+- **Files changed:** none. Documenting the pattern for future post-run inspection scripts. No source-code fix needed — the runner itself is correct.
+- **Related BUILD_LOG entry:** 2026-08-11 03:52 EDT (pool close).

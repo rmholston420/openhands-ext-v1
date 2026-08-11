@@ -11,7 +11,8 @@
         "runtime": "vllm",
         "role_pool": ["coder", "planner"],
         "approx_size_gib": 18,
-        "notes": "30B-A3B MoE thinker (AWQ-4bit). Dual-role per ADR-0012 after coder-fast smoke PASS 5/5 (2026-08-11 03:18 EDT). Hermes tool-call flavor."
+        "tool_call_parser": "hermes",
+        "notes": "30B-A3B MoE thinker (AWQ-4bit). Dual-role per ADR-0012 after coder-fast smoke PASS 5/5 (2026-08-11 03:18 EDT). Hermes tool-call flavor (<tool_call>{json}</tool_call>) — parser explicit per ADR-0011 amendment 2026-08-11."
       },
       {
         "slug": "qwen3-coder-30b-a3b-instruct-awq-4bit",
@@ -21,7 +22,8 @@
         "runtime": "vllm",
         "role_pool": ["coder"],
         "approx_size_gib": 17,
-        "notes": "Purpose-built coder-instruct (non-thinking). Qwen3MoeForCausalLM per llm-explorer metadata 2026-08-11 (passes ADR-0013 rule). AWQ-4bit group_size 32 (cyankiwi v1.0), Apache-2.0. Model card recommends temp=0.7 top_p=0.8 top_k=20 repetition_penalty=1.05 (matches local-llm-bench coder preset). Tool-call parser TBD via chat_template.jinja inspection post-pull — candidate: qwen3_coder (per Qwen-official docs), not hermes."
+        "tool_call_parser": "qwen3_coder",
+        "notes": "Purpose-built coder-instruct (non-thinking). Qwen3MoeForCausalLM per llm-explorer metadata + on-disk config.json 2026-08-11 04:05 EDT (passes ADR-0013 rule; vision_config absent). AWQ-4bit group_size 32 (cyankiwi v1.0), Apache-2.0. Model card sampling: temp=0.7 top_p=0.8 top_k=20 repetition_penalty=1.05 (matches local-llm-bench coder preset). Chat template inspection 2026-08-11 04:06 EDT: outer <tool_call> wraps inner <function=name><parameter=arg>value</parameter></function> — Qwen3-Coder XML wire format. Parser MUST be qwen3_coder per ADR-0011 amendment; hermes parser would return tool_calls=[] with the raw call left in message.content."
       },
       {
         "slug": "qwen3_6-27b-q6k-gguf",

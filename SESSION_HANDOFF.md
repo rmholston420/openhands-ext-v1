@@ -1,39 +1,54 @@
-# Kosmos Session Handoff — 2026-08-11 03:52 EDT
+# Kosmos Session Handoff — 2026-08-11 04:07 EDT
 
 ## Current build-sequencing position
 
-- **Stage / phase:** Phase 0.1 → Phase 0.2 (transitioning)
-- **Plugin / kernel component:** coder-fast POOL closed with 3 survivors; Phase 0.2 slow tier is next for coder role (quality ranking)
-- **Port(s) in progress:** none active
+- **Stage / phase:** Phase 0.1 · Fast tier
+- **Plugin / kernel component:** coder-fast POOL — expanding from 3 to 4 cells; parser plumbing complete
+- **Port(s) in progress:** none active. Runner-internal changes only.
 
 ## Completed this session
 
-- ADR-0011 ratified in-practice (fast-tier coder tool-call parser = hermes; commit `f76f307`).
-- ADR-0012 ratified (30B thinker is dual-role coder+planner; commit `9a42313` / `920d7c7`).
-- Ran real Phase 0.1 coder-fast POOL (vLLM slice only, 3 cells): 1 PASS + 2 R1 eliminated (Qwen3.5-VL multimodal, coder role has no use for vision tower).
-- ADR-0013 ratified (registry exclusion: Qwen3.5-VL not coder-pool; registry-authoring rule added; commit `4aa257d`).
-- GGUF metadata verified 2026-08-11 03:45 EDT: both `qwen3_6-27b-q6k-gguf` and `qwen3_6-35b-a3b-q4kxl-gguf` are text-only (0 VL tensors of 851/733; arch `qwen35` and `qwen35moe`).
-- llama.cpp build state confirmed: vendor built at tag `b10356` with CUDA 13.0 + gcc-13 + SM_120 per ADR-0004. `/usr/local/cuda → cuda-13.0`, RUNPATH baked in, `llama-server --version` clean.
-- Added `bench/candidates/coder-fast-pool.json` — canonical combined pool file spanning vLLM + llama.cpp cells to satisfy §0.0b min_pool=3 in one runner invocation (commit `58a741e`).
-- Ran combined coder-fast POOL 2026-08-11 03:50-03:52 EDT: **3/3 PASS**.
-  - `qwen3-30b-a3b-thinking-2507-awq` (vLLM 0.27.0) — pass, cold 38s.
-  - `qwen3_6-27b-q6k-gguf` (llama.cpp b10356) — pass, cold 13s.
-  - `qwen3_6-35b-a3b-q4kxl-gguf` (llama.cpp b10356) — pass, cold 19s.
-- BUILD_LOG entries current for both pool runs. DEBUG_LOG has the multimodal-in-coder-pool root-cause entry from earlier this session. This SESSION_HANDOFF overwritten.
+- Interpreted 2026-08-11 03:52 EDT combined 3-cell coder-fast POOL result: **3/3 PASS** (vLLM thinker 38s cold, llama.cpp 27B Q6_K 13s cold, llama.cpp 35B/A3B Q4_K_XL 19s cold). Runner exit_code=0. §0.0b guard satisfied. All 3 advance to Phase 0.2 slow tier per ADR-0007.
+- Committed pool-closed ledger (`1cd1a30`).
+- Verified `cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit` via web search + llm-explorer metadata: `Qwen3MoeForCausalLM`, `qwen3_moe`, no `vision_config`, Apache-2.0, 16.9 GiB. Committed registry addition (`8cab7b5`).
+- Pulled candidate (193s, rev `4bd30395b72e`, rollup sha `1c0f6074f956`). Manifest §0.0a snapshot for all 5 coder candidates at 04:05 EDT.
+- Inspected `models/qwen3-coder-30b-a3b-instruct-awq-4bit/chat_template.jinja` (6211 chars). Confirmed Qwen3-Coder XML wire format: outer `<tool_call>` wrapping `<function=name><parameter=arg>value</parameter></function>`. Requires `--tool-call-parser qwen3_coder`, NOT the ROLE_FLAGS default `hermes`.
+- Amended ADR-0011: parser is per-cell (default hermes; per-cell override via `tool_call_parser` field). Locked in registry-authoring rule mapping chat_template signature → required parser.
+- Wired per-cell parser through the stack:
+  - `ExpandedCandidate.tool_call_parser: Optional[str] = None` (new field).
+  - `expand_for_role()` propagates from registry (GPU + CPU-embedder cells).
+  - `_from_candidate_dict` propagates from `--candidate-file` rows.
+  - `_make_server` for vLLM coder cells appends `--tool-call-parser <value>` to `extra_flags`.
+  - `VLLMServer.__init__` unchanged (already accepted `extra_flags`; last-value-wins).
+- Registry and pool file updated: `hermes` explicit on thinker, `qwen3_coder` on coder-instruct.
+- All 4 files syntax-checked (2 Python parse OK, 2 JSON valid).
+- DEBUG_LOG search-first done: 4 prior parser entries found (03:06/03:15/03:18 EDT). New territory (per-cell mechanism) not previously covered. Appended 2 new DEBUG_LOG entries (per-cell parser plumbing + verdict-print KeyError from post-run inspection tooling).
+- BUILD_LOG appended. This SESSION_HANDOFF overwritten.
 
 ## Remaining before current Definition of Done
 
-- **Coder-fast POOL is CLOSED.** All 3 candidates advance to Phase 0.2 slow tier per ADR-0007 methodology. Phase 0.1 coder role Definition of Done met.
-- **Optional pre-Phase 0.2 enrichment:** pull `cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit` — purpose-built coder-instruct. Belongs in coder pool on principle alongside the thinker. Would give Phase 0.2 four candidates instead of three, adding architectural diversity (coder-instruct trained specifically for tool-calling & code, distinct from thinker+parser combo). Registry entry + pull invocation pending.
-- **Planner-fast POOL:** registry has only 1 planner entry (the dual-role 30B thinker via ADR-0012). §0.0b min_pool=3 for planner-fast will fail without new candidates. Deferred until user directs — options: (a) pull additional planner-flavored models, (b) use `--smoke` for verification only, (c) skip planner and go embedder-fast first (registry has 4 embedder entries, guard passes).
-- **Embedder-fast POOL:** registry has 4 embedder entries (0.6B bf16, 0.6B q8 GGUF, 4B bf16, 4B q8 GGUF). Would pass §0.0b at min_pool=4. Requires embedder ROLE_FLAGS already defined; llama.cpp embedder side is `--embedding -c 4096`. vLLM embedder side needs a mode flag (`--task embed`?). To be inspected before running.
-- Uncommitted at `/tmp/oh-ext`: `BUILD_LOG.md`, `SESSION_HANDOFF.md`. Need push.
+- Commit + push these changes to origin/main.
+- **Run 4-cell coder-fast POOL** to verify the new coder-instruct passes with the qwen3_coder parser (must show `--tool-call-parser qwen3_coder` in server log launch cmd + non-empty `tool_calls[]` in the sidecar for the new cell).
+- Expected outcome: all 4 pass. If coder-instruct fails with `tool_calls=[]`, the parser choice or the plumbing has a defect — inspect the sidecar's `raw_content` before reverting anything.
+- After 4-cell pass: Phase 0.1 coder-fast POOL is fully closed with 4 survivors. Move to Phase 0.2 slow tier for coder role (gold-standard scoring against Perplexity Max), OR pivot to embedder-fast POOL first (registry has 4 embedder entries; §0.0b passes at min_pool=4).
 
 ## Open questions / awaiting user answer
 
-1. Pull `cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit` now to give Phase 0.2 four candidates? (My recommendation: yes.)
-2. After that: which POOL next — planner (needs candidates pulled first) or embedder (already ready)? (My recommendation: embedder first — the pool is ready, guard passes, and it exercises the embedder-role code path which is otherwise unvalidated.)
+1. After the 4-cell coder-fast POOL passes: which comes next — Phase 0.2 slow tier for coder role (quality-ranked gold-scoring), or embedder-fast POOL first (already-ready pool)? My recommendation: **embedder-fast first** — it's the fastest to execute given the pool is already sized correctly, and it validates the embedder code path which is otherwise unexercised. Slow tier for coder is a bigger investment (needs a Perplexity-gold suite generated first).
 
 ## Exact next action
 
-Commit + push these two log files, then pull `cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit` — registry patch + `pull-models.sh --slug qwen3-coder-30b-a3b-instruct-awq` (or equivalent) + verify `config.json.architectures[0]` ends in `ForCausalLM` per ADR-0013 rule before adding to `roles.coder`.
+Commit + push the parser-plumbing changeset, then user runs:
+
+```bash
+cd ~/dev/openhands-ext-v1
+git pull --ff-only
+.venv/bin/python -m bench.runner.main \
+  --candidate-file bench/candidates/coder-fast-pool.json \
+  --tier fast --role coder \
+  --rubric bench/rubrics/fast-tier-coder-r1.json
+```
+
+(Substitute actual entry-point invocation if different — runner CLI unchanged from the prior 3-cell run.)
+
+Then paste the run log so we can verify (a) launch cmd for cell 4 shows `--tool-call-parser qwen3_coder`, (b) all 4 cells reach `verdict=pass`, (c) sidecar for cell 4 shows non-empty `tool_calls[]` (not the DEBUG_LOG 03:15 EDT parser-mismatch failure mode).
