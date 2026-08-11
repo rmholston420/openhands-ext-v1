@@ -1,0 +1,65 @@
+{
+  "run_metadata": {
+    "tier": "medium",
+    "role": "planner",
+    "candidate": {
+      "model": "qwen3_6-27b-q6k-gguf",
+      "quant": "q6_k",
+      "format": "gguf",
+      "runtime": "llama.cpp",
+      "device": "gpu"
+    },
+    "task_set": {
+      "identity": "planner-medium",
+      "version": "1.0.0",
+      "task_count": 4
+    },
+    "started_at_utc": "2026-08-11T14:07:08Z",
+    "ended_at_utc": "2026-08-11T14:07:49Z",
+    "duration_seconds": 40.700004,
+    "harness_commit_sha": "15fd2cd",
+    "llama_cpp_build_tag": "b10356",
+    "vllm_release_tag": null,
+    "rubric": {
+      "identity": "Phase 0.1 Fast-tier elimination rubric. Timestamped at commi",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T05:51:00Z"
+    },
+    "notes": "response_format=json_schema chat_template_kwargs={\"enable_thinking\": false}"
+  },
+  "tool_call_behavior": null,
+  "task_outcome": {
+    "verdict": "pass",
+    "verdict_source": "verify",
+    "context_budget_skip": false,
+    "truncated": false,
+    "rubric_score": null
+  },
+  "gpu_envelope": {
+    "vram_peak_mib": 25475.0625,
+    "vram_avg_mib": 25404.932180851065,
+    "vram_usable_mib": 32607.0,
+    "temp_peak_c": 63.0,
+    "temp_avg_c": 60.241134751773046,
+    "power_peak_w": 450.266,
+    "power_avg_w": 423.6950496453901,
+    "util_avg_pct": 95.58865248226951,
+    "nvml_coverage_pct": 100.0,
+    "throttle_events": 2,
+    "cuda_oom_events": 0,
+    "throttle_ceiling_c": 93.0
+  },
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 9624.483297055122,
+    "per_call_warm_ms_p95": 9979.749053018168,
+    "cold_start_ms": 3403.4289100090973,
+    "per_task_wall_seconds_p50": 9.624483297055122,
+    "repeats": 4,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": 9.979749053018168,
+    "variance_note": null
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}
