@@ -273,3 +273,19 @@ Entry format:
   - `adrs/README.md`: ADR-0010 row updated; ADR-0011 row added.
 - **Related BUILD_LOG entry:** 2026-08-11 03:15 EDT (this session).
 - **Verification (pending):** re-run coder-fast smoke; expect launch cmd to show `--tool-call-parser hermes`; expect at least one task's `raw_content` to now show `tool_calls != []` with a parsed name+arguments; expect verdict to depend only on whether the model chose the right tool + arguments (probes.py fallback semantics).
+
+## 2026-08-11 03:18 EDT — coder-fast smoke: PASS 5/5 after hermes parser flip (verification)
+
+- **Symptom:** N/A — verification entry for the 03:15 EDT fix.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast tier · coder cell `qwen3-30b-a3b-thinking-2507-awq/vllm/gpu`.
+- **Verification result:** Server log confirms launch cmd `--enable-auto-tool-choice --tool-call-parser hermes --reasoning-parser qwen3` (server-log `1786432658.log`). All 5 coder-fast tasks passed:
+  - 01-read-file: `read_file(path=/workspace/probe/greeting.txt)` — 1.08 s.
+  - 02-str-replace: `str_replace_editor(path, old_str=DEBUG=False, new_str=DEBUG=True)` — 1.36 s.
+  - 03-execute-bash: `execute_bash(command="echo probe03")` — 1.32 s.
+  - 04-write-file: `write_file(path=/workspace/probe/out/note.txt, content="from probe 04\n")` — 1.86 s.
+  - 05-multi-step step-1: `read_file(path=/workspace/probe/manifest.json)` — 6.22 s.
+  Each task has non-empty `tool_calls[0].function.name` + JSON `arguments`; `content=""`. `finish_reason=stop` on all. Reasoning parser `qwen3` stripped `<think>` server-side.
+- **Cell metrics:** VRAM peak 30753 MiB, temp peak 51 °C, NVML coverage 100 %, gen throughput ~199 tok/s.
+- **Root cause (referenced):** ADR-0011 — `--tool-call-parser hermes` matches the Hermes-style `<tool_call>{json}</tool_call>` emission of Qwen3-Thinking-2507; `qwen3_coder` did not.
+- **Related BUILD_LOG entry:** 2026-08-11 03:18 EDT (this session).
+- **Files changed:** none (verification only).

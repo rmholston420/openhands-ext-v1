@@ -398,3 +398,15 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (runtime launcher configuration only).
 - **PORTING_LEDGER / ADR updated:** ADR-0011 filed (Ratified · Phase 0.1); ADR-0010 amended.
 - **Stop-condition status:** in-progress — awaiting coder-fast smoke re-run to verify `msg.tool_calls != []` on at least one task before declaring the parser choice ratified in-practice.
+
+## 2026-08-11 03:18 EDT — Phase 0.1 coder-fast smoke gate: PASS 5/5
+
+- **Stage / plugin / port:** Phase 0.1 · Fast tier · coder cell `qwen3-30b-a3b-thinking-2507-awq/vllm/gpu`.
+- **What changed:** Verification of ADR-0011 fix in-practice. Re-ran `benchmark-tier-runner.py --tier fast --role coder --smoke` with candidate file `/tmp/single-coder.json` and task-set `bench/tasks/coder-fast.json` against rubric `bench/rubrics/fast-elimination.json`. All 5 tasks pass with populated `tool_calls`. Verdict = `pass`.
+- **Files touched:**
+  - `bench/results/smoke-fast-coder-qwen3-30b-a3b-thinking-2507-awq-vllm-gpu-20260811T071736Z.json` (result).
+  - `bench/results/smoke-fast-coder-qwen3-30b-a3b-thinking-2507-awq-vllm-gpu-20260811T071736Z.probe.json` (sidecar).
+  - `bench/results/server-logs/coder_qwen3-30b-a3b-thinking-2507-awq_vllm_gpu-1786432658.log`.
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none. ADR-0011 status remains Ratified (verification does not amend).
+- **Stop-condition status:** met for the single-candidate coder-fast smoke. Next: expand `/tmp/single-coder.json` (or the tier's real candidate list) to the full coder pool and repeat, OR pivot to planner-fast full-matrix.
