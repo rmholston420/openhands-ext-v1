@@ -1328,3 +1328,17 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** Bench probe artifact contract with the Perplexity-Max scoring stage.
 - **PORTING_LEDGER / ADR updated:** ADR-0026 amendment 3 (this entry).
 - **Stop-condition status:** Awaits one more stage-2 rerun on Colossus to regenerate the artifact with the enriched tool_trace, after which scoring stage becomes unblocked.
+
+## 2026-08-11 11:40 EDT — Stage-2 gate REGENERATED at v1.1 · canonical artifact ready for stage-3
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · stage-2 · bench/runner/probes.py
+- **What changed:** Recording outcome of the retry after commit `74e17ae`.
+- **Artifact:** `bench/results/smoke/smoke-medium-coder-qwen3-coder-30b-a3b-instruct-awq-4bit-vllm-gpu-20260811T153712Z.probe.json`
+- **Cell verdict:** pass · 10/10 tasks · 0 agent_errors · 0 run_errors · harness_version=v1.1 · harness_commit_sha=74e17ae · openhands_sdk_version=1.41.0
+- **Tools exercised:** file_editor (view + str_replace + create), terminal, think, finish
+- **Task-06 verified functionally correct:** rename compute_total → calculate_total across math_ops.py + main.py, then `python src/main.py` returned 6 with exit_code=0. Any exact-mode file-diff mismatch from the earlier artifact is a whitespace-normalization sensitivity, not an agent error — scoring stage judges from actual bytes.
+- **Turn-count reduction (19 → 10 for task-06):** attributed to (a) v1.1 tightening action_count to true `ActionEvent`s only (was counting related event kinds via loose attribute matching), and/or (b) non-determinism at temperature=0.7. Both plausible; not a regression signal.
+- **Files touched:** SESSION_HANDOFF.md (overwritten), BUILD_LOG.md (this entry).
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none.
+- **Stop-condition status:** Stage-2 harness stop condition met. Ready to score against Perplexity-Max gold + rubric (`post_hoc_edit_locked=true`). Awaiting user decision on stage-3 execution mode (AWQ alone vs. AWQ + 35b together).

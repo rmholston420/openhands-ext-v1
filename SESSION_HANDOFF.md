@@ -1,65 +1,53 @@
-# Kosmos Session Handoff — 2026-08-11 10:52 EDT
+# Kosmos Session Handoff — 2026-08-11 11:40 EDT
 
 ## Current build-sequencing position
 
-- **Stage / phase:** Phase 0.3 gate-2 · coder correctness harness v1 · **stage-1 PASS, stage-2 ready**
-- **Plugin / kernel component:** bench harness · runner + probes wired to v1 SDK contract
-- **Port(s) in progress:** Coder correctness scoring (ADR-0022 medium tier → ADR-0026 v1 harness)
+- **Stage / phase:** Phase 0.3 gate-2 · stage-2 → stage-3 transition
+- **Plugin / kernel component:** bench/runner/probes.py (coder multi-turn correctness harness v1.1)
+- **Port(s) in progress:** LLMPort (coder role · AWQ path); scoring stage (Perplexity-Max gold + rubric)
 
 ## Completed this session
 
-- ADR-0026 v1 authored + ratified; amendments 1 (import path) and 2 (real SDK surface + harness contract) applied
-- SDK freeze file pinned versions at 1.41.0
-- Task-set + 10 gold rubric files + SHA-256 pins
-- Schema extended with `harness_version`, `openhands_sdk_version`, `docker_image` on `run_metadata`
-- `_probe_coder_sdk` full implementation (~250 lines) per ADR-0026 amendment 2
-- Runner (`main.py`) wired to populate the three new fields; both v1 and legacy null-fields cases validate
-- `bench/tests/smoke_sdk_surface.py` written and run: **9/9 steps PASS in 15 s**
-- SDK surface **locked**: `CommandResult` has `stdout` + `exit_code`; `Conversation` returns `RemoteConversation`; `send_message` fires `ConversationStateUpdate`, `SystemPrompt`, `Message`, `ConversationStateUpdate` synchronously
-- Port check: `PORTS[("vllm","coder")] = 8501` in `main.py` — runner boots its own vLLM; no manual :8100 needed
+- Diagnosed + fixed LLM transport (host↔container via 172.17.0.1 + 0.0.0.0 bind) — commit `034dad6`
+- Diagnosed + fixed empty `tools=[]` in Agent construction — commit `4c05562`
+- Diagnosed + fixed `default_tools` scoping (thread as kwarg to `_run_sdk_task`) — commit `8963a10`
+- Stage-2 gate FIRST PASS at commit `8963a10` (10/10 tasks, 0 agent_errors, 129.7s run, 94s probe, artifact `20260811T152400Z`) — but `tool_trace` was `list[str]` (tool names only)
+- Authored ADR-0026 amendment 3: bundled all four wire-up fixes (transport + tools + scoping + trace schema v1 → v1.1) + task-10 mode clarification
+- Expanded `_on_event` to build `tool_trace: list[dict]` with `{tool, args, success, observation}` — commit `74e17ae`
+- Stage-2 gate REGENERATED at commit `74e17ae` with v1.1 trace (artifact `20260811T153712Z`)
+
+## Canonical stage-2 artifact (ready for stage-3 scoring)
+
+- Path: `bench/results/smoke/smoke-medium-coder-qwen3-coder-30b-a3b-instruct-awq-4bit-vllm-gpu-20260811T153712Z.probe.json`
+- Sidecar: `bench/results/smoke/smoke-medium-coder-qwen3-coder-30b-a3b-instruct-awq-4bit-vllm-gpu-20260811T153712Z.json`
+- `harness_version`: v1.1
+- `openhands_sdk_version`: 1.41.0
+- `harness_commit_sha`: 74e17ae
+- Cell verdict: pass · 10/10 tasks · 0 agent_errors · 0 run_errors
+- Tools observed exercising: `file_editor` (view + str_replace + create), `terminal`, `think`, `finish`
+
+## Invalidated stage-2 artifacts (retained on disk per "never rm bench/results/*.json" rule)
+
+- `20260811T151156Z` — tools=[] Action/Error loop (pre-`4c05562`)
+- `20260811T152029Z` — NameError on default_tools (pre-`8963a10`)
+- `20260811T152400Z` — first PASS run but v1 trace (list[str]; superseded by `20260811T153712Z`)
 
 ## Remaining before current Definition of Done
 
-1. **Stage-2 smoke** (one task through full runner, `medium-01` only via `--smoke`):
-   ```bash
-   cd ~/dev/openhands-ext-v1
-   source .venv/bin/activate
-   python scripts/benchmark-tier-runner.py \
-     --tier medium --role coder \
-     --task-set bench/tasks/coder-medium-multi-turn.json \
-     --smoke --results-dir bench/results/smoke \
-     --candidate-file bench/candidates/coder-medium-stage2-single.json
-   ```
-   Runner launches its own vLLM on :8501 with `awq_marlin`, `--tool-call-parser qwen3_coder`, `--reasoning-parser qwen3`. Expect one `BenchRun` JSON under `bench/results/smoke/`. Success = artifact validates against the extended schema **and** the three new `run_metadata` fields are populated:
-   - `harness_version = "v1"`
-   - `openhands_sdk_version = "1.41.0"`
-   - `docker_image = "ghcr.io/openhands/agent-server:latest-python"`
-
-   Failure modes to watch:
-   - vLLM launch failure on :8501 (port already bound → kill first, or the launcher will surface it)
-   - AWQ marlin compilation error (fallback to `--quantization awq` — will require a launcher-flags check)
-   - `_probe_coder_sdk` raising because of an SDK-surface case the smoke didn't cover — paste the traceback back
-
-2. **Full run**: 2 coder cells × 10 tasks (`qwen3-coder-30b-a3b-instruct-awq-4bit` + `qwen3_6-35b-a3b-q4kxl-gguf`).
-
-3. **Score via Perplexity-Max** against the 10 gold files (dump → paste → score → verify against raw content per local-llm-bench skill).
-
-4. **File ADR-0027 verdict** applying the pre-registered ADR-0026 reversal criteria (post-hoc interpretation prohibited).
+- **Stage-3: score against Perplexity-Max gold.** Feed `20260811T153712Z.probe.json` + rubric + gold to the scoring stage. Rubric at `bench/rubrics/coder-medium-multi-turn.rubric.json` (locked, `post_hoc_edit_locked=true`). Gold at `bench/gold/coder-medium/` (locked).
+- Pre-registered reversal criteria (POST-HOC INTERPRETATION PROHIBITED):
+  1. Flip to `qwen3_6-35b-a3b-q4kxl-gguf` if ALL 10 scores ≥85 AND macro lead >3 pts
+  2. Confirm ADR-0023 coder if AWQ macro leads ≥3 pts OR 35b <70 on any 2 tasks
+  3. Intermediate: confirm + log per-task mix
+- After scoring, author verdict ADR (ADR-0027 or amendment to ADR-0023, TBD by outcome shape).
 
 ## Open questions / awaiting user answer
 
-- none
+- **Stage-3 execution mode.** Options:
+  - (a) Feed the artifact + rubric + gold to Perplexity Max (this thread) for immediate scoring — no additional Colossus work needed.
+  - (b) Score the sole AWQ candidate now; the 35b-a3b-q4kxl fallback candidate would need its own stage-2 pass (~2 min) before the reversal criteria can be evaluated.
+- Recommendation: (b) — even if AWQ scores ≥85 across the board, the reversal criteria require comparison against 35b. Running 35b now costs one extra 2-min stage-2 pass and unblocks the full verdict decision tree.
 
 ## Exact next action
 
-Run stage-2:
-```bash
-cd ~/dev/openhands-ext-v1 && git pull --ff-only
-source .venv/bin/activate
-python scripts/benchmark-tier-runner.py \
-  --tier medium --role coder \
-  --task-set bench/tasks/coder-medium-multi-turn.json \
-  --smoke --results-dir bench/results/smoke \
-  --candidate-file bench/candidates/coder-medium-stage2-single.json
-```
-Paste the tail of stdout + the resulting JSON path. If a `BenchRun` JSON lands under `bench/results/smoke/` and its `run_metadata` shows all three v1 fields populated, we proceed to the full 2×10 run.
+Ask user: "Run stage-2 on the 35b-a3b-q4kxl fallback candidate now (2 min) so both candidates can be scored in one shot? Or score the AWQ candidate alone first and decide about 35b after?"
