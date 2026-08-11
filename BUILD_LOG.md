@@ -210,3 +210,20 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** none (Phase 0 pre-tier scaffolding).
 - **PORTING_LEDGER / ADR updated:** none. Registry is authored code, not a vendored port. No ADR required — candidate-list content is deliberately hot-editable per spec §0.0b (never pre-narrow the pool).
 - **Stop-condition status:** Phase 0 pool-acquisition machinery in place; downloads not yet run.
+
+## 2026-08-11 01:05 EDT — Phase 0 embedder pool downloaded + pull-models.sh polish
+
+- **Stage / plugin / port:** Phase 0 · §0.0b candidate pool acquisition (embedder complete)
+- **What changed:**
+  1. **Embedder pool pulled on Colossus** (166 s wall). 4 candidates now on disk with pinned HF revisions:
+     - `qwen3-embedding-0_6b-bf16` @ `97b0c614be4d` (1.21 GB, rollup `20eb5b26865a`)
+     - `qwen3-embedding-0_6b-q8-gguf` @ `370f27d7550e` (639 MB, rollup `f6a9ca9ef8a4`)
+     - `qwen3-embedding-4b-bf16` @ `5cf2132abc99` (8.06 GB, rollup `a5b2bd10961d`)
+     - `qwen3-embedding-4b-q8-gguf` @ `f4602530db1d` (4.28 GB, rollup `4400f3a437bf`)
+  2. **`scripts/pull-models.sh` polish:** replaced deprecated `datetime.utcnow()` with `datetime.now(timezone.utc)` (Python 3.14 DeprecationWarning eliminated); added HF-auth soft-check warning when `HF_TOKEN` is not set and no cached token at `~/.cache/huggingface/token`, noting that the ~155 GiB coder+planner batch benefits from an authenticated session. Warning only — script still runs unauthenticated.
+- **Files touched:**
+  - `models/manifest.json` (created by first pull; not committed — see .gitignore)
+  - `scripts/pull-models.sh` (utcnow deprecation + HF-auth warning)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none.
+- **Stop-condition status:** Embedder-pool half of Phase 0 §0.0b complete. Coder + planner pools pending (~155 GiB).

@@ -75,6 +75,15 @@ fi
 
 mkdir -p "$REPO_ROOT/models"
 
+# HF auth soft-check: warn (do not fail) if no token in env. Unauthenticated
+# HF pulls are rate-limited and may throttle for the ~155 GiB coder+planner
+# batch. hf CLI picks up HF_TOKEN automatically.
+if [ -z "${HF_TOKEN:-}" ] && [ ! -f "$HOME/.cache/huggingface/token" ]; then
+  echo "WARN: no HF_TOKEN in env and no token cached at ~/.cache/huggingface/token."
+  echo "WARN: pulls will run unauthenticated (rate-limited). For large role batches"
+  echo "WARN: (--role coder|planner|all) set HF_TOKEN=<your read token> before running."
+fi
+
 {
   echo "===== pull-models start — $(date -Iseconds) ====="
   echo "role: $ROLE   dry-run: $DRY_RUN"
@@ -244,7 +253,7 @@ entry = {
     "actual_size_bytes": int("$SIZE_BYTES") if "$SIZE_BYTES".isdigit() else None,
     "rollup_sha256": "$ROLLUP" or None,
     "local_dir": os.path.relpath("$DEST", "$REPO_ROOT"),
-    "resolved_at_utc": __import__("datetime").datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "resolved_at_utc": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "source_url": f"https://huggingface.co/$HF_REPO" + (f"/tree/$RESOLVED_REV" if "$RESOLVED_REV" else ""),
 }
 # Replace any prior entry with the same slug (idempotent re-runs) but preserve
