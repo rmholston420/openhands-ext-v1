@@ -29,6 +29,7 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0019 | [Phase 2 MCP port range, mode wrapper, skills convention](ADR-0019-phase-2-mcp-port-range-and-mode-wrapper.md) | Ratified | Phase 2 |
 | 0020 | [UFW bridge egress for sandbox healthcheck](ADR-0020-ufw-bridge-egress-for-sandbox-healthcheck.md) | Ratified | Phase 1 |
 | 0021 | [Live UI Playwright smoke test](ADR-0021-live-ui-playwright-smoke.md) | Ratified | Phase 1 |
+| 0022 | [Phase 0.2 coder + planner Medium-tier task-set, gold-reference, and co-residency protocol](ADR-0022-phase-0-2-coder-planner-medium-task-and-gold-protocol.md) | Ratified | Phase 0.2 |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 

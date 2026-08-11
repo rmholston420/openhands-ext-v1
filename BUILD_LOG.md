@@ -1004,3 +1004,14 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** no new ADR (pool files are mechanical derivation from ADR-0014/0015 already-ratified decisions)
 - **Stop-condition status:** Phase 0.2 pool authorship met. Coder-medium + planner-medium task sets + gold references remain blocked pending ADR authorship (decision surface: task count/shape, gold protocol, scoring passes, co-residency).
+
+## 2026-08-11 08:57 EDT — ADR-0022 filed: Phase 0.2 coder + planner Medium task-set + gold + co-residency protocol
+
+- **Stage / plugin / port:** Phase 0.2 · Medium tier · coder + planner
+- **What changed:** Filed ADR-0022 resolving four coupled Phase 0.2 decision surfaces as one unit — (1) coder-medium task set = 10 synthetic tool-call tasks, (2) planner-medium task set = 10 structural-JSON plan tasks, (3) Perplexity-Max gold = single-pass hash-frozen, (4) co-residency = sequential coder→planner blocks with one swap. Rationale: four surfaces are tightly coupled and reviewed together; separate ADRs would inflate audit trail without adding review value. Runtime estimate: ~2.5 hr per Medium coder+planner run. Extends ADR-0016 (rubric shape) — does not amend it. Escalation-skip to Phase 0.3 explicitly ruled out (spec §0.2 requires scored shortlisting; Fast tier did not produce unambiguous large-margin winners for coder or planner).
+- **Files touched:**
+  - `adrs/ADR-0022-phase-0-2-coder-planner-medium-task-and-gold-protocol.md` (new, Ratified)
+  - `adrs/README.md` (index row appended)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** ADR-0022 filed
+- **Stop-condition status:** Coder-medium + planner-medium task-set + gold + co-residency protocol locked. Next: author `bench/tasks/{coder,planner}-medium.json` + `bench/gold/{coder,planner}-medium/<task-id>.md` × 20 per protocol. Then run Medium tier.
