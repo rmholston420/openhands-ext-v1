@@ -20,7 +20,7 @@
     "coder-full-02-bug-hunt-cross-module": "PENDING_FIRST_RUN",
     "coder-full-03-feature-add-read-first-unfamiliar": "PENDING_FIRST_RUN",
     "coder-full-04-pytest-multi-failure-report": "PENDING_FIRST_RUN",
-    "coder-full-05-git-status-log-report": "PENDING_FIRST_RUN",
+    "coder-full-05-json-config-schema-report": "PENDING_FIRST_RUN",
     "coder-full-06-exact-diff-fix-plus-regression-test": "PENDING_FIRST_RUN",
     "coder-full-07-config-driven-behavior-change": "PENDING_FIRST_RUN",
     "coder-full-08-error-handling-addition": "PENDING_FIRST_RUN",
@@ -29,7 +29,7 @@
   },
   "report_style_task_ids": [
     "coder-full-04-pytest-multi-failure-report",
-    "coder-full-05-git-status-log-report",
+    "coder-full-05-json-config-schema-report",
     "coder-full-09-unused-import-cluster-analysis"
   ],
   "reversal_criteria": {
@@ -127,21 +127,19 @@
       "report_style": true
     },
     {
-      "id": "coder-full-05-git-status-log-report",
-      "prompt": "In /workspace/repo, report the current git working-tree state and recent history. DO NOT modify, add, or commit anything. In your Finish message, list: (1) every file shown as modified or staged, with its status letter (M/A/D/R/etc), and (2) the last 3 commit subjects (newest first). Do not run `git add`, `git commit`, `git reset`, `git checkout`, or `git stash`.",
+      "id": "coder-full-05-json-config-schema-report",
+      "prompt": "In /workspace/repo, three JSON config files live under config/ (app.json, db.json, cache.json). DO NOT modify any file. Read all three and, in your Finish message, produce a schema report with two sections: (1) for each file, a line 'config/<name>.json: keys=[k1, k2, ...]' listing its top-level keys in the order they appear; (2) a 'Shared keys:' line listing every top-level key that appears in ALL THREE files (sorted alphabetically). If no key is shared by all three, write 'Shared keys: none'.",
       "fixtures": {
-        "/workspace/repo/.setup_script.sh": "#!/usr/bin/env bash\nset -eu\ncd /workspace/repo\ngit init -q -b main\ngit config user.email 'harness@local'\ngit config user.name 'Harness'\ncat > src/main.py <<'PY'\ndef main():\n    print(\"initial\")\nPY\ncat > README.md <<'MD'\n# repo\ninitial\nMD\ncat > CHANGELOG.md <<'MD'\n# Changelog\nMD\nmkdir -p src\nmv src/main.py src/main.py.tmp\nmkdir -p src\nmv src/main.py.tmp src/main.py\ngit add -A\ngit commit -q -m 'initial import'\ncat > src/main.py <<'PY'\ndef main():\n    print(\"v2\")\nPY\ngit add -A\ngit commit -q -m 'update main to v2'\necho '- 2026-08-11: v2 release' >> CHANGELOG.md\ngit add -A\ngit commit -q -m 'changelog: v2 release note'\n# now leave two files dirty in the working tree\ncat > src/main.py <<'PY'\ndef main():\n    print(\"v3-wip\")\nPY\necho '\\n## Notes\\nwork in progress' >> README.md\n",
-        "/workspace/repo/src/main.py": "def main():\n    print(\"placeholder\")\n",
-        "/workspace/repo/README.md": "# repo\nplaceholder\n",
-        "/workspace/repo/CHANGELOG.md": "# Changelog\n"
+        "/workspace/repo/config/app.json": "{\n  \"name\": \"orders-api\",\n  \"version\": \"1.4.2\",\n  \"debug\": false,\n  \"timeout_seconds\": 30\n}\n",
+        "/workspace/repo/config/db.json": "{\n  \"name\": \"orders-primary\",\n  \"host\": \"db.internal\",\n  \"port\": 5432,\n  \"timeout_seconds\": 10,\n  \"pool_size\": 16\n}\n",
+        "/workspace/repo/config/cache.json": "{\n  \"name\": \"orders-cache\",\n  \"backend\": \"redis\",\n  \"host\": \"cache.internal\",\n  \"ttl_seconds\": 300,\n  \"timeout_seconds\": 5\n}\n"
       },
-      "fixture_setup_command": "bash /workspace/repo/.setup_script.sh",
-      "expected_tool_sequence": ["execute_bash", "execute_bash", "finish"],
-      "preferred_tools": ["execute_bash"],
+      "expected_tool_sequence": ["read_file", "read_file", "read_file", "finish"],
+      "preferred_tools": ["read_file", "execute_bash"],
       "dispreferred_tools": ["str_replace_editor", "write_file"],
-      "notes": "Expected finish content: modified files = 'M src/main.py' and 'M README.md'; last 3 commit subjects newest-first = 'changelog: v2 release note', 'update main to v2', 'initial import'. Any commit/reset/checkout/add is disqualifying (band cap 40-59). Omitted FinishAction auto-fires reversal rule 2 clause 3.",
+      "notes": "Expected finish content: 'config/app.json: keys=[name, version, debug, timeout_seconds]' / 'config/db.json: keys=[name, host, port, timeout_seconds, pool_size]' / 'config/cache.json: keys=[name, backend, host, ttl_seconds, timeout_seconds]' / 'Shared keys: name, timeout_seconds'. Any file modification is disqualifying (band cap 40-59). Omitted FinishAction auto-fires reversal rule 2 clause 3.",
       "expected_final_state": null,
-      "expected_final_state_mode": "rubric_only_with_immutable_check",
+      "expected_final_state_mode": "rubric_only",
       "smoke_test_command": null,
       "report_style": true
     },

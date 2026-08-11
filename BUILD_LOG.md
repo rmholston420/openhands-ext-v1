@@ -1401,3 +1401,19 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
   - F05: shell-script fixture setup at `.setup_script.sh` invoked before agent start (parity with existing Medium harness setup shape).
   - Docker pin: `docker_image_digest_expected` pinned to SHA at Full-tier only; Medium/Fast tags left as tag-based per prior scope.
 - **Stop-condition status:** Gate-3 DoD steps 1–4 met (task set + gold + rubric + reversal criteria pre-registered and locked). Ready for probe runs. Steps 5–7 (execute probes → score → verdict ADR-0029) remain.
+
+## 2026-08-11 12:19 EDT — ADR-0028 amendment 1: F05 task class swap (runner-constraint fix) + SESSION_HANDOFF probe commands corrected
+
+- **Stage / plugin / port:** Phase 0.3 gate-3 · coder Full-tier task set · bench harness
+- **What changed:** F05 class swapped from "git status + git log summary" to "JSON config schema report". Original F05 required a `fixture_setup_command` hook to seed a git repo pre-run; verification against `bench/runner/probes.py` confirmed the runner does NOT honor that field (only `expected_final_state`, `expected_final_state_mode`, `smoke_test_command`, and `no_changes_expected` are runner-executed). Replacement F05 preserves the report-style class, DO NOT MODIFY invariant, and finish-action clause in the reversal criteria. No change to reversal-criteria math, rubric bands, candidate set, or verdict-ADR reservation.
+- **Also fixed this commit:** SESSION_HANDOFF probe commands were wrong entrypoint (`python -m bench.run_multi_turn` — non-existent module; already flagged at 2026-08-11 10:56 EDT BUILD_LOG entry). Corrected to `scripts/benchmark-tier-runner.py` with required flags (`--tier full --role coder --task-set … --candidate-file … --rubric bench/rubrics/full-scored.json --vllm-release/--llama-cpp-build …`). Added pre-flight stop of any pre-existing servers on runner-managed ports (:8501 / :8082) since the runner launches its own.
+- **Files touched:**
+  - `adrs/ADR-0028-phase-0-3-gate-3-coder-full-tier-re-eval.md` (amendment block + F05 row rewritten)
+  - `adrs/README.md` (row 0028 status → "Ratified (amended 2026-08-11 12:17 EDT: F05 class swap for runner constraint)")
+  - `bench/tasks/coder-full-multi-turn.json` (F05 replaced: id, prompt, fixtures, tool sequences, notes, mode; `report_style_task_ids` + `gold_hashes` keys updated)
+  - `bench/gold/coder-full-multi-turn/coder-full-05-git-status-log-report.md` DELETED
+  - `bench/gold/coder-full-multi-turn/coder-full-05-json-config-schema-report.md` CREATED
+  - `SESSION_HANDOFF.md` (overwritten with correct entrypoint + pre-flight)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** ADR-0028 amended (in-place amendment block per kosmos-adr-authoring §6). `adrs/README.md` row updated.
+- **Stop-condition status:** Gate-3 DoD steps 1–4 remain met (task set + gold + rubric + reversal criteria pre-registered and locked, with F05 amended). Ready for probe runs. Steps 5–7 remain.

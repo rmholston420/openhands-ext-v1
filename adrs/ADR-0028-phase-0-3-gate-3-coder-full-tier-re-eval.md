@@ -1,7 +1,9 @@
 # ADR-0028 — Phase 0.3 gate-3 coder Full-tier re-eval (AWQ vs 35b, pre-registered)
 
-**Status:** Ratified
-**Lock-in phase:** Phase 0.3 gate-3 (fixture lock-in 2026-08-11 12:05 EDT)
+> **STATUS AMENDMENT (2026-08-11 12:17 EDT):** F05 task class reassigned from "git status + git log summary" to "JSON config schema report". Reason: original F05 design required pre-run fixture setup (a shell script to initialize a git repo with pre-seeded history and dirty working tree), but `bench/runner/probes.py` does NOT execute a `fixture_setup_command` — only `expected_final_state` verification and `smoke_test_command` are honored. F05 as originally specified was therefore unrunnable; the runner would present a clean, non-git workspace and both candidates would trivially degenerate. Replacement F05 preserves the report-style class (read-only, DO NOT MODIFY, FinishAction required) and preserves the finish-action clause in the reversal criteria. Rule 2 clause 3 still names F05. No change to reversal criteria math, rubric bands, or candidate set. Verdict ADR-0029 remains reserved.
+
+**Status:** Ratified (amended 2026-08-11 12:17 EDT — F05 class swap; runner constraint)
+**Lock-in phase:** Phase 0.3 gate-3 (fixture lock-in 2026-08-11 12:05 EDT · F05 amendment 2026-08-11 12:17 EDT)
 **Supersedes:** —
 **Extends:** ADR-0022, ADR-0023, ADR-0026, ADR-0027
 
@@ -32,7 +34,7 @@ Open Phase 0.3 gate-3 as a **coder Full-tier multi-turn re-eval** with the pre-r
 | F02 | Real bug hunt with failing test as oracle | Test fails; agent must locate root cause across ≥2 files, not just patch the assertion. |
 | F03 | Feature addition requiring read-first of unfamiliar module | Add a method to a class the agent has not seen; must preserve public API + existing tests. |
 | F04 | Report-style: pytest failure summary with 3 failing tests across 2 files | **Report-style · DO NOT MODIFY.** Requires FinishAction with per-test breakdown. Direct successor to Medium T05, harder. |
-| F05 | Report-style: git status + git log summary | **Report-style · DO NOT MODIFY.** Requires FinishAction with modified files + last 3 commit subjects. Direct successor to Medium T08, harder. |
+| F05 | Report-style: JSON config schema report (amended 2026-08-11) | **Report-style · DO NOT MODIFY.** Multiple `config/*.json` files pre-seeded via fixtures; agent must read all, list each file's key set in FinishAction, and identify shared keys. Runner-friendly (no setup hook required). Replaces original git-status class (unrunnable due to no `fixture_setup_command` support in `bench/runner/probes.py`). |
 | F06 | Exact-diff bug fix with regression test to be written after | Fix + add regression test that would have caught the bug. Both artifacts scored. |
 | F07 | Configuration-driven behavior change | Modify config + code together such that a smoke command produces new expected output; test-set-scale change (not one line). |
 | F08 | Error-handling addition to existing function | Add try/except path preserving happy-path bytes exactly; smoke tests both paths. |
