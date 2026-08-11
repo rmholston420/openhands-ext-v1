@@ -1248,3 +1248,11 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Files touched:** —
 - **Ports / adapters affected:** —
 - **Stop-condition status:** Verified `PORTS[("vllm","coder")] = 8501` in `bench/runner/main.py` (not 8100). The runner launches its own vLLM instance on :8501; any pre-existing vLLM on :8100 does not conflict and does not need to be torn down. `_probe_coder_sdk`'s endpoint is set from `server.port` and therefore points at :8501 in production runs. Earlier SESSION_HANDOFF references to :8100 for the coder cell are stale — corrected in the next handoff overwrite.
+
+## 2026-08-11 10:56 EDT — Phase 0.3 gate-2 stage-2: wrong entrypoint, no-op runs
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · stage-2 preflight (correction)
+- **What changed:** SESSION_HANDOFF corrected. No code touched.
+- **Files touched:** SESSION_HANDOFF.md
+- **Ports / adapters affected:** —
+- **Stop-condition status:** The stage-2 command I published used `python -m bench.runner.main`, but `bench/runner/main.py` has no `if __name__ == "__main__":` block — the module has module-level imports only, so `python -m ...` runs the imports and exits 0 with no output. User ran it three times; each produced no output and a clean prompt. Correct entrypoint is `scripts/benchmark-tier-runner.py`, which builds the argparse parser and calls `run_tier(args)` from `bench/runner/main.py`. Confirmed via `grep -n "add_argument\|ArgumentParser" scripts/benchmark-tier-runner.py`.

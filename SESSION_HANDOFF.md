@@ -24,7 +24,7 @@
    ```bash
    cd ~/dev/openhands-ext-v1
    source .venv/bin/activate
-   python -m bench.runner.main \
+   python scripts/benchmark-tier-runner.py \
      --tier medium --role coder \
      --task-set bench/tasks/coder-medium-multi-turn.json \
      --smoke --results-dir bench/results/smoke \
@@ -56,7 +56,7 @@ Run stage-2:
 ```bash
 cd ~/dev/openhands-ext-v1 && git pull --ff-only
 source .venv/bin/activate
-python -m bench.runner.main \
+python scripts/benchmark-tier-runner.py \
   --tier medium --role coder \
   --task-set bench/tasks/coder-medium-multi-turn.json \
   --smoke --results-dir bench/results/smoke \
