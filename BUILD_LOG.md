@@ -1608,3 +1608,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** none (ADR-0030 status unchanged, still Proposed)
 - **Stop-condition status:** 4-query calibration qrels LOCKED. Scoring cannot proceed agent-side — per-cell top-k rankings live only on Colossus at `~/.forge-oh/bench_embedder_full_multi_block/`; pool.jsonl is a union without rank. User to execute step 6d on Colossus against locked qrels; 3 Qwen cells produce macro metrics; nomic reported informationally. NOT a defensible verdict (needs 20 queries/block for stable macro per ADR-0030) — calibration signal only.
+
+## 2026-08-11 16:36 EDT — Phase 0.4 gate-4 step 6d calibration SCORED (4 queries, offline)
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · step 6d (scoring) · 4-query calibration slice
+- **What changed:** Authored offline scorer `bench/scoring/embedder-full-multi-block-calibration/score_offline.py` that reads step-6b per-cell ranked top-20 output (16 files at `~/.forge-oh/bench_embedder_full_multi_block/pool_*.jsonl`) + locked `qrels.jsonl`, computes nDCG@10 / R@10 / MRR@10 / R@1 / composite per (cell, chunker, block) without re-running any embedder. Composite formula per rubric: `100 * (0.40*nDCG@10 + 0.25*R@10 + 0.20*MRR@10 + 0.15*R@1)`. Ran on Colossus. Macro composite per cell: e006b_q8_cpu=16.41, e04b_q8_cpu=29.11, e08b_q6k_cpu=32.04, enomicc_q6k_gpu=28.94. 8B leads on 3 of 4 metrics (nDCG, R@10, R@1); 4B leads MRR. 0.6B has 1 all-zero sub-cell (H1 docs). Full table + json at `~/.forge-oh/bench_embedder_full_multi_block/scored_4query_calibration.json`. NO reversal-criteria (V3/W3) interpretation — calibration signal only (N=2 per sub-cell, N=4 per cell macro); 20 queries/block needed for stable macro per ADR-0030.
+- **Files touched:** `bench/scoring/embedder-full-multi-block-calibration/score_offline.py` (new); `bench/scoring/embedder-full-multi-block-calibration/scored_4query_calibration_20260811.md` (new, full results table)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** none (ADR-0030 status unchanged, still Proposed; verdict deferred pending full labeling decision)
+- **Stop-condition status:** 4-query calibration END. User decides: (a) expand to full 20 queries/block labeling for defensible V3/W3 verdict, or (b) accept calibration signal + defer to future re-eval. NOT ratifying ADR-0030 or filing ADR-0031 at this signal depth.
