@@ -1833,3 +1833,19 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Follow-up learnings:**
   - `ToolDefinition` is abstract; concrete subclasses must implement `.create()`. `TerminalTool.create()` requires a `ConversationState` and eagerly instantiates a real `TerminalExecutor` — too much machinery for LLM-only tool-calling checks. Solution used here: local minimal subclass with no executor.
   - The SDK auto-derives the OpenAI tool `name` from the `ToolDefinition` class name (snake_case). If future smokes want to assert a specific tool name, name the class deliberately (e.g. `class Terminal(ToolDefinition[...]): ...` renders as `terminal`).
+
+## 2026-08-11 19:19 EDT — Phase 3.g embedder half PASSED (round-trip against llama.cpp :8090)
+
+- **Stage / plugin / port:** Phase 3 · Runtime · LLM adapter · embedder endpoint (llama.cpp :8090, `--embedding --pooling last`, CPU-resident per ADR-0017 amd #3)
+- **What changed:** Item 3.g embedder half proven. `bench/smoke-phase-3-item-3g-embedder/` `pass=true`. Direct `POST http://127.0.0.1:8090/v1/embeddings` on `qwen3-embedding-4b-q8-gguf` with three inputs (two distinct + one duplicate) returned in 0.54 s: HTTP 200, three list-of-float vectors of dim 2560, L2 norms all 1.0, distinct-pair cosine 0.452, identical-input cosine 1.0 with `max_abs_diff = 0.0` (bit-for-bit determinism). Framed as an embedding round-trip because `--embedding` mode disables chat completions — tool-calling is not a meaningful check for this endpoint; `/v1/embeddings` is.
+- **Files touched:**
+  - `bench/smoke-phase-3-item-3g-embedder/task.md` (new)
+  - `bench/smoke-phase-3-item-3g-embedder/run.sh` (new; direct HTTP, no SDK, no litellm — Row-2 pattern)
+  - `docs/verification/verification-matrix.md` (3.g → ✅ with all three endpoints covered; item rephrased "tool-calling" → "capability functional per endpoint" to reflect that embedding endpoints require a different capability check)
+- **Ports / adapters affected:** LLM port (embedder endpoint capability confirmed).
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** 3.g fully met (coder ✓ tool-call, planner ✓ tool-call, embedder ✓ round-trip).
+- **Design notes:**
+  - Embedder co-residency: production config is 4B-Q8 on CPU per ADR-0017 amd #3 + ADR-0031 defer verdict; no VRAM competition with the GPU planner. Smaller-embedder-on-GPU (ADR-0030b) remains Proposed / deferred; not touched by this smoke.
+  - The endpoint returns L2-normalized vectors (norm = 1.0) — no client-side normalization needed for cosine similarity downstream.
+  - Bit-for-bit determinism (`max_abs_diff = 0.0`) matches expectation for llama.cpp embedding output at fixed seed; this simplifies cache invariants for downstream RAG.
