@@ -1196,3 +1196,17 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** bench harness `_probe_coder_sdk` now real; ready for smoke run.
 - **PORTING_LEDGER / ADR updated:** —
 - **Stop-condition status:** ADR-0026 stop conditions 1-2 satisfied (SDK, DockerWorkspace). Condition 3 (turn count > 20) enforced natively via `max_iteration_per_run=20`. Condition 4 (fixture seed failure) handled explicitly with `seed_failures` list and `verdict_source=transport`.
+
+## 2026-08-11 10:44 EDT — Phase 0.3 gate-2 · runner wired to populate v1 harness run_metadata fields
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · bench runner CLI · run_metadata population for ADR-0026 v1 harness
+- **What changed:**
+  - `bench/runner/main.py`:
+    * Added `_openhands_sdk_version()` helper that reads `importlib.metadata.version("openhands-sdk")` and returns None on `PackageNotFoundError` / `ImportError`.
+    * `_run_one_cell`: reads `harness_version` and `docker_image_expected` from the loaded task set at cell entry; captures `openhands_sdk_version_val` at the same point where `sdk_ok` is probed. All three flow into both the dry-run scaffold builder and the real `_build_run` call. On non-coder runs OR when SDK is unavailable, `openhands_sdk_version` and `docker_image` are forced to null so the artifact only records the SDK/Docker path when it actually ran.
+    * `_build_scaffold_run` and `_build_run`: accept three new optional kwargs (`harness_version`, `openhands_sdk_version`, `docker_image`) and pass them into `RunMetadata`.
+  - No routing change needed: `probe_coder` already dispatches on `Role.CODER` and delegates to `_probe_coder_sdk` whenever `openhands.sdk` imports succeed. Medium-tier `coder-medium-multi-turn.json` therefore already flows to the SDK-driven DockerWorkspace harness.
+- **Files touched:** bench/runner/main.py
+- **Ports / adapters affected:** bench runner cell dispatch → RunMetadata assembly. No changes to probe entry point or schema.
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** Sandbox validation confirms both cases: (a) medium-tier v1 harness run with `harness_version="v1"`, `openhands_sdk_version="1.41.0"`, `docker_image="ghcr.io/openhands/agent-server:latest-python"` validates cleanly against the extended schema; (b) legacy null-fields case (all three fields null) also validates. No test regressions in bench/tests/test_schema.py — existing `_base_run()` fixture does not pass the three new kwargs and gets the `None` defaults, which the nullable-string schema accepts.

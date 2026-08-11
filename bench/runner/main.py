@@ -130,6 +130,22 @@ def _harness_commit_sha() -> str:
         return "unknown"
 
 
+def _openhands_sdk_version() -> Optional[str]:
+    """Installed openhands-sdk package version, or None if not importable.
+
+    Called at cell-build time so each BenchRun records the exact SDK version
+    that drove _probe_coder_sdk (ADR-0026 v1 harness contract).
+    """
+    try:
+        from importlib.metadata import version, PackageNotFoundError  # type: ignore
+        try:
+            return version("openhands-sdk")
+        except PackageNotFoundError:
+            return None
+    except ImportError:
+        return None
+
+
 def _load_rubric(path: Optional[Path]) -> Optional[Rubric]:
     if path is None:
         return None
@@ -242,6 +258,12 @@ def _run_one_cell(
     modes — encodes them into the BenchRun instead. Returns (record, probe);
     probe is None on dry-run or launch failure. Probe carries raw_content per
     task for R2 diagnosis sidecars."""
+    # Harness-metadata inputs for RunMetadata (ADR-0026 v1).
+    # Read from the task set so a legacy pre-v1 fast-tier task set produces
+    # harness_version=None and downstream schema validation still passes
+    # (all three fields are nullable strings).
+    harness_version_val: Optional[str] = task_set_data.get("harness_version")
+    docker_image_val: Optional[str] = task_set_data.get("docker_image_expected")
 
     cell_label = f"{role.value}/{cand.slug}/{cand.runtime}/{cand.device}"
     progress.start_cell(cell_label)
@@ -256,17 +278,27 @@ def _run_one_cell(
             started_at=started_at, ended_at=_utcnow(),
             llama_cpp_build_tag=llama_cpp_build_tag,
             vllm_release_tag=vllm_release_tag, rubric=rubric,
+            harness_version=harness_version_val,
+            openhands_sdk_version=(
+                _openhands_sdk_version() if role == Role.CODER else None
+            ),
+            docker_image=(docker_image_val if role == Role.CODER else None),
             notes="dry-run scaffold",
         )
         progress.end_cell(cell_label, verdict="dry-run")
         return record, None
 
     # 1. Preflight probe SDK availability so we can annotate up front.
+    # Also records openhands_sdk_version for RunMetadata when the SDK is
+    # actually importable (ADR-0026 v1).
     try:
         import openhands.sdk  # noqa: F401
         sdk_ok = True
     except ImportError:
         sdk_ok = False
+    openhands_sdk_version_val: Optional[str] = (
+        _openhands_sdk_version() if sdk_ok else None
+    )
     if not sdk_ok and role == Role.CODER:
         progress.log("PROBE",
                      f"{cell_label} openhands-sdk not installed — coder cell will "
@@ -376,6 +408,10 @@ def _run_one_cell(
         verdict_notes = f"{verdict_notes} :: {launch_fail_detail}"
 
     # 8. Build BenchRun.
+    # Only surface docker_image / openhands_sdk_version on runs that actually
+    # exercised the SDK-driven DockerWorkspace path (coder + SDK importable).
+    # Fallback / non-coder runs leave them null to keep the artifact honest.
+    used_sdk_docker_path = role == Role.CODER and sdk_ok
     record = _build_run(
         tier=tier, role=role, cand=cand, task_set_meta=task_set_meta,
         started_at=started_at, ended_at=ended_at,
@@ -386,6 +422,11 @@ def _run_one_cell(
         cold_start_ms=cold_start_ms,
         verdict_str=verdict_str, verdict_notes=verdict_notes,
         launched_ok=not launch_failed,
+        harness_version=harness_version_val,
+        openhands_sdk_version=(
+            openhands_sdk_version_val if used_sdk_docker_path else None
+        ),
+        docker_image=(docker_image_val if used_sdk_docker_path else None),
     )
 
     progress.end_cell(cell_label, verdict=verdict_str)
@@ -499,6 +540,9 @@ def _build_scaffold_run(**kw) -> BenchRun:
             harness_commit_sha=_harness_commit_sha(),
             llama_cpp_build_tag=kw["llama_cpp_build_tag"],
             vllm_release_tag=kw["vllm_release_tag"],
+            harness_version=kw.get("harness_version"),
+            openhands_sdk_version=kw.get("openhands_sdk_version"),
+            docker_image=kw.get("docker_image"),
             rubric=kw["rubric"], notes=kw.get("notes", "dry-run"),
         ),
         tool_call_behavior=None, task_outcome=None,
@@ -533,6 +577,9 @@ def _build_run(
     verdict_str: str,
     verdict_notes: str,
     launched_ok: bool,
+    harness_version: Optional[str] = None,
+    openhands_sdk_version: Optional[str] = None,
+    docker_image: Optional[str] = None,
 ) -> BenchRun:
     dur = (ended_at - started_at).total_seconds()
 
@@ -594,6 +641,9 @@ def _build_run(
             harness_commit_sha=_harness_commit_sha(),
             llama_cpp_build_tag=llama_cpp_build_tag,
             vllm_release_tag=vllm_release_tag,
+            harness_version=harness_version,
+            openhands_sdk_version=openhands_sdk_version,
+            docker_image=docker_image,
             rubric=rubric,
             notes=verdict_notes or None,
         ),
