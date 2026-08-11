@@ -46,44 +46,28 @@ except Exception as e:
     agent = None
     err = f"{type(e).__name__}: {e}"
 
-# Query the SDK's agent registry. Its exact shape has moved around, so try
-# the most common accessors and fall back to import-path introspection.
+# Query the SDK's agent registry via the public accessor (SDK 1.41).
 registered_names = []
-sub_agents_dump = {}
+registry_dump = {}
+registry_error = None
 if agent is not None:
     try:
-        from openhands.sdk.subagent import (
-            list_registered_agents,
-        )
-        registered_names = list(list_registered_agents())
-    except Exception:
-        pass
-    if not registered_names:
-        try:
-            from openhands.sdk.subagent import registry as _reg  # type: ignore
-            for accessor in ("registered_agents", "agents", "_agents", "registry"):
-                candidate = getattr(_reg, accessor, None)
-                if callable(candidate):
-                    try:
-                        candidate = candidate()
-                    except Exception:
-                        candidate = None
-                if isinstance(candidate, dict):
-                    registered_names = list(candidate.keys())
-                    sub_agents_dump = {
-                        k: {
-                            "level": getattr(v, "level", None),
-                            "tools": getattr(v, "tools", None),
-                            "source": getattr(v, "source", None),
-                        }
-                        for k, v in candidate.items()
-                    }
-                    break
-                if isinstance(candidate, (list, set, tuple)):
-                    registered_names = list(candidate)
-                    break
-        except Exception:
-            pass
+        from openhands.sdk.subagent import get_registered_agent_definitions
+
+        defs = get_registered_agent_definitions()
+        if isinstance(defs, dict):
+            items = defs.items()
+        else:
+            items = [(getattr(d, "name", str(d)), d) for d in defs]
+        for name, defn in items:
+            registered_names.append(name)
+            registry_dump[name] = {
+                "level": getattr(defn, "level", None),
+                "tools": list(getattr(defn, "tools", []) or []),
+                "source": str(getattr(defn, "source", "") or ""),
+            }
+    except Exception as e:
+        registry_error = f"{type(e).__name__}: {e}"
 
 # Pull the code-explorer definition through the public discovery path too,
 # so we can assert its tools list matches the shipped preset regardless of
@@ -111,11 +95,18 @@ if agent is not None:
 
 wall = time.time() - t0
 
+code_explorer_registry_entry = registry_dump.get("code-explorer")
+
 verdict = {
     "wall_seconds": round(wall, 2),
     "build_agent_ok": agent is not None,
     "build_agent_error": err,
+    "registry_error": registry_error,
     "code_explorer_in_registry": "code-explorer" in registered_names,
+    "code_explorer_registry_entry": code_explorer_registry_entry,
+    "code_explorer_registry_tools_match_expected": (
+        (code_explorer_registry_entry or {}).get("tools") == ["terminal"]
+    ),
     "registered_agent_names": registered_names,
     "code_explorer_tools_from_preset": code_explorer_tools,
     "code_explorer_tools_match_expected": code_explorer_tools == ["terminal"],
@@ -127,7 +118,9 @@ verdict = {
     "pass": all([
         agent is not None,
         err is None,
+        registry_error is None,
         "code-explorer" in registered_names,
+        (code_explorer_registry_entry or {}).get("tools") == ["terminal"],
         code_explorer_tools == ["terminal"],
         task_tool_present,
         wall < 10,
