@@ -57,14 +57,15 @@ sys.path.insert(0, str(Path.cwd()))
 
 from config.agent import build_agent
 from openhands.sdk import Conversation
-from openhands.tools.execute_bash import BashTool
-from openhands.tools.str_replace_editor import StrReplaceEditorTool
+# SDK 1.41 exports: TerminalTool (was BashTool in older docs) + FileEditorTool.
+# Both are re-exported at openhands.tools package root.
+from openhands.tools import TerminalTool, FileEditorTool
 
 TASK = Path("bench/smoke-phase-3/task.md").read_text()
 EXPECTED_LINE = "OpenHands-Ext v1 Phase 3 smoke target."
 
 t0 = time.time()
-agent = build_agent(tools=[BashTool(), StrReplaceEditorTool()])
+agent = build_agent(tools=[TerminalTool(), FileEditorTool()])
 conversation = Conversation(agent=agent)
 conversation.send_message(TASK)
 result = conversation.run()
