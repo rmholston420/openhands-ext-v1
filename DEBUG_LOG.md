@@ -670,3 +670,12 @@ Entry format:
 - **Fix applied:** Pin `host_port=8000` explicitly when using `network="host"` so the SDK's health URL matches the port the container actually listens on. Also preflight `:8000` availability (and `docker rm -f` any stale prior container) before starting the workspace, since `check_port_available(8000)` runs inside SDK before `docker run`. This is a Colossus-local workaround; upstream fix would be to skip the port-derived health URL under host networking.
 - **Files changed:** `bench/smoke-phase-3-item-3c/run.sh` (added stale-container cleanup + `:8000` preflight; pinned `host_port=8000`).
 - **Related BUILD_LOG entry:** —
+
+## 2026-08-11 18:48 EDT — RemoteConversation LLM call fails with 'Incorrect API key provided: EMPTY'
+
+- **Symptom:** In DockerWorkspace-backed conversations, the LLM call fails with `LLMAuthenticationError: litellm.AuthenticationError: AuthenticationError: OpenAIException - Incorrect API key provided: EMPTY. You can find your API key at https://platform.openai.com/account/api-keys.` after ~12 s. Same coder endpoint (`http://127.0.0.1:8100/v1`) works fine from LocalConversation (Row-1). vLLM :8100 is launched without `--api-key` and accepts any Authorization header.
+- **Affected stage / plugin / port:** Phase 3 · Runtime · LLM adapter (RemoteConversation path).
+- **Root cause:** `config/agent.py` set `_LOCAL_API_KEY = SecretStr("EMPTY")`. Litellm treats the literal string `"EMPTY"` as a reserved sentinel meaning "no key set" (see `llm.py:2036 _get_api_key_value` → normalization at `_normalize_litellm_api_key_value`), and when the LLM config is round-tripped to the agent-server inside DockerWorkspace and reconstituted, the sentinel flips the request onto the actual OpenAI provider path — which rejects the placeholder value from OpenAI's servers, not from vLLM. LocalConversation bypasses this because it never re-serializes the LLM object; the in-process litellm call sends `Authorization: Bearer EMPTY` to `http://127.0.0.1:8100/v1` and vLLM accepts it.
+- **Fix applied:** Changed `_LOCAL_API_KEY = SecretStr("EMPTY")` → `SecretStr("local")` in `config/agent.py`. Any non-sentinel placeholder works; vLLM/llama.cpp ignore the value. Added a comment above the constant warning against the "EMPTY" pitfall.
+- **Files changed:** `config/agent.py` (constant + comment).
+- **Related BUILD_LOG entry:** —

@@ -61,8 +61,14 @@ PLANNER_BASE_URL = "http://127.0.0.1:8082/v1"
 EMBEDDER_MODEL = "qwen3-embedding-4B-Q8_0"
 EMBEDDER_BASE_URL = "http://127.0.0.1:8090/v1"
 
-# Local endpoints don't authenticate; litellm still requires a non-empty key.
-_LOCAL_API_KEY = SecretStr("EMPTY")
+# Local endpoints don't authenticate; litellm still requires a non-empty
+# key. Do NOT use the literal string "EMPTY" here — litellm treats it as a
+# reserved sentinel meaning "no key" and routes the request through the
+# OpenAI provider path, which then rejects it with 'Incorrect API key
+# provided: EMPTY'. This surfaces only inside RemoteConversation (agent
+# runs in the DockerWorkspace container), not LocalConversation. Use any
+# non-sentinel placeholder; vLLM/llama.cpp ignore the value.
+_LOCAL_API_KEY = SecretStr("local")
 
 # Retry / timeout policy (matches spec §2.4 TOML values)
 _NUM_RETRIES = 3
