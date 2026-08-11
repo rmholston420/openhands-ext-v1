@@ -1653,3 +1653,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** ADR-0033 amended (still Ratified; core decision unchanged, only max_output_tokens provenance mechanism corrected). ADR-0035 reserved (deferred) as the empirical-override ADR.
 - **Stop-condition status:** Phase 2.4 authoring complete + max_output_tokens now populable. NEXT: user runs `bash scripts/populate-max-output-tokens.sh` on Colossus, then `.venv/bin/python -c "from config.agent import build_agent; a = build_agent(); print('build_agent OK')"` to confirm end-to-end wiring. Then Phase 3 row-1 smoke.
+
+## 2026-08-11 17:25 EDT — ADR-0033 amended: condenser 1024 cap moved from LLM.max_input_tokens to LLMSummarizingCondenser.max_tokens
+
+- **Stage / plugin / port:** Phase 2.4 · config surface · condenser wiring
+- **What changed:** `build_agent()` end-to-end wiring failed on Colossus (`LLMContextWindowTooSmallError`, SDK 1.41 enforces `MIN_CONTEXT_WINDOW_TOKENS=16384`). Spec §2.4's `max_input_tokens=1024` for `[llm.condenser]` was mechanically ported to the `LLM(..., max_input_tokens=1024)` constructor. Diagnosis: the spec value was semantically mis-placed. Condenser reads LONG histories; shrinking its input window to 1024 is wrong. Inspected `openhands.sdk.context.condenser.llm_summarizing_condenser.LLMSummarizingCondenser` on Colossus: fields `max_size: int = 240` (event count), `max_tokens: int | None = None` (summary output cap), `keep_first: int = 2`. Spec intent honored by moving `1024` to `LLMSummarizingCondenser.max_tokens=1024` (summary output cap). LLM's `max_input_tokens` removed (inherits coder ceiling). `temperature=0.1` stays at LLM level (correct home).
+- **Files touched:** config/agent.py (build_condenser rewritten); adrs/ADR-0033-*.md (STATUS AMENDMENT block prepended)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** ADR-0033 amended (still Ratified; core decision unchanged, only condenser cap placement corrected).
+- **Stop-condition status:** Phase 2.4 authoring + populable. NEXT: user re-runs `.venv/bin/python -c "from config.agent import build_agent; a = build_agent(); print('build_agent OK:', type(a).__name__)"` on Colossus. If OK, proceed to Phase 3 row-1 smoke.

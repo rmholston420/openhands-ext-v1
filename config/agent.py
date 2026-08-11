@@ -183,12 +183,23 @@ def build_router(coder: LLM, planner: LLM) -> CoderPlannerRouter:
 def build_condenser(coder: LLM) -> LLMSummarizingCondenser:
     """Condenser reuses the coder endpoint (ADR-0033-7a).
 
-    Spec §2.4: temperature=0.1, max_input_tokens=1024. The condenser holds
-    its own LLM reference; if Phase 3 shows degradation, swap the argument
-    to a dedicated LLM without touching call sites.
+    Spec §2.4 verbatim: temperature=0.1, max_input_tokens=1024. Re-interpreted
+    per SDK 1.41 inspection (2026-08-11 17:20 EDT):
+
+      * `max_input_tokens=1024` on the `LLM` is REJECTED by SDK 1.41
+        (MIN_CONTEXT_WINDOW_TOKENS=16384) — spec was authored pre-inspection.
+        The condenser's job is to summarize LONG histories, so shrinking its
+        input window to 1024 is semantically wrong regardless of the SDK
+        floor. The spec's intent (bound the summary length) is honored via
+        `LLMSummarizingCondenser.max_tokens=1024`, which caps summary output.
+      * `temperature=0.1` applied at the LLM level (correct home).
+
+    The condenser holds its own LLM reference; if Phase 3 shows degradation,
+    swap the LLM argument to a dedicated model without touching call sites.
+    See ADR-0033 STATUS AMENDMENT 2026-08-11 17:25 EDT.
     """
     # A dedicated LLM instance for the condenser role, keyed off the coder
-    # endpoint but with condenser-specific sampling per spec §2.4.
+    # endpoint but with condenser-specific sampling.
     condenser_llm = LLM(
         model=CODER_MODEL,
         base_url=CODER_BASE_URL,
@@ -197,10 +208,11 @@ def build_condenser(coder: LLM) -> LLMSummarizingCondenser:
         retry_min_wait=_RETRY_MIN_WAIT,
         retry_max_wait=_RETRY_MAX_WAIT,
         temperature=0.1,
-        max_input_tokens=1024,
         usage_id="condenser",
     )
-    return LLMSummarizingCondenser(llm=condenser_llm)
+    # max_tokens=1024 caps the summary output (spec §2.4 intent).
+    # max_size=240 (SDK default) and keep_first=2 (SDK default) unchanged.
+    return LLMSummarizingCondenser(llm=condenser_llm, max_tokens=1024)
 
 
 # ---------------------------------------------------------------------------

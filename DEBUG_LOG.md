@@ -629,3 +629,13 @@ Entry format:
 - **Related BUILD_LOG entry:** 2026-08-11 13:42 EDT
 
 ---
+
+## 2026-08-11 17:25 EDT — LLMContextWindowTooSmallError at build_condenser (config/agent.py)
+
+- **Symptom:** `openhands.sdk.llm.exceptions.types.LLMContextWindowTooSmallError: The configured model has a context window of 1,024 tokens, which is below the minimum of 16,384 tokens required for OpenHands to function properly.` Raised from `_validate_context_window_size` at `.venv/lib/python3.14/site-packages/openhands/sdk/llm/llm.py:2586`, triggered by `LLM(..., max_input_tokens=1024)` in `build_condenser()`.
+- **Affected stage / plugin / port:** Phase 2.4 · config surface · condenser wiring (`config/agent.py::build_condenser`)
+- **Root cause:** Spec §2.4 `[llm.condenser]` block specifies `max_input_tokens = 1024`. Mechanically ported to the SDK `LLM` constructor, but the value was semantically mis-placed. The condenser's job is to summarize LONG histories, so its INPUT window must be large; the 1024 cap was intended for the summary OUTPUT length. SDK 1.41 enforces `MIN_CONTEXT_WINDOW_TOKENS=16384` on all `LLM` instances, catching the mis-placement immediately.
+- **Fix applied:** In `build_condenser()`, removed `max_input_tokens=1024` from the `LLM(...)` call (input window now inherits the coder endpoint's ceiling). Applied `max_tokens=1024` to the `LLMSummarizingCondenser(...)` constructor instead — this is the correct home for a summary output cap, per direct inspection of `openhands.sdk.context.condenser.llm_summarizing_condenser.LLMSummarizingCondenser` fields (`max_size: int = 240`, `max_tokens: int | None = None`, `keep_first: int = 2`). `temperature=0.1` stays at the LLM level.
+- **Files changed:** `config/agent.py` (`build_condenser` docstring + body), `adrs/ADR-0033-*.md` (STATUS AMENDMENT block prepended).
+- **Related BUILD_LOG entry:** 2026-08-11 17:25 EDT
+- **Reusable search keys:** `LLMContextWindowTooSmallError`, `MIN_CONTEXT_WINDOW_TOKENS`, `max_input_tokens`, `condenser`, `LLMSummarizingCondenser.max_tokens`, `context window too small`, `16384`
