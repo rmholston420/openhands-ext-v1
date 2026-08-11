@@ -1,0 +1,12 @@
+{
+  "repo": "https://github.com/OpenHands/agent-canvas.git",
+  "tag": "v1.6.1",
+  "sha": "43f091baf135142ed6c146f888f44a957141193f",
+  "checkout_path": "~/dev/agent-canvas-stock",
+  "pinned_at_utc": "2026-08-11T23:25:15+00:00",
+  "node_version": "v24.16.0",
+  "npm_version": "11.13.0",
+  "uv_version": "0.12.2",
+  "license": "MIT",
+  "notes": "Cloned as separate checkout (spec v16 §Phase 3 line 372). Started via `npm run dev` (dev-with-automation.mjs), Vite remapped 3001->3002 via OH_CANVAS_SAFE_VITE_PORT since Gitea owns 3001."
+}

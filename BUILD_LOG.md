@@ -1867,3 +1867,13 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
   - Canvas's `dev-safe.mjs` port assertion catches occupied dev ports and refuses to start; `OH_CANVAS_SAFE_VITE_PORT` overrides `DEFAULT_VITE_PORT=3001`. Analogous overrides exist for backend (`OH_CANVAS_SAFE_BACKEND_PORT`) and automation (`OH_CANVAS_SAFE_AUTOMATION_PORT`).
   - Canvas's automation service (:18001) is a separate uvx-launched FastAPI backend serving `/api/automation/*` through the ingress. It's a developer convenience for the Canvas UI's "automations" feature and is NOT required for spec v16 §3.d acceptance.
   - `npm run dev` uses `dev-with-automation.mjs` which spawns everything; if only the frontend is needed, `npm run dev:frontend` skips automation and agent-server. For 3.e/3.f the full stack is required.
+
+## 2026-08-11 19:47 EDT — Correction to 2026-08-11 19:45 EDT entry: pin file path
+
+- **Stage / plugin / port:** Phase 3.d (housekeeping)
+- **What changed:** The Canvas pin manifest referenced in the 19:45 EDT entry as `vendor/agent-canvas.pinned.json` was moved to `docs/pins/agent-canvas.pinned.json` before commit because `.gitignore:104` ignores `vendor/`. All prose references above are superseded by the new path. File contents unchanged.
+- **Files touched:**
+  - `docs/pins/agent-canvas.pinned.json` (new — actual committed location)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** 3.d remains ✅. This entry only records the path correction.
