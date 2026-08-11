@@ -1,34 +1,41 @@
-# Kosmos Session Handoff — 2026-08-11 18:07 EDT
+# Kosmos Session Handoff — 2026-08-11 18:15 EDT
 
 ## Current build-sequencing position
-- **Stage / phase:** Phase 3 (verification) — **⚠️ partial, DoD NOT met**
-- **Plugin / kernel component:** CoderPlannerRouter routing wired (Path B); DockerWorkspace / Agent Canvas / DelegateTool wiring still open
-- **Port(s) in progress:** Phase 3 sign-off items 3.a → 3.i (see `docs/verification/verification-matrix.md#phase-3-sign-off-checklist`)
+- **Stage / phase:** Phase 3 (Runtime integration & sign-off)
+- **Plugin / kernel component:** Subagent registry + tool set wiring
+- **Port(s) in progress:** Runtime tool contract (spec §2.4/§2.5)
 
 ## Completed this session
-- Row-1 smoke PASSED (trivial task, LocalWorkspace, coder :8100 tool-calling)
-- Row-2 smoke PASSED (router `[role:planner]` marker → planner :8082, control → coder default)
-- ADR-0033 amendments #3 (condenser trigger vs output cap), #4 (Path A, forward-compat), #5 (Path B, primary)
-- Discovered SDK 1.41 `LLMCallContext` has no `metadata` field → Path B (message-marker) selected
-- **Retracted premature "Phase 3 DoD met" claim** (BUILD_LOG 18:06 EDT append-only correction)
+- Row-1 smoke PASSED (8.16 s, 20 events).
+- Row-2 Path A implemented, then invalidated by SDK 1.41 reality
+  (`LLMCallContext` has no `metadata` field).
+- ADR-0033 amended #5 → Path B (message-marker) primary; Path A kept as
+  forward-compat no-op.
+- Row-2 smoke PASSED (18.18 s; marker→planner, control→coder,
+  active_llm.base_url=8082, 804 chars).
+- Phase 3 DoD claim RETRACTED; 9-item sign-off checklist opened in
+  `docs/verification/verification-matrix.md`.
+- Sign-off item 3.a PASSED (offline registration smoke). code-explorer
+  registered with tools=["terminal"], level=builtin; TaskToolSet in
+  agent tool list.
 
-## Remaining before current Definition of Done (Phase 3)
-
-Per `docs/verification/verification-matrix.md#phase-3-sign-off-checklist`, in dependency order:
-
-1. **3.a** — Inspect `code-explorer` tool registration status (ADR-0032, deferred from Phase 1.2)
-2. **3.b** — Inspect MCP §2.2 tools status (are servers live? tool lists non-empty?)
-3. **3.c** — Wire DockerWorkspace, rerun row-1-style trivial-task smoke against it
-4. **3.h** — Wire DelegateTool coder→planner supervisor swap, rerun row-2-style smoke through the delegation pathway (not `router.completion()` direct call)
-5. **3.d/e/f** — Clone Agent Canvas, `npm run start` against `http://127.0.0.1:8000`, verify event stream + confirmation UI
-6. **3.g** — Extend smoke to prove planner :8082 and embedder :8090 tool-calling
-7. Flip `verification-matrix.md` row 3 to ✅ pass
+## Remaining before current Definition of Done
+- 3.b MCP §2.2 tools reachable
+- 3.c Trivial task under **DockerWorkspace** (Row-1 used LocalWorkspace)
+- 3.d Agent Canvas cloned + running against :8000
+- 3.e Event stream visible in Canvas
+- 3.f Confirmation UI fires in Canvas
+- 3.g Tool-calling verified per base_url (planner + embedder still open)
+- 3.h Coder→planner via **DelegateTool** (supervisor swap); rolls up
+  the live code-explorer delegation smoke deferred from 3.a
+- 3.i Joint hand-off across both endpoints
 
 ## Open questions / awaiting user answer
-- Restart coder before proceeding? Planner :8082 is currently resident (23.2 GiB used / 8.9 GiB free). Sign-off items 3.a/3.b/3.h/3.i need coder up.
-- Should item 3.h (DelegateTool wiring) proceed as pure Phase 3 verification work, or does it belong to Phase 2.5 (per spec) and thus Phase 3 waits on Phase 2.5?
+- Which sign-off item next: 3.b (MCP), 3.c (Docker), or 3.h (DelegateTool)?
+  3.h is the highest-leverage since it also closes the deferred 3.a
+  live-delegation coverage.
 
 ## Exact next action
-1. `bash scripts/stop-large-model.sh planner` — teardown planner
-2. `bash scripts/serve-coder.sh` — restart coder
-3. Inspect `config/agent.py` and `openhands.tools` for `code-explorer` registration (sign-off item 3.a)
+- Await user selection among 3.b / 3.c / 3.h. Default recommendation:
+  3.h next, because it also validates the runtime subagent path and
+  exercises the router under a real DelegateTool swap.

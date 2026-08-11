@@ -1711,3 +1711,32 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** —
 - **Stop-condition status:** blocked (Phase 3 DoD gaps enumerated in verification matrix)
+
+## 2026-08-11 18:15 EDT — Phase 3 sign-off item 3.a PASSED (code-explorer registered)
+
+- **Stage / plugin / port:** Phase 3 · Runtime · Subagent registry
+- **What changed:** `build_agent()` now registers built-in subagents (via
+  `register_builtins_agents(enable_browser=False)`) and wires
+  `TaskToolSet` into the default tool list (via
+  `get_default_tools(enable_sub_agents=True)`). Both are on by default;
+  browser tools remain off.
+- **Files touched:**
+  - `config/agent.py` (build_agent signature + wiring + docstring)
+  - `bench/smoke-phase-3-item-3a/run.sh`
+  - `bench/smoke-phase-3-item-3a/task.md`
+- **Ports / adapters affected:** Runtime tool set (spec §2.4/§2.5).
+  Router unaffected.
+- **PORTING_LEDGER / ADR updated:** — (behavior aligns with existing
+  ADR-0032; no new ADR needed. Consider a status note if we want to
+  formally close the deferral.)
+- **Stop-condition status:** met for item 3.a. Wall 1.86 s; all six
+  assertions true (`pass=true`). Verdict at
+  `~/.forge-oh/bench_smoke_phase_3_item_3a/20260811_181503_run/verdict.json`.
+  Registry snapshot: `bash-runner`, `code-explorer` (tools=["terminal"],
+  level=builtin, source matches shipped preset), `general-purpose`.
+  Agent tool list: `terminal`, `file_editor`, `task_tracker`,
+  `task_tool_set`.
+- **Deferred:** live delegation smoke (agent invoking `code-explorer`
+  via `TaskAction` and receiving a read-only investigation result)
+  moves to sign-off item 3.h (coder→sub-agent via DelegateTool), which
+  depends on 3.c (DockerWorkspace).
