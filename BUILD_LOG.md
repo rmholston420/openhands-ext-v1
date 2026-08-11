@@ -647,3 +647,21 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0015 Ratified · Confirmed.
 - **Stop-condition status:** Phase 0.2 authoring **unblocked**. Planner Medium pool = 2 cells (llama.cpp survivors). Awaiting user: Phase 0.2 authoring order (recommended: embedder → planner → coder).
+
+## 2026-08-11 05:43 EDT — ADR-0016 filed (Ratified): Medium-tier scoring rubric = hybrid; medium-scored.json frozen
+
+- **Stage / plugin / port:** Phase 0.2 · Medium tier · scoring rubric
+- **What changed:**
+  - **ADR-0016 filed (Ratified).** Medium-tier scoring shape locked as hybrid: embedder gets programmatic scoring (recall@k, MRR, nDCG@10 against labeled qrels); planner and coder get Perplexity-gold rubric scoring (0-100 per task, canonical `local-llm-bench` protocol). Uniform tiebreak across roles: quality-first; if top two are within 3 quality points, faster wall-time-median wins.
+  - **`bench/rubrics/medium-scored.json` authored and frozen at same commit.** `post_hoc_edit_policy.allowed=false` per §0.0a bullet 3. Elimination phase reuses Fast-tier rules R1–R4 by reference (no duplication). Scoring phase defines role-specific shape.
+  - Fills the explicit forward-reference at `bench/rubrics/fast-elimination.json#/scoring.reason` ("future ADR before first Medium-tier scored output").
+  - Self-scoring prohibited for planner/coder (Perplexity Max scores; cell outputs are dumped out-of-band per skill protocol).
+  - `bench/gold/**` and per-role task-set files declared as post-hoc-edit-locked; amendment requires superseding ADR or versioned re-authoring.
+- **Files touched:**
+  - `adrs/ADR-0016-medium-tier-scoring-rubric-hybrid.md` (new, Ratified)
+  - `adrs/README.md` (row added)
+  - `bench/rubrics/medium-scored.json` (new, frozen)
+  - `BUILD_LOG.md`, `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0016 Ratified.
+- **Stop-condition status:** Medium-tier rubric locked. Next: author `bench/tasks/embedder-medium.json` + qrels. No Medium-tier task-set commits may land before this ADR's HEAD.

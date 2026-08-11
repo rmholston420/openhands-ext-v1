@@ -1,0 +1,53 @@
+{
+  "$comment": "Phase 0.2 Medium-tier scoring rubric. Timestamped at commit; no post-hoc edits per spec v16 §0.0a. Hybrid shape per ADR-0016: programmatic scoring for embedder; Perplexity-gold scoring for planner and coder. Elimination phase (Fast-tier-style hard checks) runs before scoring and is unchanged from ADR-0007.",
+  "schema_version": "1.0.0",
+  "tier": "medium",
+  "authored_utc": "2026-08-11T09:43:00Z",
+  "spec_anchor": "docs/specs/integration-execution-plan-v16.md#02-medium-tier-scored-ranking",
+  "adr_anchor": "adrs/ADR-0016-medium-tier-scoring-rubric-hybrid.md",
+  "applies_to": ["coder", "planner", "embedder"],
+  "elimination_phase": {
+    "$comment": "Runs before scoring. Same shape as Fast-tier ADR-0007 rubric; failures never reach scoring phase.",
+    "reuses_rules_from": "bench/rubrics/fast-elimination.json",
+    "rules": ["R1-launch-failure", "R2-malformed-output", "R3-latency-outlier", "R4-runtime-version-regression"]
+  },
+  "scoring": {
+    "enabled": true,
+    "shape_by_role": {
+      "embedder": {
+        "shape": "programmatic",
+        "metrics": ["recall@1", "recall@5", "recall@10", "mrr", "ndcg@10"],
+        "ground_truth_source": "bench/tasks/embedder-medium-qrels.json (or inline #/qrels in embedder-medium task file)",
+        "llm_as_judge_permitted": false,
+        "reference_conventions": ["TREC Deep Learning tracks", "BEIR", "MTEB"]
+      },
+      "planner": {
+        "shape": "perplexity_gold",
+        "score_range_per_task": [0, 100],
+        "gold_source": "bench/gold/planner-medium/<task-id>.md (Perplexity-Max reference plans, frozen at task-set commit)",
+        "scoring_authority": "Perplexity Max (Claude Sonnet 4.6 via Perplexity Computer)",
+        "scoring_protocol": "local-llm-bench skill canonical scoring protocol: dump stripped cell outputs, paste to Perplexity Max with gold reference, receive numeric scores per task, record via --record-scores",
+        "self_scoring_prohibited": true
+      },
+      "coder": {
+        "shape": "perplexity_gold",
+        "score_range_per_task": [0, 100],
+        "gold_source": "bench/gold/coder-medium/<task-id>.md (Perplexity-Max reference tool-call transcripts + expected diffs, frozen at task-set commit)",
+        "scoring_authority": "Perplexity Max (Claude Sonnet 4.6 via Perplexity Computer)",
+        "scoring_protocol": "local-llm-bench skill canonical scoring protocol",
+        "self_scoring_prohibited": true
+      }
+    },
+    "tiebreak": {
+      "primary": "quality (higher score wins)",
+      "secondary": "wall-time median across task set (lower wins) — applies only when top two cells are within 3 quality points of each other",
+      "within_points": 3,
+      "reference": "local-llm-bench skill principle 1 (quality-first) and tiebreak convention"
+    }
+  },
+  "post_hoc_edit_policy": {
+    "allowed": false,
+    "spec_anchor": "§0.0a bullet 3 (post-hoc rubric editing prohibition)",
+    "note": "Any change to this file after the first Medium-tier scored run requires a superseding ADR. Any change to bench/tasks/embedder-medium-qrels.json, bench/tasks/{embedder,planner,coder}-medium.json, or files under bench/gold/** requires either a superseding ADR or a re-authored versioned task-set file."
+  }
+}
