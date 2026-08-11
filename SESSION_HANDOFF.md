@@ -1,26 +1,34 @@
-# Kosmos Session Handoff — 2026-08-11 18:03 EDT
+# Kosmos Session Handoff — 2026-08-11 18:07 EDT
 
 ## Current build-sequencing position
-- **Stage / phase:** Phase 3 (verification)
-- **Plugin / kernel component:** CoderPlannerRouter · Path B routing (ADR-0033 amend #5)
-- **Port(s) in progress:** none — row-1 and row-2 both PASSED
+- **Stage / phase:** Phase 3 (verification) — **⚠️ partial, DoD NOT met**
+- **Plugin / kernel component:** CoderPlannerRouter routing wired (Path B); DockerWorkspace / Agent Canvas / DelegateTool wiring still open
+- **Port(s) in progress:** Phase 3 sign-off items 3.a → 3.i (see `docs/verification/verification-matrix.md#phase-3-sign-off-checklist`)
 
 ## Completed this session
-- Row-1 smoke PASSED (2026-08-11 17:47 EDT) after condenser fix (ADR-0033 amend #3)
-- Discovered SDK 1.41 `LLMCallContext` has no `metadata` field (only `prompt_cache_key`, `session_id`)
-- ADR-0033 amend #4 (Path A completion() override) — retained as forward-compat no-op
-- ADR-0033 amend #5 (Path B message-marker routing, primary) — implemented, tested, verdict pass=true
-- Row-2 smoke PASSED (2026-08-11 18:03 EDT): marker → planner :8082, control → coder default, real completion delegated correctly
+- Row-1 smoke PASSED (trivial task, LocalWorkspace, coder :8100 tool-calling)
+- Row-2 smoke PASSED (router `[role:planner]` marker → planner :8082, control → coder default)
+- ADR-0033 amendments #3 (condenser trigger vs output cap), #4 (Path A, forward-compat), #5 (Path B, primary)
+- Discovered SDK 1.41 `LLMCallContext` has no `metadata` field → Path B (message-marker) selected
+- **Retracted premature "Phase 3 DoD met" claim** (BUILD_LOG 18:06 EDT append-only correction)
 
-## Remaining before current Definition of Done
-- Phase 3 DoD: both smoke rows pass ✅ — **met**
-- Restart coder endpoint (planner currently resident; coder XOR planner+embedder per ADR-0017)
-- Optional: sequence-level DoD checklist against `Kosmos-Build-Sequence-v25.md` Phase 3 exit criteria
-- Optional: add Path A→Path B fallback ordering test (assert Path A wins if `LLMCallContext` grows a `metadata` field in the future — dormant contract test)
+## Remaining before current Definition of Done (Phase 3)
+
+Per `docs/verification/verification-matrix.md#phase-3-sign-off-checklist`, in dependency order:
+
+1. **3.a** — Inspect `code-explorer` tool registration status (ADR-0032, deferred from Phase 1.2)
+2. **3.b** — Inspect MCP §2.2 tools status (are servers live? tool lists non-empty?)
+3. **3.c** — Wire DockerWorkspace, rerun row-1-style trivial-task smoke against it
+4. **3.h** — Wire DelegateTool coder→planner supervisor swap, rerun row-2-style smoke through the delegation pathway (not `router.completion()` direct call)
+5. **3.d/e/f** — Clone Agent Canvas, `npm run start` against `http://127.0.0.1:8000`, verify event stream + confirmation UI
+6. **3.g** — Extend smoke to prove planner :8082 and embedder :8090 tool-calling
+7. Flip `verification-matrix.md` row 3 to ✅ pass
 
 ## Open questions / awaiting user answer
-- Restart coder now (auto-teardown planner → serve-coder.sh)? Or leave planner up for further work?
-- Proceed to Phase 3 DoD sign-off / next phase (spec §2.5 DelegateTool wiring)?
+- Restart coder before proceeding? Planner :8082 is currently resident (23.2 GiB used / 8.9 GiB free). Sign-off items 3.a/3.b/3.h/3.i need coder up.
+- Should item 3.h (DelegateTool wiring) proceed as pure Phase 3 verification work, or does it belong to Phase 2.5 (per spec) and thus Phase 3 waits on Phase 2.5?
 
 ## Exact next action
-- User choice: (a) `bash scripts/stop-large-model.sh planner && bash scripts/serve-coder.sh` to restore coder, or (b) proceed directly to Phase 3 DoD ratification / next phase without disturbing planner.
+1. `bash scripts/stop-large-model.sh planner` — teardown planner
+2. `bash scripts/serve-coder.sh` — restart coder
+3. Inspect `config/agent.py` and `openhands.tools` for `code-explorer` registration (sign-off item 3.a)

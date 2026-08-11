@@ -1702,3 +1702,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (verification only)
 - **PORTING_LEDGER / ADR updated:** —
 - **Stop-condition status:** met (row-2 passed)
+
+## 2026-08-11 18:06 EDT — Retract Phase 3 DoD "met" claim from 18:03 EDT entry
+
+- **Stage / plugin / port:** Phase 3 verification · bookkeeping correction
+- **What changed:** Prior entry (2026-08-11 18:03 EDT) declared "stop-condition status: met (row-2 passed)". This was a scope error. Spec §Phase 3 Verification (`docs/specs/integration-execution-plan-v16.md:382-385`) requires: (1) trivial task under **DockerWorkspace exclusively**, (2) Agent Canvas event stream + confirmation UI functional, (3) `code-explorer` reachable, (4) MCP §2.2 tools callable, (5) coder→planner delegation (implied: via DelegateTool, not direct router call). Our smokes only covered a fraction: row-1 ran on LocalWorkspace (not Docker), row-2 exercised the router directly (not via DelegateTool handoff), and Agent Canvas / MCP / code-explorer were never touched. Phase 3 DoD is **NOT met**; append-only correction filed.
+- **Files touched:** `BUILD_LOG.md` (this entry), `docs/verification/verification-matrix.md` (row 3 result → ⚠️ partial), `SESSION_HANDOFF.md` (overwrite pending)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** blocked (Phase 3 DoD gaps enumerated in verification matrix)
