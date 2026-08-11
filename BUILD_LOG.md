@@ -1581,3 +1581,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** none (ADR-0030 status unchanged, still Proposed)
 - **Stop-condition status:** step 6b COMPLETE. Step 6c (Perplexity-Max qrels labeling) is next.
+
+## 2026-08-11 15:55 EDT — Phase 0.4 gate-4 step 6c PREPPED: labeling sessions + rubric clarifications
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · step 6c (Perplexity-Max qrels labeling) PREPPED
+- **What changed:** Rubric G2 amended pre-labeling: (1) labeler_instructions_verbatim "12 cells" -> "16 cells" (typo bug from prior scope reduction), (2) metrics.$primary_key_rule clarified with line-range OVERLAP >=0.5 semantic within same (repo, source_file_path) — implements chunker-agnostic intent because H1 vs H2 rarely produce identical line ranges (only 97/3324 = 2.9% coincide) but often overlap. Added metrics.line_range_overlap_threshold=0.5. Both edits documented in rubric _amendment_note. Timing: pre-labeling, so no post-hoc scoring bias possible; rubric remains post_hoc_edit_locked=true. Split 3324 pool rows into 14 labeling sessions (7 code + 7 docs), each 75-297 labels (matches rubric G2 budget of 150-300 per session; s14 is a 75-label tail). Stripped contributed_by field from session files (bias prevention per rubric G2 line 2). Authored LABELING_PROMPT.md with rubric G2 verbatim + per-session workflow + output JSONL schema + drift-check protocol.
+- **Files touched:** `bench/rubrics/full-embedder-scored.json` (labeler_instructions_verbatim line updated, $primary_key_rule expanded, line_range_overlap_threshold added, _amendment_note extended); `bench/gold/embedder-full-multi-block/labeling_sessions/s01_code.jsonl` through `s14_docs.jsonl` (new, 14 files, ~1.3 MiB total, contributed_by stripped); `bench/gold/embedder-full-multi-block/LABELING_PROMPT.md` (new)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** none (ADR-0030 status unchanged, still Proposed)
+- **Stop-condition status:** step 6c ready for Perplexity-Max labeling execution. Each session is self-contained (rubric + queries + pool rows). Labeler emits qrels_<session_id>.jsonl per session; merge + lock at step end.

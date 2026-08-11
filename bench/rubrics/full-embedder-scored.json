@@ -1,10 +1,9 @@
 {
-  "$comment": "Phase 0.4 gate-4 DoD step 5: machine-readable rubric for embedder Full-tier re-eval. R2 (expanded schema; runner evaluates flip rules directly) + G2 (label schema plus labeler instructions embedded). Post-hoc-edit-locked per ADR-0030 §Rubric-lock.",
+  "$comment": "Phase 0.4 gate-4 DoD step 5: machine-readable rubric for embedder Full-tier re-eval. R2 (expanded schema; runner evaluates flip rules directly) + G2 (label schema plus labeler instructions embedded). Post-hoc-edit-locked per ADR-0030 \u00a7Rubric-lock.",
   "schema_version": "1.0.0",
   "authored_utc": "2026-08-11T17:23:00Z",
   "adr_anchor": "adrs/ADR-0030-phase-0-4-embedder-full-tier-re-eval.md",
   "post_hoc_edit_locked": true,
-
   "runtime_contract": {
     "co_residency": {
       "$comment": "Enforced by the runner before each embedder cell starts. Verified via the /v1/models 404 check on each server after teardown.",
@@ -13,58 +12,114 @@
         "stop planner llama.cpp server on GPU (systemctl or pkill by process name)",
         "confirm no GPU VRAM in use (nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits < 500)"
       ],
-      "harness_flags": {"llama_cpp_ngl": 0, "note": "All embedder cells run llama.cpp with -ngl 0 (pure CPU) per ADR-0017 amend #3."}
+      "harness_flags": {
+        "llama_cpp_ngl": 0,
+        "note": "All embedder cells run llama.cpp with -ngl 0 (pure CPU) per ADR-0017 amend #3."
+      }
     }
   },
-
   "candidate_pool": {
     "$comment": "Anchored to bench/candidates/embedder-full-pool.json; pinned here for provenance.",
-    "incumbent":            {"cell": "e04b_q8_cpu",   "model_id": "qwen3-embedding-4B-Q8_0.gguf",   "role": "incumbent",           "size_gib": 3.99},
-    "challenger_upsize":    {"cell": "e08b_q6k_cpu",  "model_id": "qwen3-embedding-8B-Q6_K.gguf",   "role": "challenger_upsize",   "size_gib": 5.79},
-    "challenger_downsize":  {"cell": "e006b_q8_cpu",  "model_id": "qwen3-embedding-0.6B-Q8_0.gguf", "role": "challenger_downsize", "size_gib": 0.60},
-    "sanity_check_crossfamily": {"cell": "enomicc_q6k_gpu", "model_id": "nomic-embed-code.Q6_K.gguf", "role": "sanity_check_crossfamily", "size_gib": 5.41, "query_prefix": "Represent this query for searching relevant code:", "reversal_participation": false, "_amendment_note": "Added 2026-08-11 15:00 EDT. Cross-family informational baseline. NOT evaluated by reversal_criteria — reversal_criteria remain hardcoded to the original 3-candidate set. Composite scores computed and reported for observability only."}
+    "incumbent": {
+      "cell": "e04b_q8_cpu",
+      "model_id": "qwen3-embedding-4B-Q8_0.gguf",
+      "role": "incumbent",
+      "size_gib": 3.99
+    },
+    "challenger_upsize": {
+      "cell": "e08b_q6k_cpu",
+      "model_id": "qwen3-embedding-8B-Q6_K.gguf",
+      "role": "challenger_upsize",
+      "size_gib": 5.79
+    },
+    "challenger_downsize": {
+      "cell": "e006b_q8_cpu",
+      "model_id": "qwen3-embedding-0.6B-Q8_0.gguf",
+      "role": "challenger_downsize",
+      "size_gib": 0.6
+    },
+    "sanity_check_crossfamily": {
+      "cell": "enomicc_q6k_gpu",
+      "model_id": "nomic-embed-code.Q6_K.gguf",
+      "role": "sanity_check_crossfamily",
+      "size_gib": 5.41,
+      "query_prefix": "Represent this query for searching relevant code:",
+      "reversal_participation": false,
+      "_amendment_note": "Added 2026-08-11 15:00 EDT. Cross-family informational baseline. NOT evaluated by reversal_criteria \u2014 reversal_criteria remain hardcoded to the original 3-candidate set. Composite scores computed and reported for observability only."
+    }
   },
-
   "matrix_shape": {
     "candidates": 4,
     "candidates_reversal_scope": 3,
-    "chunkers": ["H1_fixed_512_64", "H2_structure_aware"],
-    "blocks":    ["code", "docs"],
+    "chunkers": [
+      "H1_fixed_512_64",
+      "H2_structure_aware"
+    ],
+    "blocks": [
+      "code",
+      "docs"
+    ],
     "cells_total": 16,
     "cells_reversal_scope": 12,
     "queries_per_cell": 40,
     "retrieval_top_k": 20,
-    "_amendment_note": "Amended 2026-08-11 15:00 EDT: 4th candidate (enomicc_q6k_gpu, sanity_check_crossfamily) added → 16 cells total, but reversal_criteria still operate over the original 3-candidate / 12-cell scope. See candidate_pool.sanity_check_crossfamily.reversal_participation=false."
+    "_amendment_note": "Amended 2026-08-11 15:00 EDT: 4th candidate (enomicc_q6k_gpu, sanity_check_crossfamily) added \u2192 16 cells total, but reversal_criteria still operate over the original 3-candidate / 12-cell scope. See candidate_pool.sanity_check_crossfamily.reversal_participation=false."
   },
-
   "metrics": {
-    "$comment": "Composite exactly as specified in ADR-0030 §K3.",
+    "$comment": "Composite exactly as specified in ADR-0030 \u00a7K3.",
     "primary_composite": {
       "formula": "100 * (0.40 * nDCG@10 + 0.25 * Recall@10 + 0.20 * MRR@10 + 0.15 * Recall@1)",
-      "range": [0, 100],
+      "range": [
+        0,
+        100
+      ],
       "components": {
-        "nDCG@10":  {"weight": 0.40, "graded": true,  "note": "Uses 0-3 grades directly as gain values."},
-        "Recall@10":{"weight": 0.25, "graded": false, "note": "Binary hit at any grade >= 1."},
-        "MRR@10":   {"weight": 0.20, "graded": false, "note": "First hit at any grade >= 1."},
-        "Recall@1": {"weight": 0.15, "graded": false, "note": "Top-1 must be a hit at grade >= 1."}
+        "nDCG@10": {
+          "weight": 0.4,
+          "graded": true,
+          "note": "Uses 0-3 grades directly as gain values."
+        },
+        "Recall@10": {
+          "weight": 0.25,
+          "graded": false,
+          "note": "Binary hit at any grade >= 1."
+        },
+        "MRR@10": {
+          "weight": 0.2,
+          "graded": false,
+          "note": "First hit at any grade >= 1."
+        },
+        "Recall@1": {
+          "weight": 0.15,
+          "graded": false,
+          "note": "Top-1 must be a hit at grade >= 1."
+        }
       }
     },
-    "$primary_key_rule": "P1: (repo, source_file_path, line_range). Chunker-agnostic — the same qrel file is used to score both H1 and H2 cells. Runner maps each retrieved chunk back to its (repo, path, line_range) footprint and matches against qrel primary keys."
+    "$primary_key_rule": "P1: (repo, source_file_path, line_range). Chunker-agnostic \u2014 the same qrel file is used to score both H1 and H2 cells. Runner maps each retrieved chunk back to its (repo, path, line_range) footprint and matches against qrel primary keys via line-range OVERLAP \u2265 0.5 within the same (repo, source_file_path). This preserves chunker-agnosticism because H1 and H2 chunks with overlapping spans hit the same qrel'd footprint.",
+    "line_range_overlap_threshold": 0.5
   },
-
   "primary_key": {
     "$comment": "P1 chunker-agnostic key. Runner must extract this tuple from every retrieved chunk before scoring.",
-    "tuple_shape": ["repo", "source_file_path", "line_range"],
+    "tuple_shape": [
+      "repo",
+      "source_file_path",
+      "line_range"
+    ],
     "line_range_format": "inclusive-inclusive integer pair '[start, end]' referring to the source file's line numbers at the pinned snapshot SHA",
     "chunk_to_key_mapping": "runner MUST store per-chunk source metadata at index-build time; matching is exact-string on repo + path, and 'line_range covers or is covered by' semantics on line_range (any chunk whose lines fully contain OR are fully contained by a qrel line_range is considered a match)"
   },
-
   "grading": {
     "$comment": "G2: label schema + labeler instructions in one place. Perplexity-Max labelers read this section verbatim at labeling session start.",
     "label_schema": {
       "grade": {
         "type": "integer",
-        "enum": [0, 1, 2, 3],
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
         "meanings": {
           "0": "Not relevant. Chunk does not answer the query or is off-topic.",
           "1": "Marginally relevant. Chunk touches the query topic but doesn't answer it (e.g., mentions the concept in passing, refers to a related but distinct construct).",
@@ -74,7 +129,10 @@
       },
       "role": {
         "type": "string",
-        "enum": ["primary", "secondary"],
+        "enum": [
+          "primary",
+          "secondary"
+        ],
         "meanings": {
           "primary": "The canonical answer chunk(s). A query typically has 1-3 primary chunks. A code query's primary is the def/class or the specific method body being asked about. A docs query's primary is the ADR/section that directly resolves the query.",
           "secondary": "Chunks that partially answer, provide context, or are near-duplicates of the primary. May have grade 2 or 3."
@@ -83,15 +141,15 @@
       }
     },
     "labeler_instructions_verbatim": [
-      "Read the query. Consider what a natural agent — coder for code queries, planner/PM for docs queries — would want to retrieve.",
-      "For each pooled candidate chunk (union of top-20 across all 12 cells), assign a grade 0-3 using the definitions above. Do NOT peek at which cell retrieved it before grading — labels must be independent of retrieval source to prevent bias.",
+      "Read the query. Consider what a natural agent \u2014 coder for code queries, planner/PM for docs queries \u2014 would want to retrieve.",
+      "For each pooled candidate chunk (union of top-20 across all 16 cells), assign a grade 0-3 using the definitions above. Do NOT peek at which cell retrieved it before grading \u2014 labels must be independent of retrieval source to prevent bias.",
       "Assign role=primary to the 1-3 chunks that are the query's canonical answer. Everything else that's non-zero grade is role=secondary.",
       "If a chunk covers the answer but at a different granularity than another chunk (e.g., a whole file that contains the specific function), grade both, but pick the more specific one as primary.",
       "If a chunk contains the answer AND a lot of noise, prefer grade 2 over grade 3 (the retrieval is fine but the presented context is bloated).",
-      "For docs queries asking 'which ADR governs X': the ADR title-and-decision section is grade 3 primary; the ADR references in the spec §17 table are grade 2 secondary; unrelated ADRs are grade 0.",
-      "For code queries asking 'where is X defined': the def line ± its body is grade 3 primary; import statements or references are grade 2 secondary; documentation of the same construct is grade 1 (unless the query explicitly asks about docs).",
+      "For docs queries asking 'which ADR governs X': the ADR title-and-decision section is grade 3 primary; the ADR references in the spec \u00a717 table are grade 2 secondary; unrelated ADRs are grade 0.",
+      "For code queries asking 'where is X defined': the def line \u00b1 its body is grade 3 primary; import statements or references are grade 2 secondary; documentation of the same construct is grade 1 (unless the query explicitly asks about docs).",
       "If a query is genuinely unanswerable from the pinned corpus, mark it 'unanswerable_at_pinned_snapshot' in a separate field. Do NOT invent grade-3 labels to satisfy the 'at least one primary' constraint.",
-      "Labeling is done ACROSS the pooled union — same chunks may be pooled from multiple cells. Each unique (query, chunk) pair is labeled exactly once."
+      "Labeling is done ACROSS the pooled union \u2014 same chunks may be pooled from multiple cells. Each unique (query, chunk) pair is labeled exactly once."
     ],
     "labeling_session_plan": {
       "sessions": "2-4 sessions per user preference GL2, split by block (code/docs) and/or by chunker family (H1/H2) to reduce fatigue-induced drift",
@@ -99,55 +157,88 @@
       "drift_check": "each session's first 10 queries are re-labeled at the end of that session; if any label changes, halt and re-open the drift-detection ADR"
     }
   },
-
   "reversal_criteria": {
-    "$comment": "V3 + W3 verbatim from ADR-0030 §V3-W3. Runner evaluates these as boolean predicates after block-macro composites are computed. Boundary → incumbent per ADR-0030 policy.",
+    "$comment": "V3 + W3 verbatim from ADR-0030 \u00a7V3-W3. Runner evaluates these as boolean predicates after block-macro composites are computed. Boundary \u2192 incumbent per ADR-0030 policy.",
     "boundary_policy": "if any predicate below is ambiguous (numeric boundary case at 3-point threshold, or 5-point regression at exactly 5), the incumbent wins",
-
     "confirm_incumbent_4b_q8_if": {
-      "$comment": "Any single clause fires → CONFIRM incumbent (4B-Q8_0). Evaluated first.",
+      "$comment": "Any single clause fires \u2192 CONFIRM incumbent (4B-Q8_0). Evaluated first.",
       "any_of": [
-        {"clause": "overall_macro_within_3_of_max", "predicate": "max(overall_macro across 3 candidates) - overall_macro[4b_q8] <= 3"},
-        {"clause": "no_challenger_passes_W3_on_code", "predicate": "not any(flip_gate_passes_on_block['code', c] for c in {8b_q6k, 0_6b_q8})"},
-        {"clause": "no_challenger_passes_W3_on_docs", "predicate": "not any(flip_gate_passes_on_block['docs', c] for c in {8b_q6k, 0_6b_q8})"}
+        {
+          "clause": "overall_macro_within_3_of_max",
+          "predicate": "max(overall_macro across 3 candidates) - overall_macro[4b_q8] <= 3"
+        },
+        {
+          "clause": "no_challenger_passes_W3_on_code",
+          "predicate": "not any(flip_gate_passes_on_block['code', c] for c in {8b_q6k, 0_6b_q8})"
+        },
+        {
+          "clause": "no_challenger_passes_W3_on_docs",
+          "predicate": "not any(flip_gate_passes_on_block['docs', c] for c in {8b_q6k, 0_6b_q8})"
+        }
       ]
     },
-
     "flip_to_8b_q6k_if": {
-      "$comment": "ALL five clauses must fire → FLIP to 8B-Q6_K.",
+      "$comment": "ALL five clauses must fire \u2192 FLIP to 8B-Q6_K.",
       "all_of": [
-        {"clause": "code_block_macro_plus_3",             "predicate": "block_macro['code',  8b_q6k] - block_macro['code',  4b_q8] >= 3"},
-        {"clause": "docs_block_macro_plus_3",             "predicate": "block_macro['docs',  8b_q6k] - block_macro['docs',  4b_q8] >= 3"},
-        {"clause": "no_per_metric_regression_greater_5",  "predicate": "for each metric m in {nDCG@10, Recall@10, MRR@10, Recall@1}, and each block b: block_metric[b, m, 4b_q8] - block_metric[b, m, 8b_q6k] <= 5"},
-        {"clause": "no_single_metric_loss_greater_2",     "predicate": "for each metric m and each block b: block_metric[b, m, 4b_q8] - block_metric[b, m, 8b_q6k] <= 2 OR the composite gain on that block is >= 5 (offset clause)"},
-        {"clause": "ram_ceiling",                          "predicate": "peak_ram_gib[8b_q6k] <= 12"}
+        {
+          "clause": "code_block_macro_plus_3",
+          "predicate": "block_macro['code',  8b_q6k] - block_macro['code',  4b_q8] >= 3"
+        },
+        {
+          "clause": "docs_block_macro_plus_3",
+          "predicate": "block_macro['docs',  8b_q6k] - block_macro['docs',  4b_q8] >= 3"
+        },
+        {
+          "clause": "no_per_metric_regression_greater_5",
+          "predicate": "for each metric m in {nDCG@10, Recall@10, MRR@10, Recall@1}, and each block b: block_metric[b, m, 4b_q8] - block_metric[b, m, 8b_q6k] <= 5"
+        },
+        {
+          "clause": "no_single_metric_loss_greater_2",
+          "predicate": "for each metric m and each block b: block_metric[b, m, 4b_q8] - block_metric[b, m, 8b_q6k] <= 2 OR the composite gain on that block is >= 5 (offset clause)"
+        },
+        {
+          "clause": "ram_ceiling",
+          "predicate": "peak_ram_gib[8b_q6k] <= 12"
+        }
       ],
       "note": "single_metric_loss_greater_2 has an offset clause: a >5 composite gain on the block absorbs one >2 metric loss on the same block. Runner logs the offset use for ADR-0031 audit."
     },
-
     "flip_to_0_6b_q8_if": {
-      "$comment": "ALL five clauses must fire → FLIP to 0.6B-Q8_0.",
+      "$comment": "ALL five clauses must fire \u2192 FLIP to 0.6B-Q8_0.",
       "all_of": [
-        {"clause": "code_block_macro_plus_3",             "predicate": "block_macro['code',  0_6b_q8] - block_macro['code',  4b_q8] >= 3"},
-        {"clause": "docs_block_macro_plus_3",             "predicate": "block_macro['docs',  0_6b_q8] - block_macro['docs',  4b_q8] >= 3"},
-        {"clause": "no_per_metric_regression_greater_5",  "predicate": "for each metric m in {nDCG@10, Recall@10, MRR@10, Recall@1}, and each block b: block_metric[b, m, 4b_q8] - block_metric[b, m, 0_6b_q8] <= 5"},
-        {"clause": "no_single_metric_loss_greater_2",     "predicate": "for each metric m and each block b: block_metric[b, m, 4b_q8] - block_metric[b, m, 0_6b_q8] <= 2 (no offset clause on downsize — strict)"},
-        {"clause": "ram_and_speed_savings",               "predicate": "peak_ram_gib[4b_q8] - peak_ram_gib[0_6b_q8] >= 3.0 AND wall_seconds_per_query[4b_q8] / wall_seconds_per_query[0_6b_q8] >= 2.0"}
+        {
+          "clause": "code_block_macro_plus_3",
+          "predicate": "block_macro['code',  0_6b_q8] - block_macro['code',  4b_q8] >= 3"
+        },
+        {
+          "clause": "docs_block_macro_plus_3",
+          "predicate": "block_macro['docs',  0_6b_q8] - block_macro['docs',  4b_q8] >= 3"
+        },
+        {
+          "clause": "no_per_metric_regression_greater_5",
+          "predicate": "for each metric m in {nDCG@10, Recall@10, MRR@10, Recall@1}, and each block b: block_metric[b, m, 4b_q8] - block_metric[b, m, 0_6b_q8] <= 5"
+        },
+        {
+          "clause": "no_single_metric_loss_greater_2",
+          "predicate": "for each metric m and each block b: block_metric[b, m, 4b_q8] - block_metric[b, m, 0_6b_q8] <= 2 (no offset clause on downsize \u2014 strict)"
+        },
+        {
+          "clause": "ram_and_speed_savings",
+          "predicate": "peak_ram_gib[4b_q8] - peak_ram_gib[0_6b_q8] >= 3.0 AND wall_seconds_per_query[4b_q8] / wall_seconds_per_query[0_6b_q8] >= 2.0"
+        }
       ],
       "note": "downsize does NOT get the composite-offset clause on single_metric_loss; the tighter requirement reflects that 'save resources at all costs' can't override retrieval loss."
     },
-
     "evaluation_order": [
       "1. Compute per-cell metrics (nDCG@10, Recall@10, MRR@10, Recall@1) using qrels.",
       "2. Compute block_metric[block, metric, candidate] = mean across chunker variants (H1 and H2 average).",
       "3. Compute block_macro[block, candidate] via the primary_composite formula.",
       "4. Compute overall_macro[candidate] = mean(block_macro[code, c], block_macro[docs, c]).",
-      "5. Evaluate confirm_incumbent_4b_q8_if — if any clause fires, verdict = CONFIRM incumbent. Skip other predicates.",
-      "6. If not confirmed: evaluate flip_to_8b_q6k_if AND flip_to_0_6b_q8_if. If exactly one passes → that verdict. If both pass → 8b wins (tie-break on higher block_macro sum). If neither passes → verdict = CONFIRM incumbent (fallback per V3 boundary policy).",
-      "7. If per-block split is possible (one candidate passes W3 on code but not docs, or vice versa) → verdict = INTERMEDIATE, follow-up ADR required for per-block routing."
+      "5. Evaluate confirm_incumbent_4b_q8_if \u2014 if any clause fires, verdict = CONFIRM incumbent. Skip other predicates.",
+      "6. If not confirmed: evaluate flip_to_8b_q6k_if AND flip_to_0_6b_q8_if. If exactly one passes \u2192 that verdict. If both pass \u2192 8b wins (tie-break on higher block_macro sum). If neither passes \u2192 verdict = CONFIRM incumbent (fallback per V3 boundary policy).",
+      "7. If per-block split is possible (one candidate passes W3 on code but not docs, or vice versa) \u2192 verdict = INTERMEDIATE, follow-up ADR required for per-block routing."
     ]
   },
-
   "definition_of_done": {
     "gate_4_dod_full": [
       "step_1_candidate_pool_committed:  DONE (bench/candidates/embedder-full-pool.json at 5489fb19)",
@@ -161,6 +252,6 @@
       "step_9_ADR-0031_verdict_filed:    PENDING (runner evaluates reversal_criteria + records verdict; ADR-0030 Ratifies at this point OR gets amended-then-ratified if the reversal fires)"
     ]
   },
-
-  "$hash_note": "After qrels are labeled and locked in step 6, the qrels file's sha256 will be recorded in QRELS.locked.sha256 and referenced here in a POST_HOC amendment. The rubric itself has post_hoc_edit_locked=true and MUST NOT be edited after step 5 commit — only the qrels-hash amendment field can be added."
+  "$hash_note": "After qrels are labeled and locked in step 6, the qrels file's sha256 will be recorded in QRELS.locked.sha256 and referenced here in a POST_HOC amendment. The rubric itself has post_hoc_edit_locked=true and MUST NOT be edited after step 5 commit \u2014 only the qrels-hash amendment field can be added.",
+  "_amendment_note": "2026-08-11 15:55 EDT: labeler_instructions_verbatim updated 12->16 cells (typo bug from prior scope reduction). primary_key rule clarified with line-range overlap >=0.5 semantic (implementing the chunker-agnostic intent). Both edits made BEFORE step 6c labeling begins, so no post-hoc scoring bias. Rubric remains post_hoc_edit_locked=true \u2014 these are pre-labeling clarifications documented in-place per Kosmos spec-diff discipline."
 }
