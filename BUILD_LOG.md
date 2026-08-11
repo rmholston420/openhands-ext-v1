@@ -343,3 +343,12 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** planner probe (contract gain: `response_format` is now non-optional when `output_schema` is present).
 - **PORTING_LEDGER / ADR updated:** ADR-0009 filed.
 - **Stop-condition status:** in-progress — next planner smoke should show `verdict=pass` on all three tasks (or a residual `truncated at max_tokens` if any grammar-constrained JSON exceeds 4096 tokens, which is unlikely for the current 3-task set).
+
+## 2026-08-11 02:54 EDT — planner-fast-02 min_steps lowered 4→3 (natural DAG)
+
+- **Stage / plugin / port:** Phase 0.1 · Fast-tier planner task set (data only).
+- **What changed:** `planner-fast-02-forge-oh-migration.min_steps: 4 → 3`. Smoke run `smoke-fast-planner-*-20260811T065306Z` (post-ADR-0008 + ADR-0009) produced a valid 3-step DAG (model → migration → test) that the schema and DAG check accepted; only per-task `min_steps=4` gate rejected it. That gate was authorial overreach — the natural decomposition is genuinely 3 steps. Task 01 (min_steps=3) and Task 03 (min_steps=4, produced 5) already pass, confirming the harness discriminates.
+- **Files touched:** `bench/tasks/planner-fast.json` (task 02 min_steps + notes only).
+- **Ports / adapters affected:** none (task-set data).
+- **PORTING_LEDGER / ADR updated:** none (no ADR required — task authoring calibration, not a design decision).
+- **Stop-condition status:** ready for green smoke on Colossus. All three planner-fast tasks should verdict=pass on next run.
