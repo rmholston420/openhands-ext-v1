@@ -23,7 +23,10 @@
       "tool_call_parser": "qwen3_coder",
       "reasoning_parser": null,
       "serve_script": "scripts/serve-coder.sh",
-      "adr_history": ["ADR-0011#amendment-1", "ADR-0014"]
+      "adr_history": [
+        "ADR-0011#amendment-1",
+        "ADR-0014"
+      ]
     },
     "planner": {
       "model": "qwen3_6-35b-a3b-q4kxl-gguf",
@@ -37,13 +40,16 @@
       "port": 8082,
       "thinking_enabled": false,
       "serve_script": "scripts/serve-planner.sh",
-      "adr_history": ["ADR-0008", "ADR-0015"]
+      "adr_history": [
+        "ADR-0008",
+        "ADR-0015"
+      ]
     },
     "embedder": {
       "model": "qwen3-embedding-4b-q8-gguf",
       "hf_repo": "Qwen/Qwen3-Embedding-4B-GGUF",
       "runtime": "llama.cpp",
-      "device": "gpu",
+      "device": "cpu",
       "quant": "q8_0",
       "gguf_file": "Qwen3-Embedding-4B-Q8_0.gguf",
       "endpoint": "http://127.0.0.1:8090/v1",
@@ -51,7 +57,8 @@
       "port": 8090,
       "always_resident": true,
       "serve_script": "scripts/serve-embedder.sh",
-      "adr_history": []
+      "adr_history": [],
+      "device_amendment_note": "Device GPU->CPU per ADR-0017 amendment #3 (2026-08-11 06:39 EDT) to align with integration-execution-plan-v16 lines 159-161 (-ngl 0 -c 4096). Frees full 31.39 GiB VRAM for coder/planner."
     }
   },
   "endpoints_summary": {

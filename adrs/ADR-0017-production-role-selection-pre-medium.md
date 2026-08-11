@@ -1,10 +1,12 @@
 # ADR-0017 — Production role selection (pre-Medium-tier)
 
+> **STATUS AMENDMENT #3 (2026-08-11 06:39 EDT):** Embedder device corrected from **GPU → CPU** to align with `docs/specs/integration-execution-plan-v16.md` lines 159–161 (`-ngl 0 -c 4096`). Empirical root cause: the original ADR wording claimed "~5 GiB VRAM · always-resident alongside any large model" for the embedder, but `nvidia-smi` measured ~10 GiB actual VRAM consumption for the Q8_0 4B GGUF at `-ngl 999 -c 32768 --batch 512` (weights ~5 GiB + KV/graph doubling the footprint). That starved the coder — the coder attempted `--gpu-memory-utilization 0.90` (28.25 GiB) against only 20.87 GiB free and refused to start with `ValueError: Free memory on device cuda:0 (20.87/31.39 GiB) on startup is less than desired GPU memory utilization`. **Fix applied in `scripts/serve-embedder.sh`:** `EMBED_CTX_SIZE=4096` (was 32768) and `EMBED_NGL=0` (was 999), matching spec exactly. Result: full 31.39 GiB VRAM budget returns to whichever large model is resident. Coder `--gpu-memory-utilization 0.90` unchanged, embedder "always-resident" property preserved (now on CPU). **Spec deviation preserved:** embedder port stays at 8090 (spec says 8083) to avoid churning the health-check + selection.json convention already committed in amendments #1–#2 — documented as a minor deviation, not a decision change. Original ADR wording (GPU device, ~5 GiB VRAM claim) is now factually incorrect; superseded by this amendment; text preserved for audit trail.
+
 > **STATUS AMENDMENT #2 (2026-08-11 06:24 EDT):** Coder port moved from **8001 → 8100** after `sudo lsof` on Colossus revealed the OpenHands node frontend already binds 0.0.0.0:8001 (PID 1670799, UID 10001 — same UID as the agent on 8000). OpenHands owns the entire 8000–8001 cluster. Broader port survey confirmed nothing on Colossus listens in 8100+, so 8100 is a safe, single-port move that keeps the pattern "large-model on 80xx" broken deliberately for clearance. Model, runtime, parser flags, and co-residency policy unchanged. Affected files re-patched in the same commit: `bench/candidates/production-selection.json`, `scripts/serve-coder.sh`, `scripts/serve-planner.sh`, `scripts/stop-large-model.sh`. Health-check script reads endpoints from selection JSON — no code change required there. Original decision text and amendment #1 both preserved verbatim below.
 
 > **STATUS AMENDMENT (2026-08-11 06:10 EDT):** Coder port moved from **8000 → 8001** to avoid conflict with the OpenHands agent (which binds 127.0.0.1:8000 on Colossus). Model, runtime, parser flags, and co-residency policy unchanged. Affected files patched in the same commit: `bench/candidates/production-selection.json`, `scripts/serve-coder.sh`, `scripts/stop-large-model.sh`, `scripts/check-production-endpoints.sh`. Original decision text below is preserved verbatim; treat every reference to `port 8000` as `port 8001` under this amendment. **This amendment is superseded by amendment #2 above (8001 → 8100).**
 
-**Status:** Ratified · Amended (2026-08-11 06:10 EDT: 8000→8001; 2026-08-11 06:24 EDT: 8001→8100)
+**Status:** Ratified · Amended three times (2026-08-11 06:10 EDT: coder 8000→8001; 2026-08-11 06:24 EDT: coder 8001→8100; 2026-08-11 06:39 EDT: embedder GPU→CPU per spec)
 **Lock-in phase:** Phase 0.2 (Medium-tier authoring paused) → Phase 1 handoff
 **Supersedes:** —
 
@@ -36,7 +38,7 @@ Assign production roles as follows, effective immediately:
 |---|---|---|---|---|
 | **coder** | `qwen3-coder-30b-a3b-instruct-awq-4bit` | vLLM | GPU | ADR-0011 (parser `qwen3_coder`) + purpose-built coder-instruct (port **8100** per amendment #2 above; OpenHands owns 8000+8001) |
 | **planner** | `qwen3_6-35b-a3b-q4kxl-gguf` | llama.cpp | GPU | ADR-0015 (thinker-2507-awq eliminated) + MoE decoding advantage |
-| **embedder** | `qwen3-embedding-4b-q8-gguf` | llama.cpp | GPU | 4B > 0.6B on MTEB; Q8_0 near-lossless on embedders; ~5 GiB VRAM |
+| **embedder** | `qwen3-embedding-4b-q8-gguf` | llama.cpp | **CPU** (amendment #3; was GPU) | 4B > 0.6B on MTEB; Q8_0 near-lossless on embedders; ctx 4096 per spec; frees full VRAM budget for large model |
 
 **Co-residency policy: Option 2 — single-role-at-a-time for large models.**
 

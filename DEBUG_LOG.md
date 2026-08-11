@@ -476,3 +476,28 @@ Entry format:
 - **Files changed:** `scripts/serve-coder.sh`
 - **Related BUILD_LOG entry:** 2026-08-11 06:32 EDT
 - **Reusable lesson:** Before adding any `--quantization` flag to a vLLM serve command, inspect the model's `config.json` `quantization_config.quant_method`. If it's `compressed-tensors` (or any newer wrapper format), do NOT pass `--quantization <legacy-name>` — omit the flag and let vLLM auto-select. The legacy names (`awq`, `awq_marlin`, `gptq`, `gptq_marlin`) apply only to raw AWQ/GPTQ packaging. Community "AWQ" repos are often re-packaged as compressed-tensors in 2025-2026.
+
+## 2026-08-11 06:39 EDT — coder OOM at 0.90 util (embedder was on GPU); ADR wording contradicted spec
+
+- **Symptom:** After all prior fixes (port 8100, path layout, `--quantization` flag removed), coder still exited on startup:
+  ```
+  ValueError: Free memory on device cuda:0 (20.87/31.39 GiB) on startup is
+  less than desired GPU memory utilization (0.9, 28.25 GiB).
+  ```
+  Deficit: 28.25 - 20.87 = 7.38 GiB.
+- **Affected stage / plugin / port:** Phase 0.2 · serve infra · embedder + coder VRAM contention
+- **Root cause (compound):**
+  1. `serve-embedder.sh` ran the Q8_0 4B embedder GGUF on GPU (`-ngl 999`, `-c 32768`, `--batch 512`). Measured VRAM residency: ~10.5 GiB (weights ~5 GiB + KV/graph doubling the footprint).
+  2. `ADR-0017` original wording claimed the embedder was `GPU · ~5 GiB VRAM · always-resident alongside any large model`. That claim was factually wrong once the ctx and batch flags were set the way they were.
+  3. `docs/specs/integration-execution-plan-v16.md` lines 159–161 explicitly show the embedder as **CPU** (`-ngl 0 -c 4096`). ADR-0017 was authored without reconciling against the spec on this point. This is the eighth documented spec deviation this session, but the only one that actively broke a component.
+- **Fix applied:**
+  - `scripts/serve-embedder.sh`: `EMBED_CTX_SIZE` default 32768 → **4096**, `EMBED_NGL` default 999 → **0**. Header rewritten to describe CPU residency and reference this DEBUG_LOG entry.
+  - `adrs/ADR-0017-*.md`: amendment #3 prepended, status line updated, rationale table's embedder Device column changed GPU → **CPU**, original text preserved.
+  - `bench/candidates/production-selection.json`: `roles.embedder.device` set to `"cpu"`, amendment note added.
+  - Port stays at 8090 (spec says 8083, but that deviation was already established in earlier amendments — logged, not changed, to avoid churning the health-check convention).
+- **Files changed:** `scripts/serve-embedder.sh`, `adrs/ADR-0017-production-role-selection-pre-medium.md`, `bench/candidates/production-selection.json`.
+- **Related BUILD_LOG entry:** 2026-08-11 06:39 EDT
+- **Reusable lesson (compound):**
+  1. When an ADR describes a resource envelope (VRAM, CPU RAM, latency), ALWAYS cross-check that envelope against the source spec **before** the ADR is ratified — do not accept "~X GiB" claims without a `nvidia-smi` measurement or spec quotation.
+  2. `-ngl 999` on a Q8_0 4B GGUF at ctx 32768 batch 512 costs ~10 GiB VRAM, NOT the naïve weight-only estimate of ~5 GiB. The KV cache scales with `n_gpu_layers × ctx × batch`, and for embedding models the entire graph is fused, so overhead doubles.
+  3. When a decision surfaces in BOTH the spec and the ADR, and they conflict, the spec is authoritative. Author the ADR amendment against the spec, not against the ADR's own prior wording.

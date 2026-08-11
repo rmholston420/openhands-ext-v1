@@ -803,3 +803,17 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** none (script-level fix, no decision change).
 - **Stop-condition status:** Embedder verified PASS (port 8090, dim=2560). Coder pending restart after this patch.
+
+## 2026-08-11 06:39 EDT — ADR-0017 amendment #3: embedder GPU→CPU per spec
+
+- **Stage / plugin / port:** Phase 0.2 · serve infra · embedder device correction
+- **What changed:** Embedder device corrected from GPU (`-ngl 999 -c 32768`) to CPU (`-ngl 0 -c 4096`) to align with `docs/specs/integration-execution-plan-v16.md` lines 159–161. ADR-0017 original wording claimed embedder was "~5 GiB VRAM · always-resident alongside any large model"; `nvidia-smi` measured ~10 GiB actual consumption, which starved the coder at `--gpu-memory-utilization 0.90` (needed 28.25 GiB, only 20.87 GiB free). Fix: run embedder on CPU as the spec always intended. Coder VRAM budget unchanged at 0.90; full 31.39 GiB returns to whichever large model is resident.
+- **Files touched:**
+  - `scripts/serve-embedder.sh` — `EMBED_CTX_SIZE` 32768→4096; `EMBED_NGL` 999→0; header rewritten
+  - `adrs/ADR-0017-production-role-selection-pre-medium.md` — amendment #3 prepended; status line updated; embedder Device column GPU→CPU
+  - `bench/candidates/production-selection.json` — `roles.embedder.device`=cpu; amendment note added
+  - `DEBUG_LOG.md` — appended compound-cause entry with three reusable lessons
+  - `KNOWN_ISSUES.md` — filed deferred decision: 4B-CPU (current) vs. 0.6B-GPU co-resident (revisit when retrieval latency measurable)
+- **Ports / adapters affected:** embedder (device only; port 8090 unchanged); coder (indirectly — regains VRAM budget)
+- **PORTING_LEDGER / ADR updated:** ADR-0017 amendment #3
+- **Stop-condition status:** in-progress (coder restart pending user command on Colossus)
