@@ -190,3 +190,23 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** none (scaffolding + venv config; no formal ports touched).
 - **PORTING_LEDGER / ADR updated:** ADR-0005 amended; ADR-0006 authored + indexed. PORTING_LEDGER unchanged (no vendored component adopted or replaced).
 - **Stop-condition status:** Phase 0 scaffolding in place; harness/loader/task-set work remains. Phase -1 §-1.5 vLLM smoke re-verified without any workaround (`bench/results/phase-neg-1-smoke-vllm-20260811T044948Z.json`).
+
+## 2026-08-11 00:57 EDT — Phase 0 §0.0b candidate registry + table-driven pull-models.sh
+
+- **Stage / plugin / port:** Phase 0 · §0.0b candidate pool acquisition
+- **What changed:**
+  1. **`bench/candidates/registry.json`** — new file, authoritative candidate registry for Phase 0. 9 candidates across coder/planner/embedder pools. Every entry lists `slug`, `hf_repo`, optional `hf_files`, `format`, `runtime`, `role_pool` (which pools the candidate participates in — coder+planner sharing enforces spec §0.0b's no-double-download rule), `approx_size_gib`, and notes.
+  2. **Old `pull-models.sh` renamed to `pull-smoke-model.sh`** — preserves the Phase -1 smoke fetch for regression re-runs; unchanged content.
+  3. **New `scripts/pull-models.sh`** — table-driven, `--role coder|planner|embedder|all`, `--dry-run` supported. Live-resolves each HF repo's `main` revision, computes a rollup SHA256 of key files, appends to `models/manifest.json` with `resolved_revision`, `files_requested`, `actual_size_bytes`, `rollup_sha256`, `local_dir`, `resolved_at_utc`, `source_url`. Idempotent: skip on complete local dir, replace-in-place on re-download. Disk preflight refuses to start if free < 1.25× approx sum. Per-role snapshot vs single-file mode selected from `hf_files` in the registry. For Qwen embedding GGUF repos, prefers `Qwen3-Embedding-<size>-Q8_0.gguf` and falls back to full snapshot.
+- **Canonical HF repo IDs baked in (verified via Perplexity web search 2026-08-11):**
+  - `Qwen/Qwen3.6-27B`, `unsloth/Qwen3.6-27B-GGUF` (`Qwen3.6-27B-Q6_K.gguf`), `Intel/Qwen3.6-27B-int4-AutoRound`
+  - `Qwen/Qwen3.6-35B-A3B`, `unsloth/Qwen3.6-35B-A3B-GGUF` (`Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf`), `QuantTrio/Qwen3.6-35B-A3B-AWQ`
+  - `cpatonn/Qwen3-30B-A3B-Thinking-2507-AWQ-4bit` (chosen over 235B — that variant does not fit 32 GiB VRAM)
+  - `Qwen/Qwen3-Embedding-0.6B`, `Qwen/Qwen3-Embedding-0.6B-GGUF`, `Qwen/Qwen3-Embedding-4B`, `Qwen/Qwen3-Embedding-4B-GGUF`
+- **Files touched:**
+  - `bench/candidates/registry.json` (new)
+  - `scripts/pull-models.sh` (rewritten)
+  - `scripts/pull-smoke-model.sh` (renamed from prior `pull-models.sh`)
+- **Ports / adapters affected:** none (Phase 0 pre-tier scaffolding).
+- **PORTING_LEDGER / ADR updated:** none. Registry is authored code, not a vendored port. No ADR required — candidate-list content is deliberately hot-editable per spec §0.0b (never pre-narrow the pool).
+- **Stop-condition status:** Phase 0 pool-acquisition machinery in place; downloads not yet run.

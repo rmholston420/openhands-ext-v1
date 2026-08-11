@@ -1,0 +1,112 @@
+{
+  "$comment": "Phase 0 §0.0b candidate registry. Editing this file changes what pull-models.sh fetches and what the tier runner considers 'in the pool'. Do NOT hardcode revisions here — pull-models.sh resolves and pins revisions at download time and records them in models/manifest.json.",
+  "schema_version": "1.0.0",
+  "roles": {
+    "coder": [
+      {
+        "slug": "qwen3_6-27b-q6k-gguf",
+        "hf_repo": "unsloth/Qwen3.6-27B-GGUF",
+        "hf_files": ["Qwen3.6-27B-Q6_K.gguf"],
+        "format": "gguf",
+        "runtime": "llama.cpp",
+        "role_pool": ["coder", "planner"],
+        "approx_size_gib": 22,
+        "notes": "Dense 27B, Q6_K quant. Fits 32 GiB VRAM comfortably with KV cache."
+      },
+      {
+        "slug": "qwen3_6-27b-bf16",
+        "hf_repo": "Qwen/Qwen3.6-27B",
+        "hf_files": [],
+        "format": "safetensors",
+        "runtime": "vllm",
+        "role_pool": ["coder", "planner"],
+        "approx_size_gib": 55,
+        "notes": "Dense 27B bf16 base. Does NOT fit 32 GiB VRAM at full precision; kept for CPU-offload / reference scoring only. Runner must gate at load time."
+      },
+      {
+        "slug": "qwen3_6-27b-int4-autoround",
+        "hf_repo": "Intel/Qwen3.6-27B-int4-AutoRound",
+        "hf_files": [],
+        "format": "safetensors",
+        "runtime": "vllm",
+        "role_pool": ["coder", "planner"],
+        "approx_size_gib": 15,
+        "notes": "Intel official W4A16 AutoRound, group_size 128, symmetric. vLLM-servable."
+      },
+      {
+        "slug": "qwen3_6-35b-a3b-q4kxl-gguf",
+        "hf_repo": "unsloth/Qwen3.6-35B-A3B-GGUF",
+        "hf_files": ["Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"],
+        "format": "gguf",
+        "runtime": "llama.cpp",
+        "role_pool": ["coder", "planner"],
+        "approx_size_gib": 20,
+        "notes": "MoE 35B / 3B-active, Unsloth Dynamic Q4_K_XL. Fits 32 GiB VRAM."
+      },
+      {
+        "slug": "qwen3_6-35b-a3b-awq",
+        "hf_repo": "QuantTrio/Qwen3.6-35B-A3B-AWQ",
+        "hf_files": [],
+        "format": "safetensors",
+        "runtime": "vllm",
+        "role_pool": ["coder", "planner"],
+        "approx_size_gib": 20,
+        "notes": "MoE 35B / 3B-active, AWQ 4-bit. vLLM ≥ 0.19. Data-free calibration."
+      }
+    ],
+    "planner": [
+      {
+        "slug": "qwen3-30b-a3b-thinking-2507-awq",
+        "hf_repo": "cpatonn/Qwen3-30B-A3B-Thinking-2507-AWQ-4bit",
+        "hf_files": [],
+        "format": "safetensors",
+        "runtime": "vllm",
+        "role_pool": ["planner"],
+        "approx_size_gib": 20,
+        "notes": "30B-A3B MoE thinking model, AWQ-4bit by cpatonn. The 235B thinking variant does NOT fit 32 GiB VRAM."
+      }
+    ],
+    "embedder": [
+      {
+        "slug": "qwen3-embedding-0_6b-bf16",
+        "hf_repo": "Qwen/Qwen3-Embedding-0.6B",
+        "hf_files": [],
+        "format": "safetensors",
+        "runtime": "vllm",
+        "role_pool": ["embedder"],
+        "approx_size_gib": 2,
+        "notes": "Official Qwen embedding, bf16 safetensors."
+      },
+      {
+        "slug": "qwen3-embedding-0_6b-q8-gguf",
+        "hf_repo": "Qwen/Qwen3-Embedding-0.6B-GGUF",
+        "hf_files": [],
+        "format": "gguf",
+        "runtime": "llama.cpp",
+        "role_pool": ["embedder"],
+        "approx_size_gib": 1,
+        "notes": "Official Qwen embedding GGUF. File selected by pull script (Q8_0 preferred)."
+      },
+      {
+        "slug": "qwen3-embedding-4b-bf16",
+        "hf_repo": "Qwen/Qwen3-Embedding-4B",
+        "hf_files": [],
+        "format": "safetensors",
+        "runtime": "vllm",
+        "role_pool": ["embedder"],
+        "approx_size_gib": 8,
+        "notes": "Official Qwen embedding-4B bf16 safetensors."
+      },
+      {
+        "slug": "qwen3-embedding-4b-q8-gguf",
+        "hf_repo": "Qwen/Qwen3-Embedding-4B-GGUF",
+        "hf_files": [],
+        "format": "gguf",
+        "runtime": "llama.cpp",
+        "role_pool": ["embedder"],
+        "approx_size_gib": 5,
+        "notes": "Official Qwen embedding-4B GGUF. File selected by pull script (Q8_0 preferred)."
+      }
+    ]
+  }
+}
