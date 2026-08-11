@@ -1,50 +1,36 @@
-# OpenHands-Ext v1 — Session Handoff — 2026-08-10 23:45 EDT
+# OpenHands-Ext v1 — Session Handoff — 2026-08-11 00:15 EDT
 
 ## Current build-sequencing position
 
-- **Stage / phase:** Pre-Phase -1 complete; **Phase -1 execution ready on Colossus**.
-- **Plugin / kernel component:** governance (ADR-0003 mirror discipline filed); Phase -1 execution scripts landed.
+- **Stage / phase:** Phase -1 execution — **partial**, corrective fixes landed, awaiting re-run on Colossus.
+- **Plugin / kernel component:** none (governance + toolchain).
 - **Port(s) in progress:** none.
 
 ## Completed this session
 
-- Filed **ADR-0003** — three-category mirror discipline (tracked / regenerable-by-script / ephemeral) with HARD sync strictness.
-- Added pre-commit dispatcher (`hooks/pre-commit/dispatch.sh`) chaining size-guard + LocalWorkspace checks.
-- Added pre-commit size-guard (`hooks/pre-commit/size-guard.sh`, 10 MiB limit, empty allow-list).
-- Added pre-push hook (`hooks/pre-push/no-diverged-remote.sh`).
-- Extended `scripts/install-hooks.sh` to install all three hooks; idempotent.
-- Added `scripts/session-start.sh` (fetches, verifies clean tree + non-diverged remote, tails handoff + BUILD_LOG).
-- Added `scripts/session-end.sh` (commits + pushes with hard-fail on divergence, marks Colossus authorship).
-- Added `scripts/bootstrap-venv.sh` (idempotent replacement for the previous inline block that killed the interactive shell — see `DEBUG_LOG.md` 2026-08-10 23:38 EDT).
-- Added `scripts/build-llama-cpp.sh` (CUDA 12.8 + `/usr/bin/gcc-13` host compiler + `-DCMAKE_CUDA_ARCHITECTURES=120`; re-fetches latest tag).
-- Added `scripts/install-oh-sdk.sh` (re-fetches PyPI versions, installs pinned).
-- Added `scripts/install-vllm.sh` (re-fetches vllm version, installs pinned, records torch/CUDA versions).
-- Added `scripts/pull-models.sh` (Qwen2.5-1.5B-Instruct in GGUF Q4_K_M + safetensors, both via modern `hf` CLI).
-- Added `scripts/smoke-test-llama-cpp.sh` (spec §-1.5, port 8082, records GPU snapshot).
-- Added `scripts/smoke-test-vllm.sh` (spec §-1.5, port 8083, records GPU snapshot).
-- Extended `.gitignore` for `vendor/` and `bench/results/*.log`.
-- Extended LocalWorkspace hook allow-list for new hook + script paths.
+- Filed **ADR-0004** — llama.cpp CUDA toolchain pin: `/usr/local/cuda-13.0` + `/usr/bin/gcc-13` + `SM_120`. CUDA 12.8 rejected due to `math_functions.h` `noexcept` conflict with Ubuntu 26.04's glibc 2.43.
+- Amended **ADR-0003** — added the commit-message truth gate; documented that commit `535bc35`'s subject "§-1 Verification table all green" was inaccurate.
+- Rewrote `scripts/build-llama-cpp.sh` to use CUDA 13.0 (with `PATH`/`CUDA_PATH`/`LD_LIBRARY_PATH` prefixed to the cuda-13.0 tree) and to emit a `status: pass` metadata JSON on success.
+- Rewrote `scripts/smoke-test-vllm.sh` — `nvidia-smi` VRAM preflight (refuses < 20 GiB free by default), env-overridable `VLLM_GPU_MEM_UTIL` (default lowered to `0.55`), `VLLM_MAX_MODEL_LEN`, `VLLM_STARTUP_TIMEOUT` (240 s), `VLLM_MIN_FREE_GIB`, and a `status: pass|fail` metadata JSON.
+- Rewrote `scripts/session-end.sh` — reads the two Phase -1 smoke JSONs, refuses subjects claiming "all green" / "complete" when they aren't `pass`, appends `smoke.llama-cpp:` and `smoke.vllm:` lines to every commit body.
+- Added `status: pass` field to `scripts/smoke-test-llama-cpp.sh` metadata JSON.
+- Appended three DEBUG_LOG entries (CUDA-12.8/glibc conflict, vLLM VRAM OOM, commit-535bc35 misleading subject) and a BUILD_LOG entry for all of the above.
 
 ## Remaining before current Definition of Done
 
-**Phase -1 Definition of Done (spec §-1 Verification table) — execute on Colossus in this order:**
+**Phase -1 §-1 Verification table is still NOT green.** To close it out, on Colossus:
 
-1. `git pull` (or `bash scripts/session-start.sh` which does this plus checks).
-2. `bash scripts/install-hooks.sh` — install the updated hooks (idempotent).
-3. `bash scripts/bootstrap-venv.sh` — the `.venv/` from the killed run is likely usable but re-running is safe.
-4. `bash scripts/install-oh-sdk.sh` — installs pinned OpenHands SDK stack, records to `bench/results/`.
-5. `bash scripts/install-vllm.sh` — installs pinned vLLM, records torch/CUDA versions.
-6. `bash scripts/build-llama-cpp.sh` — clones + builds llama.cpp with SM_120 (5-15 min).
-7. `bash scripts/pull-models.sh` — pulls Qwen2.5-1.5B in both formats (~4 GB total).
-8. `bash scripts/smoke-test-llama-cpp.sh` — spec §-1.5 verification (llama.cpp).
-9. `bash scripts/smoke-test-vllm.sh` — spec §-1.5 verification (vLLM).
-10. `bash scripts/session-end.sh -m "phase(-1): all §-1 Verification table rows green"` — commits the `bench/results/*.json` metadata files and pushes.
-
-**Report Phase -1 Verification table row-by-row after step 9.** Metadata JSONs under `bench/results/` will be the authoritative record.
+1. `git pull origin main`
+2. `bash scripts/install-hooks.sh` (installs updated session-end truth gate)
+3. `bash scripts/build-llama-cpp.sh` — should now succeed under CUDA 13.0. Expect 5-15 min. On success this writes `bench/results/phase-neg-1-build-llama-cpp-*.json` with `status: pass`.
+4. **Free VRAM before smoke-test-vllm** — close Chrome / IDE / other GPU apps. Verify with `nvidia-smi --query-gpu=memory.free --format=csv,noheader`. Need ≥ 20 GiB free (out of 32 GiB total).
+5. `bash scripts/smoke-test-llama-cpp.sh` — port 8082.
+6. `bash scripts/smoke-test-vllm.sh` — port 8083. If VRAM preflight still fails, use `VLLM_GPU_MEM_UTIL=0.3 VLLM_MIN_FREE_GIB=10 bash scripts/smoke-test-vllm.sh` (Qwen 1.5B needs ~4 GiB of weights + KV cache; 10 GiB budget is plenty).
+7. `bash scripts/session-end.sh -m "phase(-1): §-1 Verification table green (corrected)"` — this will now be *allowed* only if both smoke JSONs report `status: pass`. Otherwise it will refuse with a truthful error.
 
 ## Open questions / awaiting user answer
 
-None. ADR-0003 ratified with optimal choices per user directive.
+- None. Recommendations from prior turn accepted.
 
 ## Exact next action
 
@@ -53,17 +39,8 @@ On Colossus:
 ```bash
 cd ~/dev/openhands-ext-v1
 git pull origin main
-bash scripts/session-start.sh
+bash scripts/install-hooks.sh
+bash scripts/build-llama-cpp.sh
 ```
 
-`session-start.sh` will refuse to run if the tree is dirty. Colossus previously had modified `.gitignore` (from the killed script). If session-start fails on dirty tree, resolve first:
-
-```bash
-cd ~/dev/openhands-ext-v1
-git diff .gitignore              # inspect (probably matches what's now on origin)
-git checkout .gitignore          # discard local changes; new .gitignore comes from git pull
-git pull origin main
-bash scripts/session-start.sh
-```
-
-Then step through steps 3-10 above, one script at a time. If any script fails, its output is at `/tmp/openhands-ext-v1-<script>-<timestamp>.log`; paste the tail and I'll diagnose.
+If the build succeeds, paste the tail of its log (or just say "build ok") and I'll walk you through freeing VRAM + running the two smoke tests. If it fails, paste the error and I'll diagnose.

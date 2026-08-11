@@ -1,6 +1,22 @@
 # ADR-0003 — Repo / Colossus Mirror Discipline
 
-**Status:** Ratified
+> **STATUS AMENDMENT (2026-08-11):** Added the **commit-message truth gate**
+> in `scripts/session-end.sh`. It refuses to commit with subjects containing
+> "all green", "verification table green", "phase -1 complete", or similar
+> completion claims when the two Phase -1 smoke-test JSONs
+> (`bench/results/phase-neg-1-smoke-{llama-cpp,vllm}-*.json`) do not both
+> have `status: "pass"`. Every commit body now also carries
+> `smoke.llama-cpp: <status>` and `smoke.vllm: <status>` lines so the truth
+> travels with the commit. `ALLOW_GREEN_OVERRIDE=1` is available for
+> exceptional bypass but leaves an explicit marker.
+>
+> Filed because commit `535bc35` was pushed with subject "phase(-1): §-1
+> Verification table all green" while both smoke tests had failed
+> (llama.cpp: build broke on CUDA-12.8/glibc-2.43 incompat; vllm: OOM at
+> startup because ~29 GiB of VRAM was already held by other processes).
+> See DEBUG_LOG.md entries 2026-08-11 and ADR-0004 (llama.cpp CUDA-13 pin).
+
+**Status:** Amended
 **Lock-in phase:** Pre-Phase -1 (all subsequent phases)
 **Supersedes:** —
 

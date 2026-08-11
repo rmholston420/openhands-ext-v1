@@ -3,20 +3,24 @@
 #
 # Clones and builds llama.cpp for RTX 5090 (Blackwell SM_120) on Colossus.
 #
-# Toolchain (from Colossus probe 2026-08-10):
-#   CUDA:  /usr/local/cuda-12.8   (nvcc 12.8.93)
-#   Host:  /usr/bin/gcc-13        (CUDA 12.8 does not officially support GCC 15)
-#   CMake: /usr/bin/cmake
-#   Ninja: /usr/bin/ninja
+# Toolchain (from Colossus probe 2026-08-10 & 2026-08-10 23:59):
+#   CUDA:   /usr/local/cuda-13.0  (nvcc 13.0.88)  <-- CUDA 12.8 is BROKEN
+#                                                 on Ubuntu 26.04 glibc 2.43;
+#                                                 see DEBUG_LOG.md.
+#   Host:   /usr/bin/gcc-13       (CUDA 13 accepts gcc-13/14/15; gcc-13
+#                                  chosen because it's currently the only
+#                                  installed CUDA-supported host compiler.)
+#   CMake:  /usr/bin/cmake
+#   Ninja:  /usr/bin/ninja
 #
-# Build location: vendor/llama.cpp/ (gitignored via vendor/)
+# Build location: vendor/llama.cpp/  (gitignored via vendor/)
 #
 # Steps:
-#   1. Re-fetch the top-of-releases tag from GitHub (spec §-1.1 rule: NEVER
-#      hardcode; always re-fetch and log).
+#   1. Re-fetch the top-of-releases tag from GitHub (spec §-1.1 rule:
+#      NEVER hardcode; always re-fetch and log).
 #   2. Clone or update the vendor tree at that tag.
-#   3. cmake configure with CUDA + SM_120 + gcc-13 host compiler.
-#   4. ninja build.
+#   3. cmake configure with CUDA 13.0 + SM_120 + gcc-13 host compiler.
+#   4. ninja build (parallel).
 #   5. Report binaries and version.
 #
 # Log: /tmp/openhands-ext-v1-build-llama-cpp-<timestamp>.log
@@ -30,7 +34,7 @@ LOG="/tmp/openhands-ext-v1-build-llama-cpp-$(date +%s).log"
 echo "logging to $LOG"
 
 VENDOR_DIR="$REPO_ROOT/vendor/llama.cpp"
-CUDA_ROOT="/usr/local/cuda-12.8"
+CUDA_ROOT="/usr/local/cuda-13.0"
 HOST_CC="/usr/bin/gcc-13"
 HOST_CXX="/usr/bin/g++-13"
 SM_ARCH="120"
@@ -46,10 +50,11 @@ SM_ARCH="120"
     fi
   done
   echo "[ok] preflight"
-  echo "nvcc: $($CUDA_ROOT/bin/nvcc --version | tail -1)"
+  echo "nvcc:   $($CUDA_ROOT/bin/nvcc --version | tail -1)"
   echo "gcc-13: $($HOST_CC --version | head -1)"
-  echo "cmake: $(cmake --version | head -1)"
-  echo "ninja: $(ninja --version)"
+  echo "cmake:  $(cmake --version | head -1)"
+  echo "ninja:  $(ninja --version)"
+  echo "glibc:  $(ldd --version | head -1)"
 
   # 1. Re-fetch live tag
   echo ""
@@ -71,7 +76,8 @@ SM_ARCH="120"
     echo ""
     echo "--- updating existing llama.cpp checkout ---"
     cd "$VENDOR_DIR"
-    git fetch --tags --depth 1 origin "$LATEST_TAG"
+    git fetch --tags --depth 1 origin "$LATEST_TAG" || \
+      git fetch --tags origin "$LATEST_TAG"
     git checkout -f "$LATEST_TAG"
     cd "$REPO_ROOT"
   fi
@@ -81,6 +87,14 @@ SM_ARCH="120"
   echo "checkout: $LATEST_TAG @ $CHECKOUT_SHA"
 
   # 3. Configure
+  #
+  # Point PATH at cuda-13.0 first so any child processes (e.g. cuBLAS
+  # lookup, ptxas invocations by nvcc) also see the 13.0 toolchain, not the
+  # 12.8 default installed on Colossus.
+  export PATH="$CUDA_ROOT/bin:$PATH"
+  export CUDA_PATH="$CUDA_ROOT"
+  export LD_LIBRARY_PATH="$CUDA_ROOT/lib64:${LD_LIBRARY_PATH:-}"
+
   echo ""
   echo "--- cmake configure ---"
   rm -rf build
@@ -92,11 +106,12 @@ SM_ARCH="120"
     -DCMAKE_CUDA_HOST_COMPILER="$HOST_CC" \
     -DCMAKE_C_COMPILER="$HOST_CC" \
     -DCMAKE_CXX_COMPILER="$HOST_CXX" \
+    -DCUDAToolkit_ROOT="$CUDA_ROOT" \
     -DLLAMA_CURL=ON
 
   # 4. Build
   echo ""
-  echo "--- ninja build ---"
+  echo "--- ninja build (parallel) ---"
   cmake --build build --config Release -j"$(nproc)"
 
   # 5. Report
@@ -108,6 +123,30 @@ SM_ARCH="120"
   echo "--- llama-server sanity ---"
   ./build/bin/llama-server --version 2>&1 | head -5 || true
 
+  # 6. Metadata
+  mkdir -p "$REPO_ROOT/bench/results"
+  METADATA_FILE="$REPO_ROOT/bench/results/phase-neg-1-build-llama-cpp-$(date -u +%Y%m%dT%H%M%SZ).json"
+  cat > "$METADATA_FILE" <<JSON
+{
+  "phase": "-1",
+  "component": "llama.cpp build",
+  "status": "pass",
+  "timestamp_utc": "$(date -u -Iseconds)",
+  "tag": "$LATEST_TAG",
+  "sha": "$CHECKOUT_SHA",
+  "toolchain": {
+    "cuda": "$($CUDA_ROOT/bin/nvcc --version | tail -1 | awk -F, '{print $NF}' | xargs)",
+    "cuda_root": "$CUDA_ROOT",
+    "host_compiler": "$($HOST_CC --version | head -1)",
+    "sm_arch": "$SM_ARCH",
+    "glibc": "$(ldd --version | head -1 | awk '{print $NF}')"
+  },
+  "server_binary": "$VENDOR_DIR/build/bin/llama-server"
+}
+JSON
+
+  echo ""
+  echo "recorded: $METADATA_FILE"
   echo ""
   echo "===== build-llama-cpp done — $(date -Iseconds) ====="
   echo "vendor: $VENDOR_DIR"

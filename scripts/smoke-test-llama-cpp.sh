@@ -131,6 +131,7 @@ trap cleanup EXIT
 {
   "phase": "-1.5",
   "component": "llama.cpp smoke",
+  "status": "pass",
   "timestamp_utc": "$(date -u -Iseconds)",
   "model": "qwen2.5-1.5b-instruct-q4_k_m.gguf",
   "port": $PORT,

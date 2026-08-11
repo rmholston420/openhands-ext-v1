@@ -91,3 +91,29 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** none (governance + execution scaffolding only)
 - **PORTING_LEDGER / ADR updated:** ADR-0003 filed
 - **Stop-condition status:** met (Colossus can now run Phase -1 as a sequence of idempotent script invocations, each with hard sync + regeneration guarantees)
+
+## 2026-08-11 00:15 EDT — Corrective Phase -1 fixes: CUDA-13 pin, vLLM VRAM preflight, session-end truth gate
+
+- **Stage / plugin / port:** Phase -1 · llama.cpp build + vLLM smoke test + session-end truth
+- **What changed:**
+  - Filed **ADR-0004** pinning llama.cpp build to `/usr/local/cuda-13.0` + gcc-13 + SM_120 (see DEBUG_LOG.md 2026-08-11 00:12 EDT — glibc 2.43 vs CUDA 12.8 `math_functions.h` conflict).
+  - Amended **ADR-0003** with the commit-message truth gate; documented that commit 535bc35's subject was inaccurate.
+  - Rewrote `scripts/build-llama-cpp.sh` — CUDA_ROOT=/usr/local/cuda-13.0, prepends CUDA-13 to PATH/CUDA_PATH/LD_LIBRARY_PATH, records status:pass metadata JSON to bench/results/.
+  - Rewrote `scripts/smoke-test-vllm.sh` — nvidia-smi VRAM preflight (refuses < VLLM_MIN_FREE_GIB=20 GiB free), env overrides (VLLM_GPU_MEM_UTIL default 0.55, VLLM_MAX_MODEL_LEN 4096, VLLM_STARTUP_TIMEOUT 240s), status:pass|fail in metadata JSON, actionable failure guidance.
+  - Rewrote `scripts/session-end.sh` — reads smoke-test JSON status, refuses "all green"/"complete" subjects when smokes aren't pass, appends `smoke.*` truth lines to every commit body, ALLOW_GREEN_OVERRIDE=1 bypass documented but discouraged.
+  - Added `status: pass` field to `scripts/smoke-test-llama-cpp.sh` metadata JSON so the truth gate can read it uniformly.
+  - Added a new `scripts/pull-docs.sh` (previously drafted in the sandbox; unchanged in this commit — it's the still-untracked file for the docs-collection task that will run after Phase -1 is genuinely green).
+- **Files touched:**
+  - `adrs/ADR-0004-llama-cpp-cuda-13-pin.md` (new)
+  - `adrs/ADR-0003-repo-colossus-mirror-discipline.md` (amendment header + status → Amended)
+  - `adrs/README.md` (index row for ADR-0004; ADR-0003 status → Amended)
+  - `scripts/build-llama-cpp.sh` (rewrite)
+  - `scripts/smoke-test-vllm.sh` (rewrite)
+  - `scripts/smoke-test-llama-cpp.sh` (status field only)
+  - `scripts/session-end.sh` (rewrite: truth gate)
+  - `scripts/pull-docs.sh` (new, unchanged since prior session)
+  - `DEBUG_LOG.md` (three appended entries for 2026-08-11 00:12 EDT)
+  - `SESSION_HANDOFF.md` (rewritten below)
+- **Ports / adapters affected:** none — governance + toolchain only.
+- **PORTING_LEDGER / ADR updated:** ADR-0003 amended, ADR-0004 ratified. PORTING_LEDGER.md not updated in this commit; a llama.cpp entry will land after the CUDA-13 build actually succeeds on Colossus.
+- **Stop-condition status:** blocked pending re-execution on Colossus. Phase -1 §-1 Verification table is NOT green until both smoke tests emit `status: pass` JSONs.
