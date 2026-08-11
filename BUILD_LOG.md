@@ -1572,3 +1572,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **PORTING_LEDGER / ADR updated:** ADR-0030 amended (still Proposed).
 - **Model provenance:** downloaded 2026-08-11 15:02 EDT from `nomic-ai/nomic-embed-code-GGUF` (nomic-embed-code.Q6_K.gguf, 5.5 GiB observed). Symlinked at `~/models/nomic-embed-code-Q6_K.gguf` → `~/dev/openhands-ext-v1/models/nomic-embed-code-q6k-gguf/nomic-embed-code.Q6_K.gguf`.
 - **Stop-condition status:** ready to execute 16-cell GPU cold run.
+
+## 2026-08-11 15:50 EDT — Phase 0.4 gate-4 step 6b COMPLETE (16 cells) + pool.jsonl generated (3324 rows)
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · step 6b (pool-only runner execution) COMPLETE
+- **What changed:** All 16 cells executed on GPU cold one-at-a-time. Timings (wall_seconds): 0.6B ~65-90s, 4B ~95-150s, 8B ~150-240s, nomic ~135-205s. Chunker-block determinism verified — all 4 candidates produced identical chunk counts (H1/code 3402, H1/docs 1791, H2/code 6441, H2/docs 3097). No probe failures; 20 rows per cell × 16 cells = 320 pool_row entries emitted. Cross-candidate diversity check on H1/code: nomic top-1 differs from all 3 Qwen top-1s on 13/20 queries; Jaccard(nomic,Qwen)≈0.31-0.34 vs Jaccard(Qwen,Qwen)≈0.37-0.41 — cross-family signal verified. Nomic similarity distribution (median 0.426) characteristically lower than Qwen (median ~0.65) as expected for asymmetric prefix-conditioned models. Pool union of top-20 across all 16 cells generated at `bench/gold/embedder-full-multi-block/pool.jsonl` — 3324 rows (1700 code + 1624 docs); per-query pool depth 49-122 (mean 83 code / 81 docs); nomic-only contributions ~15-20% per query (informational-diversity added without dominating).
+- **Files touched:** `bench/gold/embedder-full-multi-block/pool.jsonl` (new, 3324 rows)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** none (ADR-0030 status unchanged, still Proposed)
+- **Stop-condition status:** step 6b COMPLETE. Step 6c (Perplexity-Max qrels labeling) is next.
