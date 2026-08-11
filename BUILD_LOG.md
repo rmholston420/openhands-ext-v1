@@ -1290,3 +1290,13 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **PORTING_LEDGER / ADR updated:** None yet (empty tools=[] was a bug, not an architectural choice — no ADR needed). Formal ADR-0026 amendment 3 to be authored covering both the transport rewrite (previous entry) and this tool-preset wire-up before stage-3.
 - **Stop-condition status:** Not yet re-run. The 34 KB probe artifact at `bench/results/smoke/smoke-medium-coder-qwen3-coder-30b-a3b-instruct-awq-4bit-vllm-gpu-20260811T151156Z.probe.json` reflects a run where the agent had only `['finish','think']` available — every scored task hit an Action/Error loop and its verdict is NOT usable for the coder gate. Keep on disk (never rm bench/results/*.json) but treat as invalid for scoring.
 
+
+## 2026-08-11 11:22 EDT — Pass default_tools into _run_sdk_task
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · stage-2 · bench/runner/probes.py
+- **What changed:** Threaded `default_tools` from `_probe_coder_sdk` into `_run_sdk_task` as a keyword argument. Same shape as `Agent`, `Conversation`, `ActionEvent`, etc. Without this, `_run_sdk_task` raised `NameError("name 'default_tools' is not defined")` on every task, which was silently caught by the per-task `except Exception` and turned into `run_error` in the artifact.
+- **Files touched:** bench/runner/probes.py
+- **Ports / adapters affected:** none new.
+- **PORTING_LEDGER / ADR updated:** none.
+- **Stop-condition status:** Not yet re-run.
+

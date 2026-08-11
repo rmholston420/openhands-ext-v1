@@ -595,3 +595,17 @@ Entry format:
 
 1. **`Agent(llm=..., tools=[])` is silently non-fatal** — the SDK registers `finish` + `think` automatically and lets the run continue, so the failure only shows up as `Action, Error loop` inside the container's LLM/tool trace, not as a Python exception. Always assert non-empty tool list before launching.
 2. **Grep the DOCKER lines of a stage-2 run for `Tool '...' not found. Available:` before any other diagnosis** — if that line appears, the transport is fine and the wiring is wrong.
+
+## 2026-08-11 11:22 EDT — NameError: default_tools not defined in _run_sdk_task
+
+- **Symptom:** Every task in stage-2 attempt 5 (probe artifact `smoke-medium-coder-...-20260811T152029Z.probe.json`) had `wall_seconds ≈ 4µs`, `tool_trace_len=0`, `events_recorded_len=0`, `run_error="NameError(\"name 'default_tools' is not defined\")"`. Container did seed fixtures (log shows `POST /api/file/upload?path=/workspace/repo/...`) but every task returned immediately after Agent construction attempted.
+- **Affected stage / plugin / port:** Phase 0.3 gate-2 · stage-2 · `_probe_coder_sdk` / `_run_sdk_task` scoping.
+- **Root cause:** Previous fix (2026-08-11 11:16 EDT) built `default_tools = get_default_tools(...)` inside `_probe_coder_sdk` but the `Agent(llm=llm, tools=default_tools)` construction lives in `_run_sdk_task`, a separate function. Python has no closure over the parent scope for a plain `def`, so `default_tools` is unbound in `_run_sdk_task` and raises `NameError` on every call. The `NameError` was caught by the outer `try: ... except Exception as exc: run_error = repr(exc)` inside `_run_sdk_task`, silently converting it into a fail-verdict per task with no LLM traffic.
+- **Fix applied:** Pass `default_tools` in as an explicit keyword argument to `_run_sdk_task`. Same pattern as the other injected symbols (`Agent`, `Conversation`, `ActionEvent`, etc.).
+- **Files changed:** bench/runner/probes.py
+- **Related BUILD_LOG entry:** 2026-08-11 11:22 EDT
+
+### Reusable lessons
+
+1. **When threading dependencies into a per-task driver, thread them the same way you thread SDK classes.** The prior fix followed the pattern for `Agent` (import in parent, pass into child) but omitted this one.
+2. **`run_error` set on every task = look for a NameError / AttributeError in the driver, not the SDK.** Uniform ~µs wall time across all 10 tasks means the failure is in setup, not in the LLM call.

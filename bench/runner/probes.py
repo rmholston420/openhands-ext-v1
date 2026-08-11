@@ -526,6 +526,7 @@ def _probe_coder_sdk(
                 ActionEvent=ActionEvent, ObservationEvent=ObservationEvent,
                 MessageEvent=MessageEvent, AgentErrorEvent=AgentErrorEvent,
                 max_iter=max_iter,
+                default_tools=default_tools,
             )
             result.tasks.append(tr)
     finally:
@@ -554,6 +555,7 @@ def _run_sdk_task(
     MessageEvent,
     AgentErrorEvent,
     max_iter: int,
+    default_tools: list,
 ) -> "TaskResult":
     """Drive a single task under the SDK Conversation contract.
 
