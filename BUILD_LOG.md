@@ -1509,3 +1509,21 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Stop-condition status:** Gate-4 DoD step 5 COMPLETE. Step 6 (qrels labeling via Perplexity-Max GL2 sessions + hash lock) remains before Ratification.
 
 ---
+
+## 2026-08-11 13:27 EDT — Phase 0.4 gate-4 DoD step 6a COMPLETE: ADR-0030 DoD reorder amendment + runner extension (P1)
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · embedder Full-tier · runner + ADR amendment
+- **What changed:**
+  1. **ADR-0030 amended (in-place, still Proposed).** DoD ordering had step 6 (qrels labeling) before step 7 (runner extension), which is unexecutable — labelers need a pool that only the runner can produce. Amended DoD order to 6a (runner ext) → 6b (pool-only run) → 6c (label) → 6d (score) → 7 (verdict). No decision-level content changed. Ratification still coincides with ADR-0031 verdict filing.
+  2. **Runner extension (P1 per user 2026-08-11 13:26 EDT).** Added `bench/runner/probes_embedder_multi_block.py` (probe: `probe_embedder_full_multi_block`, 490 lines) as a peer to `probes_retrieval.probe_embedder_retrieval`. NO refactor of existing `probe_embedder_retrieval` — preserves Phase 0.3 provenance boundary. Probe supports `mode="pool"` (retrieval-only, step 6b) and `mode="score"` (with qrels, step 6d) so retrieval outputs cache across the labeling gap. Implements: H1 fixed 512-token + 64-token overlap chunker; H2 structure-aware chunker (Python top-level class/def/async-def splits; markdown heading splits; H1 fallback on >1024-token regions); primary-key SHA-256 chunk_id from (repo, source_file_path, line_range) — P1 chunker-agnostic; cosine ranking with deterministic (chunk_id ascending) tie-break; corpus loader that reads pinned file lists from MANIFEST.
+  3. **Driver script.** Added `bench/runner/run_embedder_full_multi_block.py` (373 lines) with 4 subcommands: `pool` (one cell), `pool-all` (all 12 with interactive candidate-swap prompts enforcing co-residency), `dedupe-pool` (aggregate 12 cell files → single labelable pool.jsonl), `score` (one cell against locked qrels). `pool-all` also runs `_ensure_corpus` which clones openhands-ext-v1/kosmos/rigpa-lms at pinned SHAs and verifies HEAD after checkout.
+  4. **Smoke test.** Chunkers verified on real files: H1 on `probes_embedder_multi_block.py` → 11 chunks; H2 → 13 chunks split cleanly on top-level defs. chunk_id proven deterministic across calls. Compile-check passed.
+- **Files touched:**
+  - `adrs/ADR-0030-phase-0-4-embedder-full-tier-re-eval.md` (in-place amendment: 3 progress notes + DoD reorder amendment; still Proposed)
+  - `bench/runner/probes_embedder_multi_block.py` (created)
+  - `bench/runner/run_embedder_full_multi_block.py` (created)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0030 amended (still Proposed).
+- **Stop-condition status:** Gate-4 DoD step 6a COMPLETE. Step 6b (pool-only runner execution across 12 cells) is the next executable step; requires user to have llama-server serving embedder models on Colossus in a co-residency-clean state (coder vLLM + planner GPU stopped).
+
+---

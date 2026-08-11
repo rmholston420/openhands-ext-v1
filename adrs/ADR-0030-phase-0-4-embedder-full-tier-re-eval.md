@@ -4,6 +4,20 @@
 
 > **PROGRESS NOTE (2026-08-11 13:16 EDT):** Fixture lock-in step 3 (corpus manifest) COMPLETE. `bench/corpus/embedder-full-multi-block/MANIFEST.json` committed at pinned SHAs: openhands-ext-v1@5489fb19 (main), Kosmos@1f33519a on branch `stage-3-13-tektos-intention` (user's live working state, 45 commits ahead of Kosmos main; option S1 per user 2026-08-11 13:15 EDT), Rigpa-LMS@55b55539 (main). Totals: 969 code files (26 + 392 + 551), 139 docs files (42 + 97). Diagnostic correction filed in BUILD_LOG: earlier comparison output was misread — stage-3-13 is AHEAD of main by 45, not behind. Steps 4–6 remain before Ratification.
 
+> **PROGRESS NOTE (2026-08-11 13:19 EDT):** Fixture lock-in step 4 (40 queries authored blind under B2 schema view + D1 20/20 split + QA2 cadence) COMPLETE. `bench/tasks/embedder-full-multi-block.queries.json` at 043ffc9. Full 66-candidate pool retained for post-hoc audit; culling was on coverage, not difficulty. Steps 5–6 remain.
+
+> **PROGRESS NOTE (2026-08-11 13:23 EDT):** Fixture lock-in step 5 (rubric R2+G2) COMPLETE. `bench/rubrics/full-embedder-scored.json` at 59c4c9b. Composite weights sum-verified to 1.0; V3+W3 reversal predicates encoded as evaluable clauses; labeler instructions embedded verbatim; downsize has stricter single-metric loss guard (no composite-offset). `post_hoc_edit_locked=true`. Step 6 remains.
+
+> **DoD ORDERING AMENDMENT (2026-08-11 13:26 EDT):** The originally listed DoD ordering has steps 6 (qrels labeling) before 7 (runner extension) and 8 (running the 12 cells). This ordering is unexecutable — Perplexity-Max labeling requires the pooled union of top-20 chunks across all 12 cells, which cannot exist until the runner has been extended AND executed once in *pool-only* mode. The amended DoD ordering is:
+>
+> - **6a. Runner extension** — add `probe_embedder_full_multi_block()` to `bench/runner/probes.py` as a peer to existing probes (P1 per user 2026-08-11 13:26 EDT; no refactor of `probe_embedder_full()` inside this gate to preserve Phase 0.3 provenance boundary).
+> - **6b. Pool-only runner execution** — run all 12 cells with retrieval-only mode; write pooled union of top-20 per query to `bench/gold/embedder-full-multi-block/pool.jsonl`. This IS execution of the 12 cells, but scoring is deferred until qrels are labeled.
+> - **6c. Qrels labeling via Perplexity-Max (GL2 2–4 sessions)** — labelers grade the pool per the rubric's embedded instructions; unanswerable queries flagged. Locked file: `bench/gold/embedder-full-multi-block/qrels.jsonl` + `QRELS.locked.sha256`.
+> - **6d. Scoring pass** — runner reads locked qrels, computes composite per cell, evaluates reversal criteria, emits verdict artifact. This is a re-run of scoring only, not retrieval — retrieval outputs from 6b are cached and reused (deterministic embeddings + fixed corpus + fixed queries).
+> - **7. ADR-0031 verdict filed** — CONFIRM incumbent, or FLIP to 8B, or FLIP to 0.6B, or INTERMEDIATE (per-block split).
+>
+> Rationale for the reorder: labeling ordering was originally written assuming the runner would produce the pool as a side effect of scoring, without recognizing that scoring depends on the very qrels labeling is meant to produce. The 6a→6b→6c→6d→7 order eliminates this cycle. ADR-0030 remains Proposed; Ratification still coincides with the ADR-0031 verdict filing (step 7). No decision-level content of this ADR (rubric, candidates, primary key, reversal criteria) is changed by this amendment — only the ordering of the DoD steps that implement it.
+
 **Lock-in phase:** Phase 0.4 gate-4 opener
 **Supersedes:** —
 **Extends:** ADR-0016 (medium-tier hybrid rubric), ADR-0017 (embedder production placement, amend #3: 4B-Q8 llama.cpp CPU), ADR-0022 (gold protocol), ADR-0028 (Full-tier ADR-opener template)
