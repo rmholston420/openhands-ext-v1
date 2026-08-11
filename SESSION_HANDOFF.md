@@ -1,70 +1,69 @@
-# OpenHands-Ext v1 Session Handoff — 2026-08-11 05:55 EDT
+# OpenHands-Ext v1 Session Handoff — 2026-08-11 06:00 EDT
 
 ## Current build-sequencing position
-- **Stage / phase:** Phase 0.2 (Medium tier) — embedder pipeline end-to-end ready. Awaiting bench execution on Colossus.
-- **Plugin / kernel component:** bench harness (embedder-medium done; planner-medium + coder-medium pending).
+- **Stage / phase:** Phase 0.2 benchmarking **PAUSED**. Production role assignments locked. Ready for Phase 1 handoff (OpenHands router / MCP wiring).
+- **Plugin / kernel component:** Production serve infrastructure complete for coder / planner / embedder.
 - **Port(s) in progress:** none.
 
 ## Completed this session
 - ADR-0014 (Ratified) — coder-fast pool reinstated 2→4. Pushed 66249e1.
 - ADR-0015 (Ratified · Confirmed) — thinker-2507-awq unfit for planner Medium. Pushed dbfa0fd.
-- ADR-0016 (Ratified) — Medium-tier hybrid scoring rubric + `bench/rubrics/medium-scored.json` frozen. Pushed 03efcee.
+- ADR-0016 (Ratified) — Medium-tier hybrid scoring rubric frozen. Pushed 03efcee.
 - embedder-medium task set (both arms) + retrieval probe + BEIR materializer. Pushed 8e17bd2.
-- **`scripts/aggregate-embedder-medium-verdict.py`** — verdict aggregator authored. Joins per-cell portability + domain arm summaries, computes cross-arm nDCG@10 macro, applies ADR-0016 tiebreak, writes tier verdict JSON.
-- **BEIR SciDocs materialized on Colossus:** 5000 docs, 100 queries, 603 qrels rows in `bench/tasks/embedder-medium-beir-scidocs-materialized.json` (derived artifact, not tracked in git).
+- Verdict aggregator + BEIR SciDocs materialized on Colossus (5000/100/603). Pushed c1f6c50.
+- **ADR-0017 (Ratified) — production role selection locked pre-Medium-tier.**
+  - coder = qwen3-coder-30B-A3B-instruct-awq-4bit (vLLM, port 8000)
+  - planner = qwen3.6-35B-A3B-Q4_K_XL GGUF (llama.cpp, port 8082)
+  - embedder = qwen3-embedding-4B Q8_0 GGUF (llama.cpp, port 8090; always-resident)
+  - co-residency = Option 2 (single-role-at-a-time for large models)
+- **Serve infrastructure authored:**
+  - `scripts/serve-coder.sh`, `scripts/serve-planner.sh`, `scripts/serve-embedder.sh`, `scripts/stop-large-model.sh`
+  - `bench/candidates/production-selection.json` (canonical role → model mapping)
 
-## Locked pool state
-- **Coder-Fast:** 4 cells.
-- **Planner-Fast:** 2 cells (llama.cpp only).
-- **Embedder-Fast:** 6 cells (0.6B ×3 + 4B ×3).
-- **Embedder-Medium:** 6 cells (Fast pool survives R1-R4).
-- **Planner-Medium (pre-authoring):** 2 cells expected — llama.cpp survivors. thinker-2507-awq excluded per ADR-0015.
-- **Coder-Medium:** to be authored.
+## Locked production endpoints
+| Role | Endpoint | Server binary | Port |
+|---|---|---|---|
+| coder | http://127.0.0.1:8000/v1 | vLLM (Docker or venv) | 8000 |
+| planner | http://127.0.0.1:8082/v1 | llama-server | 8082 |
+| embedder | http://127.0.0.1:8090/v1 | llama-server | 8090 |
 
-## Phase 0.2 authoring order (confirmed by user)
-1. **embedder-medium** ✅ authored + materialized (this session)
-2. planner-medium — next after embedder-medium bench results
-3. coder-medium
-
-## Remaining before current Definition of Done
-- Run embedder-medium bench on Colossus, both arms × 6 cells = 12 probe runs total. Two invocations of the tier runner per arm.
-- Run aggregator: `python3 scripts/aggregate-embedder-medium-verdict.py`.
-- Author verdict ADR (ADR-0017 slot open) citing the top-ranked cell(s) per arm and cross-arm.
-- Then author planner-medium task set → run bench → verdict ADR.
-- Then author coder-medium task set → run bench → verdict ADR.
+## Deferred work (do not resume until user un-pauses)
+- Embedder-medium bench (both arms) on Colossus.
+- Aggregator run + ADR-0018 (embedder-medium tier verdict).
+- Planner-medium task set + bench + ADR-0019 (verdict).
+- Coder-medium task set + bench + ADR-0020 (verdict).
+- Auto-router (lazy load large-model on demand) — only if Medium-tier evidence shows switch cost matters.
 
 ## Open questions / awaiting user answer
-- None right now. Pipeline is ready to run.
+- None. Selection is ratified. User's next move determines whether to (a) start the servers on Colossus and hand off to OpenHands router work, or (b) resume Medium-tier benchmarking.
 
 ## Exact next action
 
-On Colossus, run the two-arm bench:
+On Colossus, verify model files are present, then start the always-resident embedder + one large-model server:
 
 ```bash
 cd ~/dev/openhands-ext-v1
 git pull --ff-only
 
-# Domain arm — 6 cells
-python3 scripts/benchmark-tier-runner.py \
-  --tier medium --role embedder \
-  --task-set bench/tasks/embedder-medium-domain-openhands-ext.json \
-  --rubric bench/rubrics/medium-scored.json \
-  --candidate-file bench/candidates/embedder-fast-pool.json \
-  --results-dir bench/results
+# Verify HF/GGUF files exist for the three production models
+ls models/qwen3-coder-30b-a3b-instruct-awq-4bit/hf/config.json
+ls models/qwen3_6-35b-a3b-q4kxl-gguf/gguf/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
+ls models/qwen3-embedding-4b-q8-gguf/gguf/Qwen3-Embedding-4B-Q8_0.gguf
 
-# Portability arm — 6 cells (materialized BEIR file)
-python3 scripts/benchmark-tier-runner.py \
-  --tier medium --role embedder \
-  --task-set bench/tasks/embedder-medium-beir-scidocs-materialized.json \
-  --rubric bench/rubrics/medium-scored.json \
-  --candidate-file bench/candidates/embedder-fast-pool.json \
-  --results-dir bench/results
+# Start embedder (always-on) in a tmux/screen or nohup
+nohup bash scripts/serve-embedder.sh > /tmp/serve-embedder.log 2>&1 &
 
-# Aggregate
-python3 scripts/aggregate-embedder-medium-verdict.py
+# Start whichever large model you need first — coder or planner
+nohup bash scripts/serve-coder.sh   > /tmp/serve-coder.log   2>&1 &
+# OR
+nohup bash scripts/serve-planner.sh > /tmp/serve-planner.log 2>&1 &
 
-# Report the verdict JSON back to the agent for ADR-0017 authoring.
-cat bench/results/verdicts/medium-verdict-embedder-*.json | tail -80
+# Check status any time
+bash scripts/stop-large-model.sh status
+
+# Swap between coder and planner
+bash scripts/stop-large-model.sh coder     # then start planner
+bash scripts/stop-large-model.sh planner   # then start coder
 ```
 
-Then paste the aggregator output back so I can file ADR-0017 (embedder-medium tier verdict).
+If any of the three model files is missing, the serve script will exit with a `huggingface-cli download` command you can copy-paste to fetch it.

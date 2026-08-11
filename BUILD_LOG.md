@@ -706,3 +706,33 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** none.
 - **Stop-condition status:** embedder-medium end-to-end pipeline **complete**: task authoring done, materializer run on Colossus, retrieval probe wired, verdict aggregator ready. Next: user runs the two-arm bench (`--task-set` per arm × 6 cells = 12 probe runs), then invokes the aggregator to produce the tier verdict, then a verdict-carrying ADR is filed.
+
+## 2026-08-11 06:00 EDT — ADR-0017 filed (Ratified); production role selection locked pre-Medium-tier
+
+- **Stage / plugin / port:** Phase 0.2 (benchmarking paused) → Phase 1 handoff · production role assignments + serve scripts
+- **What changed:**
+  - **User paused Medium-tier benchmarking** and requested immediate production role assignments ("make optimal choices").
+  - **ADR-0017 filed (Ratified)** locking three production roles based on standing ADR evidence (0007–0016) rather than yet-to-run Medium-tier scores:
+    - **coder** = `qwen3-coder-30b-a3b-instruct-awq-4bit` (vLLM/GPU, port 8000). Purpose-built coder-instruct; parser `qwen3_coder` per ADR-0011 amendment 1; reinstated to Fast pool by ADR-0014.
+    - **planner** = `qwen3_6-35b-a3b-q4kxl-gguf` (llama.cpp/GPU, port 8082). ADR-0015 confirmed thinker-2507-awq unfit; MoE 35B/A3B chosen over dense 27B for planning-surface + speed. Thinking disabled per ADR-0008.
+    - **embedder** = `qwen3-embedding-4b-q8-gguf` (llama.cpp/GPU, port 8090). 4B > 0.6B on MTEB; Q8_0 near-lossless on embedders per Qwen guidance; ~5 GiB VRAM → always-resident.
+  - **Co-residency policy = Option 2 (single-role-at-a-time for large models; embedder always resident).** Simpler than a swap-router; deferred router work to a future ADR (0018+) if Medium-tier evidence justifies it.
+  - **Canonical selection file authored:** `bench/candidates/production-selection.json` — downstream OpenHands router / MCP config reads this as ground truth for role → model mapping.
+  - **Four production serve scripts authored** (all executable, syntax-checked, mirror the smoke-test convention):
+    - `scripts/serve-coder.sh` — vLLM launcher with `--tool-call-parser qwen3_coder`, `--enable-auto-tool-choice`, `--quantization awq_marlin`; refuses to start if planner port 8082 is up.
+    - `scripts/serve-planner.sh` — llama-server launcher with Q8_0 KV cache, flash-attn on, thinking disabled; refuses to start if coder port 8000 is up.
+    - `scripts/serve-embedder.sh` — llama-server `--embedding --pooling last`, batch/ubatch 512 for throughput; always-on.
+    - `scripts/stop-large-model.sh {coder|planner|both|status}` — clean TERM→KILL escalation, never touches embedder.
+  - **ADR index updated** with row 0017.
+- **Files touched:**
+  - `adrs/ADR-0017-production-role-selection-pre-medium.md` (new)
+  - `adrs/README.md` (index row appended)
+  - `bench/candidates/production-selection.json` (new, canonical)
+  - `scripts/serve-coder.sh` (new, executable)
+  - `scripts/serve-planner.sh` (new, executable)
+  - `scripts/serve-embedder.sh` (new, executable)
+  - `scripts/stop-large-model.sh` (new, executable)
+  - `BUILD_LOG.md`, `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none directly. Downstream: OpenHands router / MCP config will read `production-selection.json` when Phase 1 handoff work begins.
+- **PORTING_LEDGER / ADR updated:** ADR-0017 filed; index updated.
+- **Stop-condition status:** Production role selection **complete**. Serve infra in place. Benchmark work paused per user directive; ADR-0017 will be amended (not superseded) once Medium-tier verdicts land per ADR-0018+.

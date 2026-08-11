@@ -24,6 +24,7 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0014 | [Coder-fast pool reinstates R2-warning survivors after harness rubric-compliance fix](ADR-0014-coder-fast-pool-reinstate-r2-warning-survivors.md) | Ratified | Phase 0.1 |
 | 0015 | [Planner Medium-tier thinker-2507-awq budget-hypothesis probe (pre-registered)](ADR-0015-planner-medium-thinker-budget-probe.md) | Ratified · Confirmed (2026-08-11) — thinker unfit for planner Medium pool | Phase 0.2 |
 | 0016 | [Medium-tier scoring rubric: hybrid (embedder programmatic; planner/coder Perplexity-gold)](ADR-0016-medium-tier-scoring-rubric-hybrid.md) | Ratified | Phase 0.2 |
+| 0017 | [Production role selection (pre-Medium-tier): coder=qwen3-coder-30B-instruct-awq, planner=qwen3.6-35B-A3B-Q4_K_XL, embedder=qwen3-embedding-4B-Q8_0; co-residency Option 2](ADR-0017-production-role-selection-pre-medium.md) | Ratified | Phase 0.2 → Phase 1 handoff |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 
