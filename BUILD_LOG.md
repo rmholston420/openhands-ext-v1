@@ -561,3 +561,27 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Stop-condition status:**
   - Embedder-fast: **met** (6/6 pass; pool locked pending rescore of any warnings).
   - Planner-fast: **pending rescore + confirmation.** After rescore c3 → pass, planner pool becomes 2/3 (27B Q6_K + 35B Q4_K_XL) which satisfies §0.0b min=3 only after we backfill to 3 survivors OR run with `--smoke` for confirmation. Decision deferred until rescore evidence is on disk.
+
+
+## 2026-08-11 05:15 EDT — Planner-fast POOL locked at 2 survivors + rescore-tool ergonomics fix
+
+- **Stage / plugin / port:** Phase 0.1 · Fast-tier · planner pool lock.
+- **What changed:**
+  - Rescore executed on Colossus against harness commit `3022385`. Outcomes:
+    - `qwen3-30b-a3b-thinking-2507-awq` (vLLM/gpu): fail → **fail** (R2 legitimate, 2 malformed).
+    - `qwen3_6-27b-q6k-gguf` (llama.cpp/gpu): pass → **pass**.
+    - `qwen3_6-35b-a3b-q4kxl-gguf` (llama.cpp/gpu): fail → **pass** [CHG] (R2-warning only: 1 malformed task, `too few steps 3<4` on planner-fast-03).
+    - All 6 embedder cells unchanged (pass → pass).
+  - **Planner-fast pool locked at 2 survivors** ({`qwen3_6-27b-q6k-gguf` llama.cpp/gpu, `qwen3_6-35b-a3b-q4kxl-gguf` llama.cpp/gpu}). Spec authority: `docs/specs/integration-execution-plan-v16.md` §0.2 Verification (line 216) "Shortlist size 2–3 per role carried to Full tier"; §0.0b explicitly starts pools open and never states a lower-bound survivor count post-elimination; §0.1 further allows skip-to-Full when Fast-tier evidence is unambiguous. No §0.0b amendment required.
+  - Thinker-2507-AWQ eliminated on merit (see DEBUG_LOG 2026-08-11 05:10). Not backfilled — no other planner candidate on disk is a like-for-like structural-JSON improvement over the two survivors within Fast-tier budget.
+  - Cosmetic fix to `scripts/rescore-fast-verdicts.py`: silently skip `.probe.json` sidecars when a glob expansion includes them (previously emitted spurious `[ERR]` lines).
+- **Files touched:**
+  - `bench/results/phase-0-fast-planner-qwen3_6-35b-a3b-q4kxl-gguf-llama-cpp-gpu-20260811T085916Z.json` (rescored on Colossus; verdict flipped fail→pass).
+  - `scripts/rescore-fast-verdicts.py` (skip probe sidecars).
+  - `BUILD_LOG.md`, `SESSION_HANDOFF.md`.
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none.
+- **Stop-condition status:**
+  - **Planner-fast:** met (2 survivors locked; spec-compliant).
+  - **Embedder-fast:** met (6/6 pass).
+  - Both roles ready for Medium-tier queue.

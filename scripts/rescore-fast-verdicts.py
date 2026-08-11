@@ -104,6 +104,9 @@ def main() -> int:
     paths = [Path(p) for p in sys.argv[1:]]
     exit_code = 0
     for p in paths:
+        # Silently skip probe sidecars — glob expansions often include them.
+        if p.name.endswith(".probe.json"):
+            continue
         try:
             old, new, notes = rescore(p)
             flag = "  " if old == new else "CHG"
