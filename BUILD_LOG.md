@@ -307,3 +307,21 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** vLLM launcher only. llama.cpp path unchanged.
 - **PORTING_LEDGER / ADR updated:** ADR-0006 amendment.
 - **Stop-condition status:** in-progress — Phase 0.1 smoke test unblocked pending re-run verification.
+
+## 2026-08-11 02:38 EDT — Runner verified end-to-end on Colossus (Phase 0.1 smoke)
+
+- **Stage / plugin / port:** Phase 0.1 · Fast-tier runner · planner probe.
+- **What changed:** First real vLLM smoke completed successfully end-to-end on `qwen3-30b-a3b-thinking-2507-awq`. Model load 9s, torch.compile 19s, health 53s cold start, 3 planner probes 200 OK at 209–247 tok/s, warm p50 7.18s, VRAM peak 30446 MiB / 32607 usable, temp peak 53°C (throttle ceiling 93°C), NVML coverage 100%, zero throttle/OOM events. Clean teardown rc=0. Schema-valid write. Result: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm-gpu-20260811T063101Z.json` (harness_commit_sha 7604006). Verdict `fail` via R2 (3 malformed tasks: two missing `steps`, one `steps=3<4`) — diagnostic-only outcome, not a hardware/runner failure.
+- **Files touched:** none this entry (verification-only).
+- **Ports / adapters affected:** vLLM launcher + planner probe verified against Blackwell SM_120 under ADR-0005 sampler workaround + ADR-0006 attention AOT.
+- **PORTING_LEDGER / ADR updated:** none.
+- **Stop-condition status:** met for “first real (non-dry-run) invocation on Colossus” (open item from 2026-08-11 01:20 EDT). R2 rubric mismatch remains open pending sidecar-based diagnosis (see next entry).
+
+## 2026-08-11 02:38 EDT — Per-task raw-output sidecar for R2/rubric diagnosis
+
+- **Stage / plugin / port:** Phase 0.1 · Fast-tier runner · planner + coder probes · result serialization.
+- **What changed:** Added `raw_content: Optional[str]` field to `TaskResult` with 8 KiB truncation (`RAW_CONTENT_MAX`). Planner probe now captures `choices[0].message.content`; coder probe captures the full message JSON (content + tool_calls). Runner writes a diagnostic sidecar next to each main result with `.probe.json` suffix (role, notes, per-task verdict/detail/raw_content). Not schema-validated (diagnostic-only). Skipped on dry-run and launch failure.
+- **Files touched:** `bench/runner/probes.py`, `bench/runner/main.py`.
+- **Ports / adapters affected:** planner + coder probe surface. Sidecar naming is stable (`.probe.json` next to main result).
+- **PORTING_LEDGER / ADR updated:** none. May justify an ADR-0007 amendment (§diagnostics) if we formalize sidecar as part of the run contract.
+- **Stop-condition status:** in-progress — unblocks R2 diagnosis on next smoke run. Previous run’s outputs (20260811T063101Z) are unrecoverable (vLLM server log carries no response bodies).

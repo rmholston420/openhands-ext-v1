@@ -231,9 +231,11 @@ def _run_one_cell(
     server_log_dir: Path,
     workspace_root: Path,
     dry_run: bool,
-) -> BenchRun:
+) -> tuple[BenchRun, Optional[ProbeResult]]:
     """Run one candidate cell end-to-end. Never raises for expected failure
-    modes — encodes them into the BenchRun instead."""
+    modes — encodes them into the BenchRun instead. Returns (record, probe);
+    probe is None on dry-run or launch failure. Probe carries raw_content per
+    task for R2 diagnosis sidecars."""
 
     cell_label = f"{role.value}/{cand.slug}/{cand.runtime}/{cand.device}"
     progress.start_cell(cell_label)
@@ -251,7 +253,7 @@ def _run_one_cell(
             notes="dry-run scaffold",
         )
         progress.end_cell(cell_label, verdict="dry-run")
-        return record
+        return record, None
 
     # 1. Preflight probe SDK availability so we can annotate up front.
     try:
@@ -372,7 +374,7 @@ def _run_one_cell(
     )
 
     progress.end_cell(cell_label, verdict=verdict_str)
-    return record
+    return record, probe
 
 
 def _make_server(
@@ -649,7 +651,7 @@ def run_tier(args: argparse.Namespace) -> int:
     for cand in candidates:
         run_started = _utcnow()
         try:
-            record = _run_one_cell(
+            cell_out = _run_one_cell(
                 tier=tier, role=role, cand=cand,
                 task_set_data=task_set_data, task_set_meta=task_set_meta,
                 rubric=rubric,
@@ -666,6 +668,8 @@ def run_tier(args: argparse.Namespace) -> int:
                          f"UNCAUGHT {cand.slug}/{cand.runtime}/{cand.device}: {exc!r}")
             exit_code = 1
             continue
+
+        record, probe = cell_out
 
         # Update fastest tracker (skip dry-run / failed launches).
         if record.latency.per_task_wall_seconds_p50 > 0:
@@ -685,6 +689,32 @@ def run_tier(args: argparse.Namespace) -> int:
                            smoke=getattr(args, "smoke", False))
         out.write_text(json.dumps(as_dict, indent=2) + "\n", encoding="utf-8")
         progress.log("WRITE", f"{out}")
+
+        # Sidecar: raw model outputs per task, for R2/rubric diagnosis.
+        # Written next to the main result with `.probe.json` suffix. Not
+        # schema-validated (diagnostic-only). Skipped when probe is None
+        # (dry-run / launch failure).
+        if probe is not None and probe.tasks:
+            sidecar = out.with_suffix(".probe.json")
+            probe_dump = {
+                "role": probe.role,
+                "notes": probe.notes,
+                "tasks": [
+                    {
+                        "task_id": t.task_id,
+                        "verdict": t.verdict,
+                        "verdict_source": t.verdict_source,
+                        "wall_seconds": t.wall_seconds,
+                        "detail": t.detail,
+                        "truncated": t.truncated,
+                        "raw_content": t.raw_content,
+                    }
+                    for t in probe.tasks
+                ],
+            }
+            sidecar.write_text(json.dumps(probe_dump, indent=2) + "\n",
+                               encoding="utf-8")
+            progress.log("WRITE", f"{sidecar}")
 
     progress.log("RUN", f"complete exit_code={exit_code}")
     return exit_code

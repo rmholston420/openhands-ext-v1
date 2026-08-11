@@ -171,3 +171,12 @@ Entry format:
 - **Files changed:** `bench/runner/main.py`, `adrs/ADR-0006-flashinfer-jit-cache-cu129.md`.
 - **Related BUILD_LOG entry:** 2026-08-11 02:26 EDT
 - **Supersedes:** 2026-08-11 00:50 EDT (for the sampler subset only — attention path from that entry remains correct).
+
+## 2026-08-11 02:38 EDT — Runner discards raw probe outputs; R2 failures undiagnosable post-hoc
+
+- **Symptom:** Phase 0.1 planner smoke (`smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm-gpu-20260811T063101Z.json`) recorded `task_outcome.verdict=fail` via R2 with `run_metadata.notes` describing three malformed tasks — but the raw model responses that produced those verdicts were unavailable. `TaskResult` in `bench/runner/probes.py` captured `content` in a local variable and threw it away after computing `detail`. The vLLM server log (`bench/results/server-logs/planner_qwen3-30b-a3b-thinking-2507-awq_vllm_gpu-1786429863.log`) carries request lines but no response bodies. Result: cannot distinguish prompt-under-specification from schema-over-strictness from thinking-model behavior after the run.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast-tier runner · planner + coder probes · result serialization.
+- **Root cause:** Design gap in probe result surface. `TaskResult` fields were `verdict/verdict_source/wall_seconds/detail/truncated` plus coder tool-call counters — no field for raw model output. The main result record (`BenchRun`) never received the probe object, only the derived `TaskOutcome`. Diagnostic loss was structural, not accidental.
+- **Fix applied:** Added `raw_content: Optional[str]` to `TaskResult` (8 KiB cap, `RAW_CONTENT_MAX`). Planner probe captures `choices[0].message.content`; coder probe captures `json.dumps(msg)` to preserve tool_calls structure. Changed `_run_one_cell` to return `tuple[BenchRun, Optional[ProbeResult]]`; runner writes a diagnostic sidecar at `<result>.probe.json` with per-task raw_content. Sidecar is schema-unvalidated (diagnostic-only) and skipped on dry-run / launch failure. Previous run's outputs unrecoverable — next planner smoke will produce a sidecar for diagnosis.
+- **Files changed:** `bench/runner/probes.py`, `bench/runner/main.py`.
+- **Related BUILD_LOG entry:** 2026-08-11 02:38 EDT

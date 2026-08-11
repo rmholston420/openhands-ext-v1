@@ -47,6 +47,20 @@ def _http_post(url: str, payload: dict, *, timeout: int = 300) -> tuple[dict, fl
 
 # --- Result dataclasses -----------------------------------------------------
 
+# Max bytes of raw model output kept per task in the sidecar. Planner outputs
+# are short JSON; thinking-model prose can be large. 8 KiB is enough to
+# capture typical <think>...</think> + final JSON without bloating sidecars.
+RAW_CONTENT_MAX = 8192
+
+
+def _truncate_raw(s: Optional[str]) -> Optional[str]:
+    if s is None:
+        return None
+    if len(s) <= RAW_CONTENT_MAX:
+        return s
+    return s[:RAW_CONTENT_MAX] + f"\n\n[...truncated: original {len(s)} chars]"
+
+
 
 @dataclass
 class TaskResult:
@@ -66,6 +80,9 @@ class TaskResult:
     tool_wrong: int = 0
     tool_argerrors: int = 0
     tool_retries: int = 0
+    # Raw model output capture for R2 diagnosis (planner/coder). Truncated to
+    # RAW_CONTENT_MAX bytes to keep sidecar files bounded. See ADR-0007 §diagnostics.
+    raw_content: Optional[str] = None
 
 
 @dataclass
@@ -119,6 +136,9 @@ def probe_planner(
             tr.detail = "malformed response envelope"
             result.tasks.append(tr)
             continue
+
+        # Capture raw model output for R2 diagnosis (thinking blocks + JSON).
+        tr.raw_content = _truncate_raw(content)
 
         if finish == "length":
             tr.truncated = True
@@ -471,6 +491,12 @@ def _probe_coder_fallback(
             tr.tool_malformed = 1
             result.tasks.append(tr)
             continue
+
+        # Capture raw message (content + tool_calls) for R2 diagnosis.
+        try:
+            tr.raw_content = _truncate_raw(json.dumps(msg))
+        except (TypeError, ValueError):
+            tr.raw_content = _truncate_raw(str(msg))
 
         if finish == "length":
             tr.truncated = True
