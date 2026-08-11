@@ -12,6 +12,7 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0002 | [LocalWorkspace guard = pre-commit hook, not GitHub Actions](ADR-0002-localworkspace-guard-pre-commit.md) | Ratified | Phase 1 |
 | 0003 | [Repo / Colossus mirror discipline](ADR-0003-repo-colossus-mirror-discipline.md) | Amended (2026-08-11) | Pre-Phase -1 |
 | 0004 | [llama.cpp CUDA toolchain pin: CUDA 13.0 + gcc-13 + SM_120](ADR-0004-llama-cpp-cuda-13-pin.md) | Amended (2026-08-11) | Phase -1 |
+| 0005 | [flashinfer Blackwell (SM_120) workaround via VLLM_USE_FLASHINFER_SAMPLER=0](ADR-0005-flashinfer-blackwell-workaround.md) | Ratified | Phase -1 |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 

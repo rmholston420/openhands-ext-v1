@@ -145,3 +145,26 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** —
 - **Stop-condition status:** blocked pending Colossus re-run.
+
+## 2026-08-11 00:20 EDT — llama.cpp built + smoke green (Phase -1 §-1.5 llama.cpp side)
+
+- **Stage / plugin / port:** Phase -1 · §-1.5 llama.cpp smoke test
+- **What changed:** With the CUDA-13 pin + `patch-cuda-headers.sh` fix (perm preservation) in place, `scripts/build-llama-cpp.sh` completed in 185 s on Colossus. Tag b10356 @ `0666ad2b2`, `bin/llama-server` links cleanly against `libggml-cuda.so.0.19.0` (65 MB). `scripts/smoke-test-llama-cpp.sh` then passed: 18 ms prompt (2328 tok/s), 26.7 ms/16 tokens (599 tok/s decode) on Qwen 1.5B q4_k_m. GPU peaked at 30735/32607 MiB during inference — confirms CUDA backend active. Assistant reply: "Hello! I am running on the RTX 5090." Metadata JSON `bench/results/phase-neg-1-smoke-llama-cpp-20260811T042026Z.json` (status: pass) written.
+- **Files touched:** none (Colossus-side execution only; scripts already committed).
+- **Ports / adapters affected:** none (Phase -1 pre-port scaffolding).
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** llama.cpp side of §-1.5 green. vLLM side still blocked.
+
+## 2026-08-11 00:30 EDT — vLLM smoke green (Phase -1 §-1.5 vLLM side, flashinfer Blackwell workaround)
+
+- **Stage / plugin / port:** Phase -1 · §-1.5 vLLM smoke test
+- **What changed:** Diagnosed engine-core init crash as flashinfer 0.6.16 vs SM_120/CUDA<12.9 incompatibility (see DEBUG_LOG 2026-08-11 00:27 EDT and ADR-0005). Baked `VLLM_USE_FLASHINFER_SAMPLER=0` default-if-unset `export` into `scripts/smoke-test-vllm.sh` right after `cd $REPO_ROOT`. Re-ran smoke on Colossus with the env override first (proof) then with the baked-in export (final): health OK 30 s, chat completion returned ("Hello! I am currently running on an NVIDIA RTX 5090 GPU."), 18.86 GiB GPU used, `bench/results/phase-neg-1-smoke-vllm-20260811T042731Z.json` written with status: pass.
+- **Files touched:**
+  - `scripts/smoke-test-vllm.sh` (workaround export)
+  - `adrs/ADR-0005-flashinfer-blackwell-workaround.md` (new)
+  - `adrs/README.md` (index row added)
+  - `DEBUG_LOG.md` (root-cause entry)
+  - `SESSION_HANDOFF.md` (overwritten)
+- **Ports / adapters affected:** none (Phase -1 pre-port scaffolding).
+- **PORTING_LEDGER / ADR updated:** ADR-0005 authored + indexed. PORTING_LEDGER unchanged (no vendored component).
+- **Stop-condition status:** **§-1.5 fully green.** Both smokes (llama.cpp + vLLM) report status: pass. Phase -1 §-1 Verification table is truly green — session-end.sh truth gate will now permit a "green" commit subject.

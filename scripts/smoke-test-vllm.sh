@@ -26,6 +26,16 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$REPO_ROOT"
 
+# --- flashinfer Blackwell (SM_120) workaround (2026-08-11) ---
+# flashinfer 0.6.16.post3 (bundled with vllm 0.27.0) cannot query SM_120
+# device capability under CUDA <12.9 and falls through check_cuda_arch()
+# which then raises the misleading "FlashInfer requires GPUs with sm75 or
+# higher". Disabling the flashinfer sampler forces vLLM's native top-k/top-p
+# path. See DEBUG_LOG.md 2026-08-11 and ADR-0005. Permanent fix (flashinfer
+# upgrade + CUDA >=12.9) deferred to Phase 0.
+export VLLM_USE_FLASHINFER_SAMPLER="${VLLM_USE_FLASHINFER_SAMPLER:-0}"
+# --- end workaround ---
+
 LOG="/tmp/openhands-ext-v1-smoke-vllm-$(date +%s).log"
 VENV_BIN="$REPO_ROOT/.venv/bin"
 VLLM="$VENV_BIN/vllm"

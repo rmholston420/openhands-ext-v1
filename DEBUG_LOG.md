@@ -113,3 +113,17 @@ Entry format:
 - **Fix applied:** Changed the probe to compile-only (`-c`). The header/parse conflict that we actually needed to check manifests during cudafe++ processing, which `-c` fully exercises. Also made the probe drop to `SUDO_USER` when run under sudo, so it also verifies the header is world-readable.
 - **Files changed:** `scripts/patch-cuda-headers.sh`
 - **Related BUILD_LOG entry:** 2026-08-11 00:20 EDT
+
+## 2026-08-11 00:27 EDT — vLLM EngineCore init crash: misleading "FlashInfer requires GPUs with sm75 or higher"
+
+- **Symptom:** `vllm serve` starts, loads model (2.98 GiB), captures CUDA graphs, then EngineCore raises `RuntimeError: FlashInfer requires GPUs with sm75 or higher` inside `compile_or_warm_up_model` → `sample_tokens` → `flashinfer.jit.core.check_cuda_arch()`. Outer APIServer surfaces only `RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}` (empty dict — engine-core worker died before registering).
+- **Affected stage / plugin / port:** Phase -1 · §-1.5 vLLM smoke test.
+- **Root cause:** Real diagnostic appeared earlier in the log:
+  ```
+  Failed to get device capability: SM 12.x requires CUDA >= 12.9.
+  ```
+  flashinfer 0.6.16.post3 (bundled with vllm 0.27.0) was compiled against a CUDA runtime older than 12.9 and cannot query SM_120 (Blackwell/RTX 5090) device capability. Its fallback returns a stub capability which `flashinfer.jit.core.check_cuda_arch()` compares against sm75 and rejects — producing the misleading "sm75 or higher" error even though the 5090 is far above that. Not a real capability failure; it's a downstream artifact of the earlier CUDA-version failure.
+- **Fix applied:** Set `VLLM_USE_FLASHINFER_SAMPLER=0` to route sampling through vLLM's native top-k/top-p path, bypassing flashinfer's JIT sampling module entirely. Baked into `scripts/smoke-test-vllm.sh` with a default-if-unset `export` after the `cd $REPO_ROOT` line. See ADR-0005 for the permanent-fix follow-up (upgrade flashinfer or CUDA >=12.9) deferred to Phase 0.
+- **Files changed:** `scripts/smoke-test-vllm.sh`, `adrs/ADR-0005-flashinfer-blackwell-workaround.md`, `adrs/README.md`.
+- **Related BUILD_LOG entry:** 2026-08-11 00:30 EDT
+- **Supersedes:** —
