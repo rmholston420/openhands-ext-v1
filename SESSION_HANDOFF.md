@@ -1,51 +1,52 @@
-# Kosmos Session Handoff — 2026-08-11 16:50 EDT
+# Kosmos Session Handoff — 2026-08-11 17:10 EDT
 
 ## Current build-sequencing position
-- **Project:** OpenHands-Ext v1 (this Space)
-- **Stage / phase:** Phase 1 CLOSED (spec-scope 1.1 done; 1.2 deferred to §2.4/3 per ADR-0032) → **opening Phase 2.4 (tiered multi-LLM routing) + Phase 3 (baseline verification)** next session
-- **Production embedder:** 4B-Q8 (`qwen3-embedding-4B-Q8_0.gguf`, llama.cpp GPU cold) — unchanged (ADR-0031)
 
-## Completed this session (Phase 0.4 gate-4 + Phase 1)
-- 4-query calibration labeled + locked qrels (SHA256 `f7137c7bebbf9b10da14091488c185921f4cda2e071880c838eefff4aaca48f8`)
-- Offline scorer authored + ran (`bench/scoring/embedder-full-multi-block-calibration/score_offline.py`)
-- ADR-0031 Ratified: verdict DEFER, retain 4B-Q8 incumbent
-- ADR-0030 amended: execution deferred; ADR-0030b deferred
-- Phase 1 hook installer executed on Colossus
-- Hook allow-list amended for `docs/BENCHMARK_UNPAUSE_GATES.md`; full-tree dispatch now clean
-- ADR-0032 Ratified: Phase 1 spec-scope closure (1.1 done, 1.2 deferred)
+- **Stage / phase:** Phase 2.4 (config surface authored) → Phase 3 (verification, pending execution)
+- **Plugin / kernel component:** OpenHands-Ext v1 canonical config surface — `config/agent.py` + `config/router.py`
+- **Port(s) in progress:** none formally; `CoderPlannerRouter` is a config-surface subclass, not a port
 
-## Ratified this session
-- ADR-0031 (embedder verdict DEFER)
-- ADR-0032 (Phase 1 spec-scope closure + 1.2 defer)
+## Completed this session
 
-## Deferred (queue items, not blockers)
-- Phase 0.4 full-tier re-eval: resume by appending to `bench/gold/embedder-full-multi-block/qrels.jsonl` → re-lock SHA → rerun offline scorer. No embedder relaunch. Rubric post_hoc_edit_locked=true.
-- ADR-0030 (still Proposed pending future execution)
-- ADR-0030b (still Proposed, deferred to post-verdict)
+- Filed ADR-0031 (Ratified) — Phase 0.4 gate-4 embedder verdict DEFER; retain 4B-Q8 incumbent
+- Filed ADR-0032 (Ratified) — Phase 1 spec-scope closure: 1.1 DockerWorkspace-only policy CLOSED; 1.2 code-explorer registration deferred to Phase 2.4/3
+- Committed offline scorer + 4-query calibration markdown to `bench/scoring/embedder-full-multi-block-calibration/`
+- Amended spec §Phase 1 L292 with 1.2 deferral footnote
+- Amended pre-commit allow-list to exempt `docs/BENCHMARK_UNPAUSE_GATES.md`
+- Inspected openhands-sdk 1.41.0 on Colossus: RouterLLM base class + MultimodalRouter reference impl + LLMSummarizingCondenser + openhands.tools.delegate + openhands.tools.task.TaskToolSet
+- Filed ADR-0033 (Ratified) — Phase 2.4 config surface: Python module, not TOML; option 6c LLMCallContext dispatch; option 7a coder-as-condenser
+- Authored `config/agent.py` (build_coder_llm / build_planner_llm / build_embedder_llm / build_router / build_condenser / build_agent)
+- Authored `config/router.py` (CoderPlannerRouter subclass dispatching via `LLMCallContext.metadata['role']`)
+- Authored `scripts/extract-max-output-tokens.sh` (measured provenance → `config/max-output-tokens.json`)
+- Authored `bench/smoke-phase-3/{task.md, README-target.txt, run.sh}` for Phase 3 row-1 verification
+- Amended spec §2.4 with ADR-0033 pointer; rewrote `config/README.md`
 
-## Next session: Phase 2.4 + Phase 3 opener
-- **Spec:** `docs/specs/integration-execution-plan-v16.md` §2.4 (L328+) + §Phase 3 (L367+)
-- **Prerequisite:** Phase 0.3 concludes ✅ (ADR-0029 Ratified, AWQ retained)
-- **Scope to restate before executing:**
-  - Populate `[llm]` router table with Phase 0.3 winners (AWQ coder, 27B-Q6_K planner per ADR-0023/0025/0029)
-  - Register `code-explorer` (Phase 1.2 rollover per ADR-0032)
-  - Runtime config surface: `config/agent.toml` (or SDK equivalent — investigate donor Forge-OH config layout first per Kosmos port workflow)
-  - Coder XOR planner enforcement: verify orchestration primitive prevents concurrent GPU-resident LLMs beyond corrected co-residency contract
-  - Phase 3 verification matrix (§Phase 3 L378-386)
-- **Ambiguity to flag on kickoff:**
-  - Config file format + location (Forge-OH uses `.env` + Python config classes; OpenHands SDK canonical config format needs a donor inspection before greenfield authoring)
-  - Router table implementation surface (config-only vs code-based dispatcher) — the spec is thin here
+## Remaining before current Definition of Done
 
-## Remaining before Definition of Done
-- **None for Phase 1 as scoped.** Gate closed via ADR-0032.
+Phase 2.4 authoring is complete. Phase 3 verification matrix (spec L378-386) is the next DoD gate:
+
+1. User runs `scripts/extract-max-output-tokens.sh` on Colossus to populate `config/max-output-tokens.json`
+2. User clones agent-canvas donor: `git clone https://github.com/OpenHands/agent-canvas.git ~/dev/agent-canvas-stock && cd ~/dev/agent-canvas-stock && git checkout v1.6.1`
+3. User starts coder endpoint: `scripts/serve-coder.sh` (foreground) in a separate terminal
+4. User runs Phase 3 row-1 smoke: `bash bench/smoke-phase-3/run.sh` → confirm event stream + tool action + FinishAction + expected line + wall < 60s
+5. Phase 3 row-2 (role-switch): dispatch a planner task via `DelegateTool` with `call_context.metadata["role"]="planner"` → confirm CoderPlannerRouter selects planner, supervisor swap completes
+6. File ADR-0034 (Phase 3 verdict) after both rows pass
 
 ## Open questions / awaiting user answer
-- None (Phase 2.4 opener will surface any).
+
+- **LLMCallContext metadata propagation:** the SDK 1.41 `RouterLLM.completion()` signature does NOT forward `call_context` to `select_llm()` by default (base class only passes `messages`). Two paths, decidable at Phase 3 row-2:
+    - **Path A:** Override `completion()` in `CoderPlannerRouter` to intercept `call_context` before calling `select_llm(messages, call_context=call_context)`.
+    - **Path B:** Flip `CoderPlannerRouter.fallback_message_heuristic = True` and use `[role:planner]` marker in the last user message as the dispatch signal (option 6b fallback documented in ADR-0033).
+    Recommendation: Path A (cleaner, matches option 6c intent). Decide during row-2 execution.
 
 ## Exact next action
-Kick off Phase 2.4 opener. Load `kosmos-port-workflow` skill, inspect Forge-OH donor config, restate exact scope from spec §2.4 + §Phase 3, flag ambiguities, wait for confirmation before scaffolding runtime config.
 
-## Reminders (binding)
-- `code-explorer` (Phase 1.2) registers in Phase 2.4 runtime tool registry per ADR-0032
-- Router config populated with Phase 0.3 winners only: AWQ coder + 27B-Q6_K planner
-- No LocalWorkspace anywhere in runtime config (pre-commit hook enforces on every commit)
+Run on Colossus:
+
+```bash
+cd ~/dev/openhands-ext-v1 && git pull
+bash scripts/extract-max-output-tokens.sh
+cat config/max-output-tokens.json
+```
+
+Paste output. Then decide whether to clone agent-canvas + run the smoke immediately or in a follow-up session.

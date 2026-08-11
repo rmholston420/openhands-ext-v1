@@ -327,6 +327,8 @@ This is the install pattern for every Forge-OH MCP server (Phases 5–7).[^1]
 
 ### 2.4 Tiered multi-LLM routing (populated only after Phase 0.3 concludes)
 
+> **Amended 2026-08-11 · ADR-0033.** The TOML block below documents the semantic *intent* (four roles, measured limits) but is no longer the deliverable. The canonical Phase 2.4 config surface for OpenHands-Ext v1 is the Python module **`config/agent.py`**, wired against openhands-sdk 1.41.0's Pydantic-based `LLM` / `RouterLLM` / `LLMSummarizingCondenser` APIs. See `adrs/ADR-0033-phase-2-4-config-surface-python-not-toml.md`.
+
 ```toml
 [llm]
 model = "openai/der-winner-from-full-tier-combination-test>"
