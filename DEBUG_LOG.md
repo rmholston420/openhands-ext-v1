@@ -217,3 +217,18 @@ Entry format:
 - **Fix applied:** N/A — recording that after commits 94bafbb (raw_content) + bd09e1a (ADR-0008) + 1fa2495 (ADR-0009) + ab5ff74 (task calibration), the smoke run `smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm-gpu-20260811T065511Z.json` reports `overall verdict: pass`, all 3 tasks pass, probe elapsed 2s, VRAM peak 30648 MiB, temp peak 49 °C, NVML coverage 100%, teardown rc=0.
 - **Files changed:** none.
 - **Related BUILD_LOG entry:** 2026-08-11 02:54 EDT.
+
+## 2026-08-11 03:01 EDT — probe_coder crashes with NotImplementedError; fallback unreachable
+
+- **Symptom:**
+  ```
+  PROBE: coder/qwen3-30b-a3b-thinking-2507-awq/vllm/gpu probe crashed:
+    NotImplementedError('OpenHands SDK coder path not yet implemented — use fallback')
+  CELL: [1/1] END coder/qwen3-30b-a3b-thinking-2507-awq/vllm/gpu verdict=unknown
+  ```
+  vLLM launched cleanly (NVML coverage 100%, VRAM peak 30652 MiB), then the runner never issued a single `/v1/chat/completions` — the probe crashed synchronously and the sidecar `.probe.json` was never written. Reproduced with smoke run `smoke-fast-coder-qwen3-30b-a3b-thinking-2507-awq-vllm-gpu-20260811T070014Z`.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast-tier runner · `bench/runner/probes.py::probe_coder` (dispatch).
+- **Root cause:** Exception-handling scope bug in `probe_coder`. The dispatcher wraps `from openhands.sdk import …; return _probe_coder_sdk(…)` in `try: … except ImportError:` and expected the SDK to be absent. In this venv `openhands-sdk` **is** installed (banner `OpenHands SDK v1.41.0` printed on every run), so the import succeeds and control flows into `_probe_coder_sdk`, which is intentionally a stub raising `NotImplementedError` per its own docstring ("Phase 0.1 the fallback path is spec-adequate"). `NotImplementedError` is not `ImportError`, so the `except` clause does not catch it and the fallback path is unreachable in this environment.
+- **Fix applied:** Widened dispatcher in `bench/runner/probes.py::probe_coder` to also catch `NotImplementedError` from `_probe_coder_sdk` and fall through to `_probe_coder_fallback` (SDK path is spec-adequate stub per ADR-0007). `sdk_unavailable_reason` records the underlying cause so the sidecar `notes` distinguishes `openhands-sdk unavailable` from `sdk path stubbed`. Fallback behavior is unchanged.
+- **Files changed:** `bench/runner/probes.py` (dispatcher only; `_probe_coder_sdk` stub intentionally preserved).
+- **Related BUILD_LOG entry:** 2026-08-11 03:01 EDT.

@@ -351,21 +351,31 @@ def probe_coder(
     paths do post-hoc file-state verification against expected_file_state and
     expected_output_contains.
     """
+    sdk_unavailable_reason: Optional[str] = None
     try:
         from openhands.sdk import Agent, Conversation, LLM  # type: ignore  # noqa
-        return _probe_coder_sdk(
-            endpoint=endpoint, served_name=served_name,
-            task_set=task_set, budget_tokens=budget_tokens,
-            workspace_root=workspace_root,
-        )
-    except ImportError:
-        result = _probe_coder_fallback(
-            endpoint=endpoint, served_name=served_name,
-            task_set=task_set, budget_tokens=budget_tokens,
-        )
+        try:
+            return _probe_coder_sdk(
+                endpoint=endpoint, served_name=served_name,
+                task_set=task_set, budget_tokens=budget_tokens,
+                workspace_root=workspace_root,
+            )
+        except NotImplementedError as exc:
+            # SDK is installed but the SDK-driven path is a stub (spec-adequate
+            # per ADR-0007). Fall through to the fallback exactly like the
+            # ImportError case, and tag the notes so the sidecar records why.
+            sdk_unavailable_reason = f"sdk path stubbed ({exc})"
+    except ImportError as exc:
+        sdk_unavailable_reason = f"openhands-sdk unavailable ({exc})"
+
+    result = _probe_coder_fallback(
+        endpoint=endpoint, served_name=served_name,
+        task_set=task_set, budget_tokens=budget_tokens,
+    )
+    if sdk_unavailable_reason:
         result.notes = (result.notes + "; " if result.notes else "") + \
-            "degraded: openhands-sdk unavailable — used raw tool-call fallback"
-        return result
+            f"degraded: {sdk_unavailable_reason} — used raw tool-call fallback"
+    return result
 
 
 def _probe_coder_sdk(

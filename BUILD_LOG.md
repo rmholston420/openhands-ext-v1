@@ -363,3 +363,12 @@ America/Detroit (`EDT` / `EST`).
 - **Stop-condition status:** MET for planner-fast smoke. Fast-tier planner probe contract is production-ready. Next stop condition = coder-fast smoke gate.
 
 Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm-gpu-20260811T065511Z.json` — overall verdict pass, 3/3 task pass, probe elapsed 2s, VRAM peak 30648 MiB, temp peak 49 °C, NVML coverage 100%, teardown rc=0.
+
+## 2026-08-11 03:01 EDT — probe_coder dispatcher: catch NotImplementedError, reach fallback
+
+- **Stage / plugin / port:** Phase 0.1 · Fast-tier runner · `bench/runner/probes.py::probe_coder` (dispatch only).
+- **What changed:** Dispatcher now catches `NotImplementedError` from the intentional `_probe_coder_sdk` stub in addition to `ImportError` on the SDK import, and falls through to `_probe_coder_fallback`. Sidecar `notes` gains a `degraded: sdk path stubbed (…)` or `degraded: openhands-sdk unavailable (…)` marker so the two failure modes are distinguishable in downstream diagnostics. `_probe_coder_sdk` stub is preserved verbatim per ADR-0007 (fallback is spec-adequate for Phase 0.1).
+- **Files touched:** `bench/runner/probes.py`.
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none. No ADR required — this is a probe-dispatcher defect fix, not a design decision.
+- **Stop-condition status:** ready for coder-fast smoke re-run. Next run should reach the fallback path and produce a sidecar with per-task tool-call diagnostics.
