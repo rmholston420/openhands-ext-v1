@@ -1,6 +1,8 @@
 # ADR-0030 — Phase 0.4 embedder Full-tier re-eval (three-way, pre-registered)
 
-**Status:** Proposed (flips to Ratified on fixture lock-in: corpus manifest committed with pinned repo SHAs, 40 queries authored blind, rubric committed, qrels labeled by Perplexity-Max and hash-locked)
+**Status:** Proposed · execution deferred per ADR-0031 (verdict-defer; 4-query calibration accepted; 4B-Q8 incumbent retained; full N=20/block labeling deferred to a future batched re-eval)
+
+> **STATUS AMENDMENT (2026-08-11 16:39 EDT):** Full-labeling execution deferred. See ADR-0031. The step-6b pool and locked calibration qrels persist on disk; a future re-eval resumes by expanding the qrels file (append + re-lock SHA) and rerunning the offline scorer. No embedder re-run required. This ADR stays Proposed pending that future execution.
 
 > **PROGRESS NOTE (2026-08-11 13:16 EDT):** Fixture lock-in step 3 (corpus manifest) COMPLETE. `bench/corpus/embedder-full-multi-block/MANIFEST.json` committed at pinned SHAs: openhands-ext-v1@5489fb19 (main), Kosmos@1f33519a on branch `stage-3-13-tektos-intention` (user's live working state, 45 commits ahead of Kosmos main; option S1 per user 2026-08-11 13:15 EDT), Rigpa-LMS@55b55539 (main). Totals: 969 code files (26 + 392 + 551), 139 docs files (42 + 97). Diagnostic correction filed in BUILD_LOG: earlier comparison output was misread — stage-3-13 is AHEAD of main by 45, not behind. Steps 4–6 remain before Ratification.
 

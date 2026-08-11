@@ -1617,3 +1617,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** none (ADR-0030 status unchanged, still Proposed; verdict deferred pending full labeling decision)
 - **Stop-condition status:** 4-query calibration END. User decides: (a) expand to full 20 queries/block labeling for defensible V3/W3 verdict, or (b) accept calibration signal + defer to future re-eval. NOT ratifying ADR-0030 or filing ADR-0031 at this signal depth.
+
+## 2026-08-11 16:39 EDT — ADR-0031 filed: Phase 0.4 gate-4 embedder verdict DEFER (retain 4B-Q8)
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · verdict decision · production embedder retention
+- **What changed:** Filed ADR-0031 ratifying the deferral decision per user 2026-08-11 16:39 EDT. Retains 4B-Q8 (e04b_q8_cpu, `qwen3-embedding-4B-Q8_0.gguf` GPU cold) as production embedder. Explicitly declines to file V3/W3 verdict at N=4 (rubric requires N=20/block for stable macro). Amended ADR-0030 status to `Proposed · execution deferred per ADR-0031` with resume path documented (step-6b pool + calibration qrels persist; future re-eval appends to qrels + re-runs offline scorer, no embedder re-launch). ADR-0030b status updated to `Proposed · deferred (execution conditional on future full re-eval)`. No production config change (4B-Q8 stays wired in inference_backends). No rubric edits (post_hoc_edit_locked intact per ADR-0016+ADR-0022).
+- **Files touched:** `adrs/ADR-0031-phase-0-4-embedder-verdict-defer.md` (new), `adrs/README.md` (index + ADR-0030b status), `adrs/ADR-0030-phase-0-4-embedder-full-tier-re-eval.md` (status amendment header)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** ADR-0031 (new, Ratified); ADR-0030 (status amendment, still Proposed, execution deferred); ADR-0030b (status update, still Proposed, deferred)
+- **Stop-condition status:** MET. Phase 0.4 gate-4 execution deferred. No open blockers on this gate. Future re-eval is an intentional queue item, not a WIP.
