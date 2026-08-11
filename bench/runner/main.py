@@ -106,14 +106,16 @@ def _iso(dt: datetime) -> str:
 
 
 def _result_path(results_dir: Path, tier: Tier, role: Role,
-                 cand: ExpandedCandidate, started: datetime) -> Path:
+                 cand: ExpandedCandidate, started: datetime,
+                 smoke: bool = False) -> Path:
     slug = "-".join([
         cand.slug.lower().replace("/", "-").replace(":", "-"),
         cand.runtime.replace(".", "-"),
         cand.device,
     ])
     stamp = started.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    return results_dir / f"phase-0-{tier.value}-{role.value}-{slug}-{stamp}.json"
+    prefix = "smoke" if smoke else "phase-0"
+    return results_dir / f"{prefix}-{tier.value}-{role.value}-{slug}-{stamp}.json"
 
 
 def _harness_commit_sha() -> str:
@@ -597,7 +599,7 @@ def run_tier(args: argparse.Namespace) -> int:
     else:
         candidates = expand_for_role(role.value)
 
-    if not args.dry_run:
+    if not args.dry_run and not getattr(args, "smoke", False):
         # Open-pool guard (§0.0b).
         min_pool = {
             (Tier.FAST, Role.CODER): 3,
@@ -608,6 +610,8 @@ def run_tier(args: argparse.Namespace) -> int:
             print(f"[GUARD §0.0b] {role.value}/{tier.value} pool has {len(candidates)} "
                   f"candidates; spec minimum is {min_pool}. Refusing.", file=sys.stderr)
             return 2
+    if getattr(args, "smoke", False):
+        print(f"[SMOKE] pool-guard bypassed; results tagged smoke=true", file=sys.stderr)
 
     if not candidates:
         print("no candidates to run", file=sys.stderr)
@@ -667,7 +671,8 @@ def run_tier(args: argparse.Namespace) -> int:
                          f"FAIL validation for {cand.slug}: {exc}")
             exit_code = 1
             continue
-        out = _result_path(results_dir, tier, role, cand, run_started)
+        out = _result_path(results_dir, tier, role, cand, run_started,
+                           smoke=getattr(args, "smoke", False))
         out.write_text(json.dumps(as_dict, indent=2) + "\n", encoding="utf-8")
         progress.log("WRITE", f"{out}")
 

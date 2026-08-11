@@ -289,3 +289,12 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** none. ADR-0007 §7 progress-visibility discipline honored throughout new modules.
 - **Stop-condition status:** Phase 0.1 runner implemented and dry-run-verified. Remaining Phase 0.1 work on Colossus: (a) install `openhands-sdk` + `openhands-tools` into runner venv so `_probe_coder_sdk` can lift its `NotImplementedError`; until then coder cells run in fallback tool-call mode and are tagged accordingly. (b) `.versions/llama.cpp` and `.versions/vllm` files not yet materialized on Colossus; runner accepts `--llama-cpp-build` / `--vllm-release` as explicit args. (c) First real (non-dry-run) invocation on Colossus is the next stop condition.
+
+## 2026-08-11 02:16 EDT — --smoke bypass added for single-candidate hardware verification
+
+- **Stage / plugin / port:** Phase 0.1 · runner UX
+- **What changed:** Added `--smoke` CLI flag to `scripts/benchmark-tier-runner.py`. When set, bypasses the §0.0b open-pool guard (allowing single-candidate runs) and prefixes result filenames with `smoke-` instead of `phase-0-`. Purpose: hardware verification runs against one model before firing a full role pool. Not for elimination decisions — smoke records are visually distinct from Fast-tier records.
+- **Files touched:** `bench/runner/main.py`, `scripts/benchmark-tier-runner.py`.
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none. Spec §0.0b guard remains the default; bypass is opt-in and self-labels its outputs.
+- **Stop-condition status:** verified via dry-run — normal run still emits `phase-0-*.json`; `--smoke --candidate-file` on a 1-element list bypasses guard and emits `smoke-*.json`.

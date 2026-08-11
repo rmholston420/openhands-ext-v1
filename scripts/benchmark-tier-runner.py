@@ -84,6 +84,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="Exact vLLM release tag for run_metadata (e.g. v0.27.0).")
     p.add_argument("--dry-run", action="store_true",
                    help="Skip server launch + probe; emit schema-conformant scaffold records.")
+    p.add_argument("--smoke", action="store_true",
+                   help="Bypass §0.0b open-pool guard (allow <min_pool candidates); "
+                        "result files are prefixed 'smoke-' instead of 'phase-0-'. "
+                        "Use for single-candidate hardware verification only, not "
+                        "for real Fast-tier elimination decisions.")
     return p.parse_args(argv)
 
 
