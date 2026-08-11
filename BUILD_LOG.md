@@ -1210,3 +1210,13 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** bench runner cell dispatch → RunMetadata assembly. No changes to probe entry point or schema.
 - **PORTING_LEDGER / ADR updated:** —
 - **Stop-condition status:** Sandbox validation confirms both cases: (a) medium-tier v1 harness run with `harness_version="v1"`, `openhands_sdk_version="1.41.0"`, `docker_image="ghcr.io/openhands/agent-server:latest-python"` validates cleanly against the extended schema; (b) legacy null-fields case (all three fields null) also validates. No test regressions in bench/tests/test_schema.py — existing `_base_run()` fixture does not pass the three new kwargs and gets the `None` defaults, which the nullable-string schema accepts.
+
+## 2026-08-11 10:49 EDT — Phase 0.3 gate-2 stage-1 smoke: SDK-surface probe script
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · stage-1 smoke · bench/tests/smoke_sdk_surface.py
+- **What changed:**
+  - New script `bench/tests/smoke_sdk_surface.py` that verifies every SDK symbol and method `_probe_coder_sdk` depends on, without contacting an LLM or invoking the bench runner. Nine hard-stop steps in order: (1) imports, (2) DockerWorkspace boot, (3) `execute_command` return-attribute surface (records which of stdout/output/exit_code/returncode exist so the harness can be locked to a stable shape), (4) `file_upload` round-trip via host tempfile + cat, (5) `mkdir -p a/b/c` chain, (6) `LLM` + `Agent(tools=[])` construction with a bogus base_url (no traffic), (7) `Conversation(..., callbacks=[cb], max_iteration_per_run=20).send_message('smoke ...')` — construct + queue only, no `.run()`, (8) event-class isinstance sanity for `ActionEvent`/`ObservationEvent`/`MessageEvent`/`AgentErrorEvent`, (9) `ws.cleanup()`. Emits a compact JSON report on stdout, exits 0 on all-pass. Rationale in the module docstring.
+- **Files touched:** bench/tests/smoke_sdk_surface.py
+- **Ports / adapters affected:** none (test-only)
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** Prerequisite for stage-2 runner smoke. Purpose is to catch SDK-surface mismatches in ~30 s instead of burning a full 45-minute vLLM cell cycle. If step 3 or 4 reports unexpected attribute names, the harness will need a small edit before stage-2 proceeds.
