@@ -30,6 +30,20 @@ if ! docker version --format '{{.Server.Version}}' >/dev/null 2>&1; then
   exit 2
 fi
 
+# Preflight: :8000 free (SDK bug workaround requires host_port=8000 when
+# network='host'; see BUILD_LOG 2026-08-11 18:38 EDT). Also clean up any
+# stale agent-server container from a prior failed run.
+STALE_CIDS=$(docker ps -a --filter 'ancestor=ghcr.io/openhands/agent-server:latest-python' --format '{{.ID}}' 2>/dev/null)
+if [ -n "$STALE_CIDS" ]; then
+  echo "Removing stale agent-server container(s): $STALE_CIDS"
+  echo "$STALE_CIDS" | xargs -r docker rm -f >/dev/null
+fi
+if ss -ltn 2>/dev/null | awk '{print $4}' | grep -qE '(^|:)8000$'; then
+  echo "PRECONDITION FAIL: host port 8000 is bound by something else." >&2
+  ss -ltnp 2>/dev/null | grep ':8000' >&2
+  exit 2
+fi
+
 TASK_FILE="$REPO_ROOT/bench/smoke-phase-3-item-3c/task.md"
 IMAGE="ghcr.io/openhands/agent-server:latest-python"
 
@@ -74,9 +88,14 @@ verdict = {
 t0 = time.time()
 err = None
 try:
+    # NOTE: with network='host', Docker ignores -p mappings and the
+    # container binds :8000 on the host directly. The SDK's health check
+    # polls http://127.0.0.1:{host_port}/health, so we must pin
+    # host_port=8000 to match the server's actual bind port.
     with DockerWorkspace(
         server_image=IMAGE,
         network="host",
+        host_port=8000,
         enable_gpu=False,
         health_check_timeout=180.0,
     ) as ws:

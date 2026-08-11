@@ -661,3 +661,12 @@ Entry format:
   4. Path A's `completion()` override retained as forward-compatibility: if a future SDK adds `metadata`, it activates automatically and Path B becomes dormant.
 - **Files changed:** `config/agent.py`, `config/router.py`, `bench/smoke-phase-3-row-2/task.md`, `bench/smoke-phase-3-row-2/run.sh`, `adrs/ADR-0033-phase-2-4-config-surface-python-not-toml.md`
 - **Related BUILD_LOG entry:** 2026-08-11 18:01 EDT
+
+## 2026-08-11 18:38 EDT — DockerWorkspace health-check hangs 180 s when network="host"
+
+- **Symptom:** `openhands.workspace.docker.workspace.DockerWorkspace(server_image=..., network="host")` raises `RuntimeError: Container failed to become healthy in time` after the full `health_check_timeout` (default 120 s, 180 s in our run). `docker inspect` shows the container is `Running=true` the entire time; container logs show clean startup ending in `Uvicorn running on http://0.0.0.0:8000` and `Application startup complete.`
+- **Affected stage / plugin / port:** Phase 3 · Runtime · workspace (`RemoteWorkspace` via Docker).
+- **Root cause:** SDK 1.41 `DockerWorkspace._start_container` at `workspace/docker/workspace.py:186-189` auto-assigns `self.host_port` to a random port in `30000-39999` when the caller doesn't pass one; the docker-run command then includes `-p <random>:8000`. Under `network="host"`, Docker **silently ignores** the `-p` mapping and the containerized uvicorn binds `:8000` on the host directly (evidence: `sudo ss -ltnp` shows `openhands-agent` PID listening on `0.0.0.0:8000`). But `_wait_for_health` at line ~330 constructs `health_url = f"{self.host}/health"` where `self.host` was set to `http://127.0.0.1:{self.host_port}` (the ignored random port). Health poll goes to a port that was never bound → connect refused for the full timeout.
+- **Fix applied:** Pin `host_port=8000` explicitly when using `network="host"` so the SDK's health URL matches the port the container actually listens on. Also preflight `:8000` availability (and `docker rm -f` any stale prior container) before starting the workspace, since `check_port_available(8000)` runs inside SDK before `docker run`. This is a Colossus-local workaround; upstream fix would be to skip the port-derived health URL under host networking.
+- **Files changed:** `bench/smoke-phase-3-item-3c/run.sh` (added stale-container cleanup + `:8000` preflight; pinned `host_port=8000`).
+- **Related BUILD_LOG entry:** —
