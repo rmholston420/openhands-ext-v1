@@ -28,16 +28,19 @@ if [ ! -x "$VENV_PY" ]; then
   exit 1
 fi
 
-# Prereq 1: coder endpoint reachable
-if ! curl -sf -o /dev/null "http://127.0.0.1:8100/v1/models"; then
-  echo "FAIL: coder endpoint not reachable at 127.0.0.1:8100 — start scripts/serve-coder.sh first" >&2
-  exit 1
-fi
-
-# Prereq 2: planner endpoint reachable
+# Prereq: planner endpoint reachable (REQUIRED — row-2 issues real completions to :8082)
 if ! curl -sf -o /dev/null "http://127.0.0.1:8082/v1/models"; then
   echo "FAIL: planner endpoint not reachable at 127.0.0.1:8082 — start scripts/serve-planner.sh first" >&2
   exit 1
+fi
+
+# Coder endpoint is OPTIONAL for row-2 (ADR-0017 amend: coder XOR planner+embedder).
+# We build the coder LLM object to test select_llm's default routing, but we never
+# make an HTTP call to :8100. This lets row-2 run while the planner is resident.
+CODER_UP=0
+if curl -sf -o /dev/null "http://127.0.0.1:8100/v1/models"; then
+  CODER_UP=1
+  echo "note: coder endpoint is also up — XOR violation, but row-2 only calls planner endpoint"
 fi
 
 echo "=== Phase 3 row-2 smoke (planner routing) — $(date -Iseconds) ==="
