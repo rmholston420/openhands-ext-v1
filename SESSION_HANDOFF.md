@@ -1,34 +1,49 @@
-# Kosmos Session Handoff — 2026-08-11 18:33 EDT
+# Kosmos-Style Session Handoff — 2026-08-11 18:57 EDT
 
 ## Current build-sequencing position
-- **Stage / phase:** Phase 3 (Runtime integration & sign-off)
-- **Plugin / kernel component:** DockerWorkspace + Agent Canvas + tool-calling verification
-- **Port(s) in progress:** Runtime workspace policy (Phase 1), UI (Phase 3)
+- **Stage / phase:** Phase 3 · Runtime sign-off
+- **Plugin / kernel component:** OpenHands-Ext v1 verification matrix
+- **Port(s) in progress:** none actively (3.c just closed)
 
 ## Completed this session
-- Row-1 PASSED (LocalWorkspace, coder).
-- Row-2 Path B PASSED (message-marker routing).
-- 3.a PASSED (offline registration smoke).
-- 3.h split: 3.h-1 ✅, 3.h-2 ⛔ hardware-blocked (accepted gap).
-- 3.h-1 PASSED (live DelegateTool + code-explorer).
-- 3.b PASSED vacuously (§2.2 has no concrete servers until Phases 5-7;
-  install-pattern prereqs green: npx, uvx, supergateway).
+- 3.h-1 DelegateTool wiring smoke → ✅ (`8853337`)
+- 3.b MCP §2.2 probe → ✅ vacuously (`25b722c`)
+- 3.c DockerWorkspace trivial task smoke → ✅ (final commit for verdict predicate + matrix + BUILD_LOG)
+  - Bug 1: SDK `network=host` + auto `host_port` → health-URL mismatch. Fix: pin `host_port=8000`. (`a57684f`)
+  - Bug 2: `_LOCAL_API_KEY="EMPTY"` → litellm sentinel → OpenAI provider path. Fix: `"local"`. (`b35eeae`)
+  - Bug 3: `CoderPlannerRouter` doesn't serialize `llms_for_routing` → placeholder routed to `api.openai.com`. Workaround: rebuild `Agent(llm=coder, condenser=build_condenser(coder), tools=<default>)`. (`2636241`, `656cf15`)
+  - Bug 4: `has_terminal_error` too broad (any observation with "error" substring). Fix: `ConversationErrorEvent` only. (`692f074`)
+- New sign-off item opened: **3.j** RouterLLM/CoderPlannerRouter under RemoteConversation.
 
-## Remaining before current Definition of Done
-- 3.c Trivial task under **DockerWorkspace** (Row-1 used LocalWorkspace)
-- 3.d Agent Canvas cloned + running against :8000
-- 3.e Event stream visible in Canvas
-- 3.f Confirmation UI fires in Canvas
-- 3.g Tool-calling verified per base_url (planner + embedder still open)
-- 3.h-2 Cross-endpoint hand-off — ⛔ accepted hardware gap
-- 3.i Joint hand-off — ⛔ accepted hardware gap (same VRAM constraint)
+## Phase 3 checklist (current)
+
+| # | Item | Status |
+|---|---|---|
+| 3.a | `code-explorer` tool registered | ✅ |
+| 3.b | MCP §2.2 tools callable | ✅ vacuously |
+| 3.c | DockerWorkspace trivial task | ✅ (router bypassed) |
+| 3.d | Agent Canvas cloned + running | ❌ not done |
+| 3.e | Event stream in Canvas | ❌ blocked on 3.d |
+| 3.f | Confirmation UI in Canvas | ❌ blocked on 3.d |
+| 3.g | Tool-calling per `base_url` | ⚠️ coder ✓, planner/embedder open |
+| 3.h-1 | DelegateTool wiring | ✅ |
+| 3.h-2 | Cross-endpoint hand-off | ⛔ hardware gap (documented) |
+| 3.i | Both endpoints during role-switch | ⚠️ partial |
+| 3.j | RouterLLM under RemoteConversation | ❌ not done |
+
+## Remaining before Phase 3 sign-off
+- 3.d: `git clone agent-canvas && npm run start` against `http://127.0.0.1:8000`
+- 3.e-f: exercise Canvas against a live DockerWorkspace-backed conversation
+- 3.g planner half: tool-calling smoke against `:8082` (llama.cpp planner)
+- 3.g embedder half: verify `:8090` responds to embedding calls (no tool-calling expected)
+- 3.i: joint role-switch coverage (depends on 3.g planner)
+- 3.j: RouterLLM serialization fix or ADR deferring routing to a boundary that survives RemoteConversation
 
 ## Open questions / awaiting user answer
-- Next sign-off item pick: 3.c (Docker), 3.g (planner+embedder tool-calling,
-  requires model swap), or 3.d/e/f (Canvas)?
-- Recommendation: 3.c next. It's the largest remaining executable item,
-  keeps coder resident (no swap), and unlocks 3.d-f which need a
-  Canvas-backed live task under Docker anyway.
+- **Which item next?** Sensible orders:
+  - Cheap first: 3.g planner + embedder smokes (no Canvas dep, no hardware conflict since planner+embedder are XOR-co-resident with coder — need to bring planner up)
+  - Milestone first: 3.d Agent Canvas (unlocks 3.e/3.f in one shot)
+  - Deferrable-cleanest: 3.j RouterLLM fix (would retroactively strengthen 3.c but is not required for 3.c sign-off)
 
 ## Exact next action
-- Await user choice. Coder currently up on :8100; planner+embedder down.
+Await user's choice among {3.g planner, 3.d Canvas, 3.j RouterLLM}. Default recommendation: **3.g planner smoke** — it's the cheapest and unblocks 3.i joint hand-off directly.

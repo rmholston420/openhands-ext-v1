@@ -1802,3 +1802,18 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
   callable" is treated as vacuously satisfied because §2.2 lists no
   concrete servers before Phase 5. This is documented gap #2 for
   Phase 3 close (#1 was 3.h-2 hardware co-residency).
+
+## 2026-08-11 18:56 EDT — Phase 3.c PASSED (DockerWorkspace trivial task, router bypassed)
+
+- **Stage / plugin / port:** Phase 3 · Runtime · DockerWorkspace (RemoteConversation)
+- **What changed:** Item 3.c signed off. `bench/smoke-phase-3-item-3c/` `pass=true` on the third rerun (verdict predicate narrowed after the conversation itself already succeeded on the second try). DockerWorkspace container (`ghcr.io/openhands/agent-server:latest-python`, host network, `host_port=8000`, `enable_gpu=False`) healthy in ~4 s; agent completed the trivial task (create `/workspace/hello.txt`=`docker-ok`, cat it, finish) in 51.25 s over 89 events with 27 tool actions (`terminal`, `file_editor`, `think`, `finish`). Two SDK/config bugs surfaced and fixed along the way (see DEBUG_LOG entries at 18:38, 18:48). Router was bypassed for this smoke because `CoderPlannerRouter` does not serialize `llms_for_routing` under `RemoteConversation` — tracked as new item 3.j.
+- **Files touched:**
+  - `bench/smoke-phase-3-item-3c/run.sh` (`network=host` + `host_port=8000`, preflight cleanup, router bypass via `Agent(llm=build_coder_llm(...), condenser=build_condenser(coder), tools=<default>)`, `has_terminal_error` narrowed to `ConversationErrorEvent`)
+  - `bench/smoke-phase-3-item-3c/recompute_verdict.py` (new; re-scores existing `events.json` without re-running the conversation)
+  - `bench/smoke-phase-3-item-3c/task.md` (unchanged)
+  - `config/agent.py` (`_LOCAL_API_KEY = SecretStr("local")` + comment)
+  - `DEBUG_LOG.md` (3 entries appended: 18:38, 18:48, 18:52)
+  - `docs/verification/verification-matrix.md` (3.c → ✅, new row 3.j added)
+- **Ports / adapters affected:** `LLM` port (sentinel-value pitfall documented). No new ports.
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** 3.c DoD met (`pass=true` under DockerWorkspace, real winning coder endpoint, real event stream with tool actions and finish). Router-under-RemoteConversation intentionally scoped out and tracked as 3.j.
