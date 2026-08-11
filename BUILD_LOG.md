@@ -605,3 +605,24 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0014 Ratified; ADR-0011 amended (status annotation, not content).
 - **Stop-condition status:** met — coder-fast pool restored to 4 cells based on the ratified rubric applied to persisted probe evidence. All three roles' Fast-tier pools now locked: coder = 4, planner = 2, embedder = 6. Ready for Phase 0.2 Medium-tier authoring.
+
+
+## 2026-08-11 05:29 EDT — ADR-0015 filed (Proposed); planner Medium thinker budget-probe pre-registered
+
+- **Stage / plugin / port:** Phase 0.2 · Medium tier · planner probe (Fast-tier plumbing reused via --smoke)
+- **What changed:**
+  - **ADR-0015 filed (Proposed).** Pre-registered budget-hypothesis probe for `qwen3-30b-a3b-thinking-2507-awq` on planner role. Two competing hypotheses: H0 = structural refusal of `enable_thinking=false` (no budget fixes it); H1 = budget-bound (Fast-tier 4096 tokens too small for reasoning + JSON tail). Sequential probe (8k first, 16k only if 8k does not falsify H0) with pre-registered success criteria — malformed_count ≤ 1 of 3, median wall ≤ 60s, valid schema on all successful completions.
+  - Two task-set files (`planner-medium-thinker-probe-b8k.json`, `-b16k.json`) — identical to `planner-fast.json` except `budget_tokens` (8192/16384). tier field remains `fast` so the existing rubric/harness apply; `--smoke` bypasses §0.0b pool guard because probe is 1-cell diagnostic. Results are NOT admissible as pool-decision evidence.
+  - One candidate file (`planner-medium-thinker-probe.json`) with 1 cell: thinker-2507-awq, role overridden to planner (registry entry is dual-role per ADR-0012), `reasoning_parser=qwen3` so vLLM strips the reasoning block cleanly.
+  - Added `scripts/inspect-raw-content.py` — read-only inspector for `.probe.json` sidecars; prints per-task raw_chars, <think> block char count, wall, truncation flag. Sizes budgets and diagnoses failure modes from evidence.
+- **Files touched:**
+  - `adrs/ADR-0015-planner-medium-thinker-budget-probe.md` (new, Proposed)
+  - `adrs/README.md` (index row added)
+  - `bench/tasks/planner-medium-thinker-probe-b8k.json` (new)
+  - `bench/tasks/planner-medium-thinker-probe-b16k.json` (new)
+  - `bench/candidates/planner-medium-thinker-probe.json` (new)
+  - `scripts/inspect-raw-content.py` (new, executable)
+  - `BUILD_LOG.md`, `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0015 Proposed. No ledger change.
+- **Stop-condition status:** pending evidence. ADR moves to Ratified with Falsified or Confirmed verdict after probe run(s).

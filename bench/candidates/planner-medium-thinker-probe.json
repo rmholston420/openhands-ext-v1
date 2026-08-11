@@ -1,0 +1,14 @@
+[
+  {
+    "model": "qwen3-30b-a3b-thinking-2507-awq",
+    "hf_repo": "cpatonn/Qwen3-30B-A3B-Thinking-2507-AWQ-4bit",
+    "format": "safetensors",
+    "runtime": "vllm",
+    "device": "gpu",
+    "role": "planner",
+    "quant": "awq-4bit",
+    "approx_size_gib": 18,
+    "reasoning_parser": "qwen3",
+    "notes": "ADR-0015 probe cell. Role overridden to planner (registry entry is dual-role coder+planner per ADR-0012). Task set carries chat_template_kwargs.enable_thinking=false. Under H1 the higher completion budget lets the model emit valid schema-conformant JSON after </think>. Under H0 the model cannot suppress thinking regardless of budget. Uses reasoning_parser=qwen3 so vLLM strips the reasoning block into a separate field; tool_call_parser omitted (planner is JSON-out, not tool-call)."
+  }
+]
