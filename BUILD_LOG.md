@@ -1849,3 +1849,21 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
   - Embedder co-residency: production config is 4B-Q8 on CPU per ADR-0017 amd #3 + ADR-0031 defer verdict; no VRAM competition with the GPU planner. Smaller-embedder-on-GPU (ADR-0030b) remains Proposed / deferred; not touched by this smoke.
   - The endpoint returns L2-normalized vectors (norm = 1.0) — no client-side normalization needed for cosine similarity downstream.
   - Bit-for-bit determinism (`max_abs_diff = 0.0`) matches expectation for llama.cpp embedding output at fixed seed; this simplifies cache invariants for downstream RAG.
+
+## 2026-08-11 19:45 EDT — Phase 3.d PASSED (Agent Canvas up on ingress :8000)
+
+- **Stage / plugin / port:** Phase 3 · UI · Agent Canvas frontend + Canvas-managed agent-server
+- **What changed:** Item 3.d closed. `bench/smoke-phase-3-item-3d/` `pass=true` (5/5 spec-relevant HTTP checks). Canvas v1.6.1 (SHA `43f091b`) cloned to `~/dev/agent-canvas-stock`, `npm install` clean (1370 packages), `npm run dev` launches the full ingress+frontend+agent-server stack via `scripts/dev-with-automation.mjs`. Ingress at `http://127.0.0.1:8000/` returns 200 with `<title>OpenHands</title>` (1.13 MB HTML). Agent-server behind ingress on :18000 (uvx `openhands-agent-server`, `/server_info` `/health` `/alive` all 200). `/openapi.json` 200 with `"openapi"` needle. Vite frontend on :3002 (remapped from :3001 via `OH_CANVAS_SAFE_VITE_PORT` because Gitea owns :3001).
+- **Files touched:**
+  - `bench/smoke-phase-3-item-3d/README.md` (new)
+  - `bench/smoke-phase-3-item-3d/run.sh` (new; canonical replay of the 5-check smoke)
+  - `bench/smoke-phase-3-item-3d/results/verdict_20260811_194509.json` (new; committed verdict artifact)
+  - `vendor/agent-canvas.pinned.json` (new; pins repo/tag/SHA/node/npm/uv versions)
+  - `docs/verification/verification-matrix.md` (3.d ✅; 3.e/3.f unblocked; remaining-work list refreshed)
+- **Ports / adapters affected:** Canvas ingress :8000 · agent-server :18000 · Vite :3002 (all Canvas-owned).
+- **PORTING_LEDGER / ADR updated:** — (Canvas is a vendored tool clone in `~/dev/agent-canvas-stock`, tracked via `vendor/agent-canvas.pinned.json`; not a monorepo port under `adapters/`)
+- **Stop-condition status:** 3.d met per spec v16 §Phase 3.d ("Agent Canvas cloned, built, running against `http://127.0.0.1:8000`"). 3.e and 3.f now unblocked but not started.
+- **Follow-up learnings:**
+  - Canvas's `dev-safe.mjs` port assertion catches occupied dev ports and refuses to start; `OH_CANVAS_SAFE_VITE_PORT` overrides `DEFAULT_VITE_PORT=3001`. Analogous overrides exist for backend (`OH_CANVAS_SAFE_BACKEND_PORT`) and automation (`OH_CANVAS_SAFE_AUTOMATION_PORT`).
+  - Canvas's automation service (:18001) is a separate uvx-launched FastAPI backend serving `/api/automation/*` through the ingress. It's a developer convenience for the Canvas UI's "automations" feature and is NOT required for spec v16 §3.d acceptance.
+  - `npm run dev` uses `dev-with-automation.mjs` which spawns everything; if only the frontend is needed, `npm run dev:frontend` skips automation and agent-server. For 3.e/3.f the full stack is required.

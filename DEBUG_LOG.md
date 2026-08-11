@@ -689,3 +689,27 @@ Entry format:
 - **Files changed:** `bench/smoke-phase-3-item-3c/run.sh` (router-bypass block + `agent.llm = build_coder_llm(...)`).
 - **Related BUILD_LOG entry:** —
 - **Followup:** Open a new sign-off item (Phase 3.j) tracking the RouterLLM discriminated-union / serialization fix. Likely requires either (a) extending `RouterLLM` to declare `llms_for_routing` as a Pydantic field with a proper discriminated-union type, or (b) a custom `model_dump`/`model_validate` override — and possibly an ADR since routing is a spec §2.4 concern.
+
+## 2026-08-11 19:44 EDT — Canvas automation :18001 aborts on stale alembic DB (revision `013`)
+
+- **Symptom:** During Phase 3.d Canvas boot (`npm run dev`), the automation service downloads `openhands-automation==1.3.1` via `uvx`, starts uvicorn, opens `~/.openhands/automation/automations.db`, then aborts with:
+  ```
+  alembic.script.revision.ResolutionError: No such revision or branch '013';
+  please ensure at least four characters are present for partial revision identifier matches
+  ...
+  RuntimeError: SQLite migration failed. Database may be inconsistent: Can't locate revision identified by '013'
+  [automation] Application startup failed. Exiting.
+  [automation] Exited with code 3
+  ```
+  Subsequent requests to `http://127.0.0.1:8000/api/automation/*` return 502 from the ingress proxy.
+- **Affected stage / plugin / port:** Phase 3.d Canvas automation backend (:18001).
+- **Root cause:** `~/.openhands/automation/automations.db` was created 2026-08-08 by an older `openhands-automation` release with newer alembic migrations (past revision `013`). The pinned `1.3.1` release ships an older migration set that does not know revision `013`, so `alembic.command.upgrade(alembic_cfg, "head")` in the app lifespan raises `ResolutionError` at startup.
+- **Fix applied:** Moved the stale DB aside so the next automation launch will create a fresh DB matching the pinned version's migrations:
+  ```
+  mv ~/.openhands/automation/automations.db ~/.openhands/automation/automations.db.stale-20260811_194023
+  ```
+  Verified via `ls ~/.openhands/automation/` — original DB preserved as `.stale-*` for forensics.
+- **Not required for §3.d:** Spec v16 §Phase 3.d acceptance is "Agent Canvas cloned, built, running against `http://127.0.0.1:8000`". Ingress + frontend + agent-server (`/server_info` `/health` `/alive` `/openapi.json`) all 200 without automation — the 5-check `bench/smoke-phase-3-item-3d/` verdict passed cleanly. Automation is a Canvas-side developer convenience for the "automations" UI feature, not part of the ext-v1 runtime path.
+- **Files changed:** none in the ext repo. Only `~/.openhands/automation/automations.db` on Colossus was moved aside.
+- **Related BUILD_LOG entry:** 2026-08-11 19:45 EDT (3.d PASSED)
+- **Follow-up (deferred):** If 3.e/3.f later require automation, re-restart Canvas after moving the stale DB — automation will initialize a fresh DB from its own baseline. The stale DB can be re-attached only against the release that authored it (>1.3.1); no plan to do so.

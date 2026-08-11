@@ -30,16 +30,16 @@ verbatim from the spec.
 
 ## Phase 3 sign-off checklist
 
-Spec §Phase 3 Verification (`docs/specs/integration-execution-plan-v16.md:382-385`) requires DockerWorkspace + Agent Canvas + role-switch via delegation, plus code-explorer and MCP §2.2 reachability. Actual coverage as of 2026-08-11 18:06 EDT:
+Spec §Phase 3 Verification (`docs/specs/integration-execution-plan-v16.md:382-385`) requires DockerWorkspace + Agent Canvas + role-switch via delegation, plus code-explorer and MCP §2.2 reachability. Actual coverage as of 2026-08-11 19:45 EDT:
 
 | # | Sign-off item | Status | Evidence / gap |
 |---|---|---|---|
 | 3.a | `code-explorer` tool registered (ADR-0032, deferred from Phase 1.2 to §2.4/Phase 3) | ✅ registration only | `build_agent()` registers built-in subagents via `register_builtins_agents(enable_browser=False)` and includes `TaskToolSet` via `get_default_tools(enable_sub_agents=True)`. Smoke `bench/smoke-phase-3-item-3a/` `pass=true` 2026-08-11 18:15 EDT (`code-explorer` in registry, tools=`["terminal"]`, level=builtin, source matches shipped preset; agent tools = `terminal`, `file_editor`, `task_tracker`, `task_tool_set`). Live-delegation coverage rolls into 3.h. |
 | 3.b | MCP §2.2 tools callable | ✅ vacuously | §2.2 defines only the supergateway install pattern; concrete servers land in Phase 5 (GPU telemetry), Phase 6 (Inference health + Episodic memory), Phase 7 (RepoGraph Neo4j). Probe `bench/smoke-phase-3-item-3b/` 2026-08-11 18:33 EDT confirms prereqs green: `npx`, `uvx`, `supergateway` installed; SDK exposes `MCPClient`/`MCPToolDefinition`/`MCPToolObservation`/`create_mcp_tools`/`MCPServer`; `build_agent()` wires no MCP yet (as expected). Live tool-list smoke deferred to Phases 5-7. |
 | 3.c | Trivial task under **DockerWorkspace** (not Local), real winning endpoints | ✅ (router bypassed) | Smoke `bench/smoke-phase-3-item-3c/` `pass=true` 2026-08-11 18:55 EDT. `DockerWorkspace(server_image=ghcr.io/openhands/agent-server:latest-python, network=host, host_port=8000, enable_gpu=False)` container healthy in ~4 s; 89 events; 27 `ActionEvent`s (`terminal`/`file_editor`/`think`/`finish`); `has_finish_action=true`, `has_docker_ok_string=true`, `has_hello_txt=true`; wall 51.25 s. Two DockerWorkspace bugs surfaced and logged: (a) SDK `network=host` + auto-picked random `host_port` → health-poll port mismatch (fix: pin `host_port=8000`, DEBUG_LOG 2026-08-11 18:38 EDT); (b) `_LOCAL_API_KEY=SecretStr("EMPTY")` triggers litellm sentinel path in `RemoteConversation` (fix: `SecretStr("local")`, DEBUG_LOG 2026-08-11 18:48 EDT). Router bypassed with `Agent(llm=build_coder_llm(...), condenser=build_condenser(coder), tools=<default>)` because `CoderPlannerRouter` does not serialize `llms_for_routing` — tracked as new item 3.j. |
-| 3.d | Agent Canvas cloned, built, running against `http://127.0.0.1:8000` | ❌ not done | `git clone agent-canvas && npm run start` never executed |
-| 3.e | Event stream renders in Canvas | ❌ not done | Blocked on 3.d |
-| 3.f | Confirmation UI fires in Canvas | ❌ not done | Blocked on 3.d |
+| 3.d | Agent Canvas cloned, built, running against `http://127.0.0.1:8000` | ✅ | Smoke `bench/smoke-phase-3-item-3d/` `pass=true` 2026-08-11 19:45 EDT (5/5 spec-relevant HTTP checks). Canvas v1.6.1 SHA `43f091b` cloned to `~/dev/agent-canvas-stock`, `npm run dev` (dev-with-automation.mjs). Ingress :8000 → 200 (`<title>OpenHands</title>`, 1.13 MB); `/server_info` → 200 via agent-server :18000 (uvx openhands-agent-server); `/health` `/alive` `/openapi.json` all 200. Vite remapped 3001→3002 via `OH_CANVAS_SAFE_VITE_PORT` (Gitea owns :3001). Automation (:18001) not launched — stale `~/.openhands/automation/automations.db` (alembic rev `013`) incompatible with pinned automation-1.3.1; stale DB moved aside, but not needed for §3.d — see DEBUG_LOG 2026-08-11 19:44 EDT. |
+| 3.e | Event stream renders in Canvas | ❌ not done | 3.d now unblocked; requires configuring coder or planner LLM in Canvas Settings then starting a conversation |
+| 3.f | Confirmation UI fires in Canvas | ❌ not done | 3.d now unblocked; requires conversation with confirmation-mode tool |
 | 3.g | Capability functional against every configured `base_url` | ✅ | **Coder :8100** — tool-calling proven by Row-1. **Planner :8082** — smoke `bench/smoke-phase-3-item-3g-planner/` `pass=true` 2026-08-11 19:13 EDT: direct `LLM.completion(messages=[Message(...)], tools=[_LLMOnlyTerminalTool])` returned `tool_calls=[{args={command: 'echo hello-planner-3g', summary: '...'}}]` in 2.92 s (llama.cpp `--jinja` chat template working). Predicate loosened to argument-content check because SDK auto-derives the OpenAI tool name from the `ToolDefinition` class name; with a single tool offered, the argument match is sufficient signal. **Embedder :8090** — smoke `bench/smoke-phase-3-item-3g-embedder/` `pass=true` 2026-08-11 19:19 EDT: direct `POST /v1/embeddings` on `qwen3-embedding-4b-q8-gguf` returned 3 vectors of dim 2560, L2 norms all 1.0, in 0.54 s. Discrimination: `cos(distinct_pairs) = 0.452` (well below 0.999 threshold). Determinism: identical inputs → `cos = 1.0`, `max_abs_diff = 0.0` exact bit-for-bit. Item asks "functional against every configured `base_url`"; "tool-calling" is only the meaningful check on chat endpoints. For the embedder endpoint (`--embedding` mode disables chat), the correct capability is `/v1/embeddings` round-trip — verified here. |
 | 3.h-1 | DelegateTool wiring (mechanism only; subagent inherits parent LLM per `manager.py:367`) | ✅ | Smoke `bench/smoke-phase-3-item-3h-1/` `pass=true` 2026-08-11 18:28 EDT. `TaskAction` + `TaskObservation` + `FinishAction` present; subagent located `task/definition.py:198`; wall 19.76 s. Also closes the live-delegation coverage deferred from 3.a. |
 | 3.h-2 | Cross-endpoint hand-off (coder supervisor ↔ planner subagent on their real endpoints, via profile store or router marker inside subagent) | ⛔ blocked (hardware) | ADR-0017 XOR co-residency (coder AWQ-4 ~18 GiB + planner Q6_K ~23 GiB = ~41 GiB on a 32 GiB card). Achievable only via sequential model-swap orchestration (Phase 3.5) or new hardware. Documented gap; Row-2 (`bench/smoke-phase-3-row-2/`) provides the endpoint-swap coverage we have via direct `router.completion()` + marker. |
@@ -50,10 +50,11 @@ Order of remaining work (dependency-first):
 
 1. ~~3.a inspection (`code-explorer` registration)~~ ✅ 2026-08-11 18:15 EDT
 2. ~~3.b inspection (MCP §2.2 status)~~ ✅ vacuously 2026-08-11 18:33 EDT (no servers until Phases 5-7)
-3. 3.c — wire DockerWorkspace, rerun row-1 style smoke
+3. ~~3.c — wire DockerWorkspace, rerun row-1 style smoke~~ ✅ 2026-08-11 18:55 EDT
 4. ~~3.h — wire DelegateTool coder→planner, rerun row-2 style smoke~~
    - ~~3.h-1: DelegateTool wiring (mechanism only)~~ ✅ 2026-08-11 18:28 EDT
    - 3.h-2: cross-endpoint hand-off — ⛔ hardware-blocked (documented gap)
-5. 3.d/e/f — Agent Canvas up, trivial task through Canvas
-6. 3.g — planner + embedder tool-calling smokes
-7. Flip row 3 to ✅ pass
+5. ~~3.g — planner + embedder tool-calling smokes~~ ✅ 2026-08-11 19:19 EDT
+6. ~~3.d — Agent Canvas up~~ ✅ 2026-08-11 19:45 EDT
+7. 3.e/3.f — event stream + confirmation UI in Canvas (requires configuring an LLM in Canvas Settings, then a live conversation)
+8. Flip row 3 to ✅ pass
