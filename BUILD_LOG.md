@@ -1485,3 +1485,15 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Stop-condition status:** Gate-4 DoD step 3 COMPLETE. Steps 4 (40 queries authored blind), 5 (rubric commit), 6 (qrels labeling + hash lock) remain before Ratification.
 
 ---
+
+## 2026-08-11 13:19 EDT — Phase 0.4 gate-4 DoD step 4 COMPLETE: 40 queries authored blind (B2 + D1 + QA2)
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · embedder Full-tier · task queries
+- **What changed:** Committed `bench/tasks/embedder-full-multi-block.queries.json` — 40 queries authored blind under QA2 cadence (drafted 66 candidates: 45 code + 46 docs pool → culled to 20 + 20). Authoring protocol B2 per user 2026-08-11 13:18 EDT: schema view included TOC/section headers of `Kosmos-Build-Spec-v25.md` and `Kosmos-Build-Sequence-v25.md`, top-level ADR titles, top-level dir structure of all three repos. Never grepped corpus content for likely-answerable phrases. Distribution D1: 20 code + 20 docs. Cross-repo balance: code (openhands-ext-v1=6, Kosmos=11, Rigpa-LMS=3), docs (openhands-ext-v1=6, Kosmos=14, Rigpa-LMS=0 per DD2). Realistic query length 4–14 words. `post_hoc_edit_locked=true`. Full candidate pool retained in the file for post-hoc auditability (culling was on coverage, not difficulty).
+- **Files touched:**
+  - `bench/tasks/embedder-full-multi-block.queries.json` (created; 40 final queries + 91 candidate pool retained for audit; post_hoc_edit_locked)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0030 progress noted below (not a commit).
+- **Stop-condition status:** Gate-4 DoD step 4 COMPLETE. Steps 5 (rubric) and 6 (qrels labeling + hash lock) remain before Ratification.
+
+---
