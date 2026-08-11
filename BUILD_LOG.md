@@ -690,3 +690,19 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none directly; `probe_embedder_retrieval` is a new port-adjacent probe module.
 - **PORTING_LEDGER / ADR updated:** none (materializer is an internal preparation script, not a vendored port; BEIR itself is used as pypi dependency at run time, not vendored).
 - **Stop-condition status:** embedder-medium task authoring **complete**. Ready to run embedder-medium bench on Colossus. Next: install BEIR (`pip install beir`), run `python3 scripts/materialize-beir-scidocs-subset.py` once, then invoke the benchmark tier runner for embedder-medium on the 6-cell Fast-tier embedder pool.
+
+## 2026-08-11 05:55 EDT — embedder-medium verdict aggregation script authored; BEIR SciDocs materialized on Colossus (5000 docs, 100 queries, 603 qrels rows)
+
+- **Stage / plugin / port:** Phase 0.2 · Medium tier · embedder verdict pipeline
+- **What changed:**
+  - **`scripts/aggregate-embedder-medium-verdict.py` added** — read-only aggregator over `bench/results/` .probe.json sidecars. Joins per-cell portability + domain arm summaries, computes cross-arm nDCG@10 macro-average per cell, applies ADR-0016 tiebreak (quality-first, within 0.03 nDCG@10 → lower total embed_wall_seconds wins), writes `bench/results/verdicts/medium-verdict-embedder-<UTC>.json`. Never mutates result files.
+  - **Cell identity extraction** from sidecar filenames uses the same slug+runtime+device triple that `_result_path()` in main.py emits; supports 'llama-cpp' compound runtime name. Cells missing arms are dropped per `--min-arms` (default 2 = both arms required).
+  - **Quality metric = nDCG@10 cross-arm macro-average.** Tiebreak threshold 0.03 (= 3 points on the 0-100 mapping the local-llm-bench skill uses).
+  - **On Colossus (out-of-repo state, logged for record):** `pip install beir` succeeded (beir-2.2.0 + datasets-5.0.1 + sentence-transformers-5.7.0 + pytrec-eval-terrier-0.5.10 chain). BEIR SciDocs downloaded to ~/.cache/beir/scidocs (136M zip, 25657 corpus docs, 1000 test queries at source). Materializer produced `bench/tasks/embedder-medium-beir-scidocs-materialized.json` with 5000 docs + 100 queries + **603 qrels rows** (avg ~6 relevance judgments per query — healthy density for stable retrieval metrics).
+  - Materialized file is a derived artifact (regenerable via SHA-256 hash-rank sampling); not tracked in git (belongs in .gitignore for bench/tasks/ — noted for potential future ADR if the file grows to require Git LFS).
+- **Files touched:**
+  - `scripts/aggregate-embedder-medium-verdict.py` (new, executable)
+  - `BUILD_LOG.md`, `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none.
+- **Stop-condition status:** embedder-medium end-to-end pipeline **complete**: task authoring done, materializer run on Colossus, retrieval probe wired, verdict aggregator ready. Next: user runs the two-arm bench (`--task-set` per arm × 6 cells = 12 probe runs), then invokes the aggregator to produce the tier verdict, then a verdict-carrying ADR is filed.
