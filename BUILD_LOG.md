@@ -269,3 +269,23 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0007 filed.
 - **Stop-condition status:** Fast-tier task+rubric authoring complete. Next Phase 0.1 work item is implementing real serving in `scripts/benchmark-tier-runner.py` (replacing `build_dry_run_record` with a launcher that consumes the new task files and enforces the elimination rubric).
+
+## 2026-08-11 02:10 EDT — Phase 0.1 real runner implemented (process-supervised)
+
+- **Stage / plugin / port:** Phase 0.1 · Fast-tier benchmark runner
+- **What changed:**
+  1. Rewrote `scripts/benchmark-tier-runner.py` from scaffold into a thin CLI shim over new `bench/runner/` package. Real launch/probe/teardown loop, no more `build_dry_run_record` placeholder on the hot path.
+  2. Runner adopts **inline Popen supervisor** design (not separate shell launchers). Rationale in ADR-0007 vs skill guidance: runner owns Popen as a child so `atexit`+SIGINT/SIGTERM handlers cleanly kill servers on any exit path, one log file per cell, no PID parsing brittleness, natural line-buffered tee. The four launcher scripts drafted earlier (`bench/launchers/*.sh`) were removed before commit — dead code, worse ownership semantics.
+  3. New modules under `bench/runner/`:
+     - `progress.py` — line-buffered timestamped `[i/N]` printer, per-phase context-manager with 5 s heartbeats (ADR-0007 §7).
+     - `server.py` — `BaseServer` + `VLLMServer` + `LlamaCppServer`. Owns Popen, tees stdout to per-cell log file AND runner stdout with `[<cell_id>] ` prefix. Structured `ServerLaunchError` with reason enum (missing_binary / port_in_use / insufficient_vram / startup_timeout / early_exit) for R1/R4 tagging. Global `_LIVE` registry cleaned up via `atexit` and signal handlers.
+     - `nvml.py` — background pynvml sampler at 250 ms interval; edge-triggered throttle counter; `nvml_coverage_pct` computed from `samples / (samples + failed_samples)`. Graceful no-op when pynvml is unavailable.
+     - `probes.py` — `probe_planner` (raw `/v1/chat/completions` + JSON extraction + jsonschema + DAG check), `probe_embedder` (single `/v1/embeddings` batch call + cosine identical/orthogonal probes + norm check), `probe_coder` (OpenHands-SDK path stubbed with `NotImplementedError`; runtime falls back to raw tool-call `/v1/chat/completions` probe and tags the cell `degraded: openhands-sdk unavailable`). Per §0.0a, malformed calls stay in the denominator.
+     - `candidates.py` — expands `bench/candidates/registry.json` × `models/manifest.json` into concrete cells; filters oversized models unless `include_oversized=True`; expands embedder role across `{gpu, cpu}` axis per spec §0.1.
+     - `main.py` — end-to-end tier orchestration: guard checks (open-pool §0.0b, rubric-lock §0.0a, planner requires rubric), per-cell dispatch (launch → NVML start → probe → NVML stop → teardown), rubric R1/R2/R3/R4 application, `BenchRun` construction, schema validation before write.
+  4. Added `bench/tasks/README.md` documenting the task-set JSON contract for coder/planner/embedder files (fields, pass conditions, amendment policy).
+  5. Verified end-to-end with `--dry-run`: planner (5 candidates), coder (4 candidates), embedder (8 cells × runtime/device matrix), rubric-lock guard exit 2 when planner runs without `--rubric`. All 17 dry-run records validate cleanly against `run.schema.json`.
+- **Files touched:** `scripts/benchmark-tier-runner.py` (rewritten as thin CLI), `bench/runner/__init__.py` (new), `bench/runner/progress.py` (new), `bench/runner/server.py` (new), `bench/runner/nvml.py` (new), `bench/runner/probes.py` (new), `bench/runner/candidates.py` (new), `bench/runner/main.py` (new), `bench/tasks/README.md` (new).
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none. ADR-0007 §7 progress-visibility discipline honored throughout new modules.
+- **Stop-condition status:** Phase 0.1 runner implemented and dry-run-verified. Remaining Phase 0.1 work on Colossus: (a) install `openhands-sdk` + `openhands-tools` into runner venv so `_probe_coder_sdk` can lift its `NotImplementedError`; until then coder cells run in fallback tool-call mode and are tagged accordingly. (b) `.versions/llama.cpp` and `.versions/vllm` files not yet materialized on Colossus; runner accepts `--llama-cpp-build` / `--vllm-release` as explicit args. (c) First real (non-dry-run) invocation on Colossus is the next stop condition.
