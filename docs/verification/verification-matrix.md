@@ -41,7 +41,8 @@ Spec §Phase 3 Verification (`docs/specs/integration-execution-plan-v16.md:382-3
 | 3.e | Event stream renders in Canvas | ❌ not done | Blocked on 3.d |
 | 3.f | Confirmation UI fires in Canvas | ❌ not done | Blocked on 3.d |
 | 3.g | Tool-calling functional against every configured `base_url` | ⚠️ partial | Row-1 proved coder :8100 tool-calls work. Planner :8082 tool-calling untested. Embedder :8090 untested. |
-| 3.h | Coder → planner role-switch **via DelegateTool** (supervisor swap) | ❌ not done | Row-2 exercised `router.completion()` directly, bypassing the delegation pathway |
+| 3.h-1 | DelegateTool wiring (mechanism only; subagent inherits parent LLM per `manager.py:367`) | ✅ | Smoke `bench/smoke-phase-3-item-3h-1/` `pass=true` 2026-08-11 18:28 EDT. `TaskAction` + `TaskObservation` + `FinishAction` present; subagent located `task/definition.py:198`; wall 19.76 s. Also closes the live-delegation coverage deferred from 3.a. |
+| 3.h-2 | Cross-endpoint hand-off (coder supervisor ↔ planner subagent on their real endpoints, via profile store or router marker inside subagent) | ⛔ blocked (hardware) | ADR-0017 XOR co-residency (coder AWQ-4 ~18 GiB + planner Q6_K ~23 GiB = ~41 GiB on a 32 GiB card). Achievable only via sequential model-swap orchestration (Phase 3.5) or new hardware. Documented gap; Row-2 (`bench/smoke-phase-3-row-2/`) provides the endpoint-swap coverage we have via direct `router.completion()` + marker. |
 | 3.i | Both endpoints respond correctly during role-switch | ⚠️ partial | Coder + planner each verified independently (rows 1 and 2); joint hand-off untested |
 
 Order of remaining work (dependency-first):
@@ -49,7 +50,9 @@ Order of remaining work (dependency-first):
 1. ~~3.a inspection (`code-explorer` registration)~~ ✅ 2026-08-11 18:15 EDT
 2. 3.b inspection (MCP §2.2 status)
 3. 3.c — wire DockerWorkspace, rerun row-1 style smoke
-4. 3.h — wire DelegateTool coder→planner, rerun row-2 style smoke
+4. ~~3.h — wire DelegateTool coder→planner, rerun row-2 style smoke~~
+   - ~~3.h-1: DelegateTool wiring (mechanism only)~~ ✅ 2026-08-11 18:28 EDT
+   - 3.h-2: cross-endpoint hand-off — ⛔ hardware-blocked (documented gap)
 5. 3.d/e/f — Agent Canvas up, trivial task through Canvas
 6. 3.g — planner + embedder tool-calling smokes
 7. Flip row 3 to ✅ pass

@@ -1,23 +1,19 @@
-# Kosmos Session Handoff — 2026-08-11 18:15 EDT
+# Kosmos Session Handoff — 2026-08-11 18:28 EDT
 
 ## Current build-sequencing position
 - **Stage / phase:** Phase 3 (Runtime integration & sign-off)
-- **Plugin / kernel component:** Subagent registry + tool set wiring
-- **Port(s) in progress:** Runtime tool contract (spec §2.4/§2.5)
+- **Plugin / kernel component:** DelegateTool + subagent registry (verified)
+- **Port(s) in progress:** MCP §2.2 reachability, Docker workspace, Agent Canvas
 
 ## Completed this session
-- Row-1 smoke PASSED (8.16 s, 20 events).
-- Row-2 Path A implemented, then invalidated by SDK 1.41 reality
-  (`LLMCallContext` has no `metadata` field).
-- ADR-0033 amended #5 → Path B (message-marker) primary; Path A kept as
-  forward-compat no-op.
-- Row-2 smoke PASSED (18.18 s; marker→planner, control→coder,
-  active_llm.base_url=8082, 804 chars).
-- Phase 3 DoD claim RETRACTED; 9-item sign-off checklist opened in
-  `docs/verification/verification-matrix.md`.
-- Sign-off item 3.a PASSED (offline registration smoke). code-explorer
-  registered with tools=["terminal"], level=builtin; TaskToolSet in
-  agent tool list.
+- Row-1 PASSED (LocalWorkspace, coder).
+- Row-2 Path B PASSED (message-marker routing; ADR-0033 amend #5).
+- Phase 3 DoD claim retracted; 9-item sign-off checklist opened.
+- 3.a PASSED (offline registration smoke).
+- 3.h split into 3.h-1 (executable) + 3.h-2 (hardware-blocked, documented gap).
+- 3.h-1 PASSED (live DelegateTool smoke via `code-explorer`;
+  TaskAction + TaskObservation + FinishAction; subagent found
+  `task/definition.py:198`).
 
 ## Remaining before current Definition of Done
 - 3.b MCP §2.2 tools reachable
@@ -26,16 +22,20 @@
 - 3.e Event stream visible in Canvas
 - 3.f Confirmation UI fires in Canvas
 - 3.g Tool-calling verified per base_url (planner + embedder still open)
-- 3.h Coder→planner via **DelegateTool** (supervisor swap); rolls up
-  the live code-explorer delegation smoke deferred from 3.a
-- 3.i Joint hand-off across both endpoints
+- 3.h-2 Cross-endpoint hand-off — ⛔ hardware-blocked (documented gap;
+  not a blocker for Phase 3 close if we accept the gap)
+- 3.i Joint hand-off across both endpoints (same hardware constraint as 3.h-2)
 
 ## Open questions / awaiting user answer
-- Which sign-off item next: 3.b (MCP), 3.c (Docker), or 3.h (DelegateTool)?
-  3.h is the highest-leverage since it also closes the deferred 3.a
-  live-delegation coverage.
+- Accept 3.h-2 as a documented gap for Phase 3 close, or defer Phase 3
+  DoD until we have a sequential-model-swap harness? (Recommendation:
+  accept the gap; the SDK-level mechanism is proven by 3.h-1 and the
+  router-level endpoint swap is proven by Row-2. A live coder-planner
+  hand-off would only combine two things already independently
+  verified.)
+- Next sign-off item: 3.b (MCP), 3.c (Docker), or 3.g (planner+
+  embedder tool-calling)?
 
 ## Exact next action
-- Await user selection among 3.b / 3.c / 3.h. Default recommendation:
-  3.h next, because it also validates the runtime subagent path and
-  exercises the router under a real DelegateTool swap.
+- Await user decision on 3.h-2 gap acceptance + next item pick.
+  Coder currently up on :8100; planner+embedder down.

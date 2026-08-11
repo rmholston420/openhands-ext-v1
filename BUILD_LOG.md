@@ -1740,3 +1740,36 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
   via `TaskAction` and receiving a read-only investigation result)
   moves to sign-off item 3.h (coder→sub-agent via DelegateTool), which
   depends on 3.c (DockerWorkspace).
+
+## 2026-08-11 18:28 EDT — Phase 3 sign-off item 3.h-1 PASSED (DelegateTool wiring)
+
+- **Stage / plugin / port:** Phase 3 · Runtime · DelegateTool + subagent
+- **What changed:** Added `bench/smoke-phase-3-item-3h-1/` exercising
+  the SDK 1.41 delegation mechanism end-to-end. Supervisor Agent (from
+  `build_agent()`) issued a `TaskAction` to the `code-explorer`
+  subagent; subagent ran a read-only investigation and returned a
+  `TaskObservation`; supervisor consumed it and emitted `FinishAction`.
+- **Files touched:**
+  - `bench/smoke-phase-3-item-3h-1/task.md`
+  - `bench/smoke-phase-3-item-3h-1/run.sh`
+- **Ports / adapters affected:** Runtime tool contract (DelegateTool),
+  subagent registry (verified 3.a wiring under live use).
+- **PORTING_LEDGER / ADR updated:** — (3.h split rationale documented
+  in `task.md`; consider a status note on ADR-0032 to record the split.)
+- **Stop-condition status:** met for 3.h-1. Verdict: `pass=true`,
+  wall 19.76s, event_count=6, type_counts include
+  `action:TaskAction=1` + `observation:TaskObservation=1` +
+  `action:FinishAction=1`. Subagent returned `task/definition.py` and
+  line 198 (verified against SDK source). Verdict at
+  `~/.forge-oh/bench_smoke_phase_3_item_3h_1/20260811_182747_run/verdict.json`.
+- **3.h split:** 3.h-1 done. 3.h-2 (true cross-endpoint hand-off:
+  coder supervisor ↔ planner subagent on their real endpoints) is
+  BLOCKED by ADR-0017 XOR co-residency — coder AWQ-4 (~18 GiB) +
+  planner Q6_K (~23 GiB) = ~41 GiB on a 32 GiB card. Documented gap;
+  see verification-matrix.md.
+- **Regex-fix rework:** Two iterations of the citation regex were
+  needed because Qwen3-Coder formats answers with `**Line Number**:
+  198` (markdown emphasis around the descriptor word). Substantive
+  evidence was present on all three runs; only the assertion missed.
+  Final regex verified locally against six transcript shapes before
+  the third run.
