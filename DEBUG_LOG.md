@@ -455,3 +455,24 @@ Entry format:
 - **Related BUILD_LOG entry:** 2026-08-11 06:24 EDT
 - **Supersedes:** 2026-08-11 06:22 EDT (the earlier "port 8001 answers 403" entry — root cause now identified, action taken)
 - **Reusable lesson (compounds prior entry):** Before assigning ANY port on Colossus, run a broad port survey — not a single-port check. Command: `sudo lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null | grep -E "node|openhands|docker|python|ollama|vllm|llama|containerd"`. OpenHands is known to occupy 8000 (agent/backend) + 8001 (node/frontend) minimum. Prefer 8100+ for local model servers to guarantee clearance.
+
+## 2026-08-11 06:32 EDT — vLLM refused to load coder: quant method mismatch
+
+- **Symptom:** After the port move to 8100, `nohup bash scripts/serve-coder.sh` exited immediately (Exit 1). vLLM traceback:
+  ```
+  pydantic_core._pydantic_core.ValidationError: 1 validation error for ModelConfig
+    Value error, Quantization method specified in the model config (compressed-tensors)
+    does not match the quantization method specified in the `quantization` argument (awq_marlin).
+  ```
+- **Affected stage / plugin / port:** Phase 0.2 · serve infra · coder (vLLM)
+- **Root cause:** The `cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit` repo is packaged as **compressed-tensors** (INT4, format=pack-quantized, group_size=32, symmetric), not raw AWQ, despite the "AWQ" in its name. Verified against on-disk `models/qwen3-coder-30b-a3b-instruct-awq-4bit/config.json`:
+  ```
+  "quant_method": "compressed-tensors",
+  "format": "pack-quantized",
+  "config_groups.group_0.weights": {"num_bits":4, "group_size":32, "symmetric":true, "type":"int"}
+  ```
+  Our `scripts/serve-coder.sh` was passing `--quantization awq_marlin`, which vLLM refuses to override the model-declared method with an incompatible one.
+- **Fix applied:** Removed the `--quantization awq_marlin` flag from `scripts/serve-coder.sh`. vLLM auto-detects `compressed-tensors` from `config.json` and dispatches to its native compressed-tensors backend, which selects the correct kernel on Blackwell (SM_120). Added a header comment referencing this DEBUG_LOG entry so no future edit re-introduces the flag.
+- **Files changed:** `scripts/serve-coder.sh`
+- **Related BUILD_LOG entry:** 2026-08-11 06:32 EDT
+- **Reusable lesson:** Before adding any `--quantization` flag to a vLLM serve command, inspect the model's `config.json` `quantization_config.quant_method`. If it's `compressed-tensors` (or any newer wrapper format), do NOT pass `--quantization <legacy-name>` — omit the flag and let vLLM auto-select. The legacy names (`awq`, `awq_marlin`, `gptq`, `gptq_marlin`) apply only to raw AWQ/GPTQ packaging. Community "AWQ" repos are often re-packaged as compressed-tensors in 2025-2026.

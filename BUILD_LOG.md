@@ -794,3 +794,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0017 amendment #2 filed in-place.
 - **Stop-condition status:** Port 8100 confirmed free by broad survey. All serve-script paths now match on-disk model layout (verified by `ls` output showing models under models/<slug>/ directly). Next: kill orphaned serve-script attempts (none — they all Exit 1'd cleanly), start embedder + coder on new port, run health-check.
+
+## 2026-08-11 06:32 EDT — coder serve-script quantization flag removed (compressed-tensors auto-detect)
+
+- **Stage / plugin / port:** Phase 0.2 · serve infra · coder (vLLM)
+- **What changed:** Removed `--quantization awq_marlin` from `scripts/serve-coder.sh` after vLLM refused to load with a quant-method mismatch. The `cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit` model is packaged as compressed-tensors (INT4 pack-quantized, group-32, symmetric), not raw AWQ — despite the repo name. vLLM auto-detects from config.json.
+- **Files touched:** `scripts/serve-coder.sh`, `DEBUG_LOG.md`, `BUILD_LOG.md`, `SESSION_HANDOFF.md`.
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none (script-level fix, no decision change).
+- **Stop-condition status:** Embedder verified PASS (port 8090, dim=2560). Coder pending restart after this patch.

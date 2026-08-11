@@ -1,9 +1,9 @@
-# OpenHands-Ext v1 Session Handoff — 2026-08-11 06:24 EDT
+# OpenHands-Ext v1 Session Handoff — 2026-08-11 06:32 EDT
 
 ## Current build-sequencing position
-- **Stage / phase:** Phase 0.2 benchmarking **PAUSED**. ADR-0017 (production role selection) amended twice today for port conflicts. Serve-script path layouts corrected. Models materialized on Colossus. Endpoints not yet started under the new port.
-- **Plugin / kernel component:** Serve infrastructure ready. Health-check script ready. Interim OpenHands wiring **still pending** — awaiting successful health-check under port 8100 before Option B is authored.
-- **Port(s) in progress:** none.
+- **Stage / phase:** Phase 0.2 benchmarking **PAUSED**. ADR-0017 (production role selection) amended twice today for port conflicts. Serve scripts now path-correct AND quantization-flag-correct. Embedder verified live. Coder pending restart after quant-flag fix.
+- **Plugin / kernel component:** Embedder = LIVE on port 8090 (dim=2560, PASS). Coder = pending restart (compressed-tensors auto-detect fix just committed).
+- **Port(s) in progress:** 8090 (embedder) live.
 
 ## Completed this session
 - ADR-0014, ADR-0015 (Fast-tier verdict rounds), ADR-0016 (Medium-tier hybrid rubric).
@@ -53,43 +53,36 @@
 
 ## Exact next action
 
-On Colossus:
+Embedder is already live (leave it running). Restart just the coder:
 
 ```bash
 cd ~/dev/openhands-ext-v1
 git pull --ff-only
 
-# Sanity checks
-grep -n "PORT=" scripts/serve-coder.sh                                     # PORT="8100"
-grep -n '"port":' bench/candidates/production-selection.json | head -3     # coder=8100, planner=8082, embedder=8090
-grep -n "HF_MODEL_DIR\|^GGUF=" scripts/serve-coder.sh scripts/serve-planner.sh scripts/serve-embedder.sh
+# Sanity: confirm --quantization is gone from the vllm invocation
+grep -n "quantization" scripts/serve-coder.sh    # should show only comment lines
 
-# Start embedder (always-resident) FIRST
-nohup bash scripts/serve-embedder.sh > /tmp/serve-embedder.log 2>&1 &
-sleep 30
-tail -20 /tmp/serve-embedder.log        # confirm llama-server up on 8090
+# Confirm embedder still up (should return HTTP 200)
+curl -sf http://127.0.0.1:8090/v1/models | head -c 200; echo
 
-# Then coder
+# Start coder
 nohup bash scripts/serve-coder.sh > /tmp/serve-coder.log 2>&1 &
-sleep 60
-tail -20 /tmp/serve-coder.log           # confirm vLLM up on 8100
+sleep 90        # vLLM cold-load of 30B compressed-tensors is slower than llama.cpp
+tail -40 /tmp/serve-coder.log
 
-# Health-check
-bash scripts/check-production-endpoints.sh embedder
+# If tail shows 'Application startup complete' or 'listening on http://0.0.0.0:8100':
 bash scripts/check-production-endpoints.sh coder
 ```
 
-**Expected outcomes:**
-- embedder PASS on port 8090, vector dim reported (likely 1024 or 2560).
-- coder PASS on port 8100, chat completion round-trip OK.
+**Expected outcome:**
+- coder PASS on port 8100, chat completion round-trip OK, first-token latency reasonable.
 
-**If either FAILS:**
-- Paste the last 40 lines of `/tmp/serve-{embedder,coder}.log`.
-- Paste the failing `check-production-endpoints.sh` output.
-- Do NOT amend ADR-0017 again — the port and layout are now verified. Any new failure is a runtime or model-loading issue, not port allocation.
+**If it still FAILS:**
+- Paste the last 60 lines of `/tmp/serve-coder.log`.
+- Do NOT amend ADR-0017. Any new failure is either a Blackwell/kernel issue or a compressed-tensors edge case — DEBUG_LOG entry needed, not a decision change.
 
-Once both PASS, tell me and I'll:
-1. Address the four flagged spec-compliance questions above.
+Once coder PASSES, tell me and I'll:
+1. Address the four flagged spec-compliance questions.
 2. Author the interim OpenHands wiring (env-vars-only if you choose that route).
 
 ## Handoff invariants (do not break)

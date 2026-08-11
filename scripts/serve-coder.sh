@@ -78,6 +78,15 @@ echo "gpu-mem:     $GPU_MEM_UTIL"
 echo "max-len:     $MAX_MODEL_LEN"
 echo "parser:      qwen3_coder (per ADR-0011 amendment 1)"
 
+# NOTE: --quantization is intentionally OMITTED. The model config declares
+# quant_method="compressed-tensors", format="pack-quantized" (INT4 group-32
+# symmetric per config.json quantization_config). vLLM auto-detects and uses
+# its native compressed-tensors backend, which picks the correct kernel on
+# Blackwell (SM_120). Passing --quantization awq_marlin caused vLLM to raise:
+#   ValueError: Quantization method specified in the model config
+#   (compressed-tensors) does not match the quantization method specified
+#   in the `quantization` argument (awq_marlin).
+# See DEBUG_LOG 2026-08-11 06:32 EDT.
 exec "$VLLM" serve "$HF_MODEL_DIR" \
   --host 0.0.0.0 --port "$PORT" \
   --served-model-name "$SERVED_NAME" \
@@ -86,5 +95,4 @@ exec "$VLLM" serve "$HF_MODEL_DIR" \
   --dtype auto \
   --trust-remote-code \
   --enable-auto-tool-choice \
-  --tool-call-parser qwen3_coder \
-  --quantization awq_marlin
+  --tool-call-parser qwen3_coder
