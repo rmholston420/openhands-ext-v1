@@ -54,7 +54,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path.cwd()))
 
-from config.agent import build_coder_llm, build_planner_llm, build_router
+from config.agent import (
+    build_coder_llm,
+    build_planner_llm,
+    build_router,
+    _load_max_output_tokens,
+)
 from config.router import CoderPlannerRouter
 from openhands.sdk.llm.llm import LLMCallContext
 from openhands.sdk.llm.message import Message, TextContent
@@ -67,9 +72,10 @@ _start = _task_full.index(_prompt_marker) + len(_prompt_marker)
 _end = _task_full.index(_end_marker)
 PROMPT = _task_full[_start:_end].strip().lstrip("> ").strip()
 
-# Build router directly
-coder = build_coder_llm()
-planner = build_planner_llm()
+# Build router directly (factories require measured max_output_tokens per ADR-0033)
+mot = _load_max_output_tokens()
+coder = build_coder_llm(mot["coder"])
+planner = build_planner_llm(mot["planner"])
 router = build_router(coder=coder, planner=planner)
 
 # Sanity: routing decision alone (no network)
