@@ -57,15 +57,19 @@ sys.path.insert(0, str(Path.cwd()))
 
 from config.agent import build_agent
 from openhands.sdk import Conversation
-# SDK 1.41 exports: TerminalTool (was BashTool in older docs) + FileEditorTool.
-# Both are re-exported at openhands.tools package root.
-from openhands.tools import TerminalTool, FileEditorTool
+# SDK 1.41: TerminalTool/FileEditorTool are ToolDefinition Pydantic models
+# requiring `description`+`action_type` fields; use the SDK's factory instead.
+# get_default_tools() returns [terminal, file_editor, task_tracker, browser_tool_set].
+# For Phase 3 row-1 smoke we only need terminal + file_editor.
+from openhands.tools import get_default_tools
 
 TASK = Path("bench/smoke-phase-3/task.md").read_text()
 EXPECTED_LINE = "OpenHands-Ext v1 Phase 3 smoke target."
 
 t0 = time.time()
-agent = build_agent(tools=[TerminalTool(), FileEditorTool()])
+all_tools = get_default_tools(enable_browser=False, enable_sub_agents=False)
+smoke_tools = [t for t in all_tools if t.name in ("terminal", "file_editor")]
+agent = build_agent(tools=smoke_tools)
 conversation = Conversation(agent=agent)
 conversation.send_message(TASK)
 result = conversation.run()
