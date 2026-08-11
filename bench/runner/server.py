@@ -333,6 +333,7 @@ class VLLMServer(BaseServer):
         gpu_memory_utilization: float = 0.90,
         extra_flags: Optional[Sequence[str]] = None,
         min_free_vram_gib: float = 20.0,
+        env: Optional[dict] = None,
     ) -> None:
         vllm_bin = REPO_ROOT / ".venv" / "bin" / "vllm"
         cmd = [
