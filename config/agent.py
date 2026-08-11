@@ -25,14 +25,13 @@ to ADR-0035 if Phase 3+ observes response length approaching the ceiling).
 Usage:
 
     from config.agent import build_agent
-    agent = build_agent()
+    agent = build_agent()  # code-explorer subagent + task tool are wired by default
 
-    # Delegating a planner subtask (dispatch signal, ADR-0033-6c):
-    from openhands.sdk.llm.llm import LLMCallContext
-    ctx = LLMCallContext(metadata={"role": "planner"})
-    result = agent.llm.completion(messages=..., call_context=ctx)
-
-    # Default (no metadata) routes to coder.
+    # Delegating a planner subtask (Path B per ADR-0033 amend #5):
+    # Prepend a [role:planner] marker to the leading user message; the
+    # router's fallback_message_heuristic dispatches to the planner LLM.
+    # Path A (metadata routing) is retained as forward-compat but inert
+    # in SDK 1.41 because LLMCallContext has no `metadata` field.
 """
 
 from __future__ import annotations
@@ -241,26 +240,64 @@ def build_condenser(coder: LLM) -> LLMSummarizingCondenser:
 # ---------------------------------------------------------------------------
 
 
-def build_agent(tools: list[Any] | None = None) -> Agent:
+def build_agent(
+    tools: list[Any] | None = None,
+    enable_browser: bool = False,
+    enable_sub_agents: bool = True,
+    enable_code_explorer: bool = True,
+) -> Agent:
     """Build a fully-wired OpenHands-Ext v1 Agent.
 
+    Default tool set (ADR-0032 lock-in for Phase 2.4/3):
+
+      * TerminalTool + FileEditorTool + TaskTrackerTool  (standard SDK)
+      * TaskToolSet (aka DelegateTool)                   (enables
+        `code-explorer` and any other registered subagent)
+      * BrowserToolSet                                   (opt-in only;
+        heavy dependency, single-user local doesn't need it by default)
+
     Args:
-        tools: Optional list of ToolDefinition. If None, caller wires tools
-            downstream (e.g. code-explorer per ADR-0032, DelegateTool per
-            spec §2.5).
+        tools: Optional caller-supplied tool list. If provided, it fully
+            REPLACES the default tool set — caller owns wiring completely.
+        enable_browser: Include `BrowserToolSet`. Off by default (spec
+            §2.4 doesn't require it; opt in per-task if needed).
+        enable_sub_agents: Include `TaskToolSet` so the agent can delegate
+            to registered subagents (e.g. `code-explorer`). On by default.
+        enable_code_explorer: Register the built-in `code-explorer`
+            subagent (from `openhands.tools.preset.subagents/code_explorer.md`)
+            before returning. On by default. Satisfies Phase 2.4 DoD
+            item "register code-explorer in the runtime tool registry"
+            (ADR-0032 deferral).
 
     Returns:
-        Agent(llm=router, condenser=condenser, tools=tools_or_[])
+        Agent(llm=router, condenser=condenser, tools=<default or caller-supplied>)
     """
     mot = _load_max_output_tokens()
     coder = build_coder_llm(mot["coder"])
     planner = build_planner_llm(mot["planner"])
     router = build_router(coder, planner)
     condenser = build_condenser(coder)
+
+    # Register the code-explorer subagent (idempotent via
+    # register_agent_if_absent inside register_builtins_agents).
+    if enable_code_explorer:
+        from openhands.tools.preset.default import register_builtins_agents
+
+        register_builtins_agents(enable_browser=enable_browser)
+
+    # Default tool set unless caller fully overrides.
+    if tools is None:
+        from openhands.tools import get_default_tools
+
+        tools = get_default_tools(
+            enable_browser=enable_browser,
+            enable_sub_agents=enable_sub_agents,
+        )
+
     return Agent(
         llm=router,
         condenser=condenser,
-        tools=tools or [],
+        tools=tools,
     )
 
 
