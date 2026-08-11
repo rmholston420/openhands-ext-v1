@@ -26,8 +26,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from bench.runner.main import _apply_fast_rubric, _load_rubric  # noqa: E402
-from bench.schema import LaunchFailReason, ProbeResult, TaskResult  # noqa: E402
+from bench.runner.main import _apply_fast_rubric  # noqa: E402
+from bench.runner.probes import ProbeResult, TaskResult  # noqa: E402
+from bench.runner.server import LaunchFailReason  # noqa: E402
 
 
 def _probe_from_json(data: dict) -> ProbeResult:
