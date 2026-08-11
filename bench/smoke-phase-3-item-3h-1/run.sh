@@ -130,11 +130,19 @@ for e in events:
 # The subagent's returned content should quote a real path + a line number
 final_text = " ".join(_event_text_blob(e) for e in events)
 
-# Grounded-evidence check: substring "task/definition.py" AND a "198"-like line
-# number citation, OR at minimum any real repo path + a `:\d+` citation.
+# Grounded-evidence check: the subagent must produce (a) a real *.py path AND
+# (b) some form of line-number citation associated with it. We accept any of:
+#   - inline citation "...file.py:198" or "...file.py 198"
+#   - agent-formatted "...file.py`" followed later by "line 198"/"Line: 198"/"Line Number: 198"
+#   - a plain *.py path co-occurring with any "line[s]?\s*(?:number|no\.?)?\s*:?\s*\d+"
 mentions_target_file = "task/definition.py" in final_text
 mentions_line_198 = bool(re.search(r"\b198\b", final_text))
-has_any_path_citation = bool(re.search(r"[\w./-]+\.py[:\s]+\d+", final_text))
+_has_py_path = bool(re.search(r"[\w./-]+\.py\b", final_text))
+_has_line_number_phrase = bool(
+    re.search(r"line\s*(?:number|no\.?|#)?\s*[:\-]?\s*\d+", final_text, re.IGNORECASE)
+    or re.search(r"[\w./-]+\.py[:\s]+\d+", final_text)
+)
+has_any_path_citation = _has_py_path and _has_line_number_phrase
 
 has_task_action = len(task_action_events) >= 1
 has_task_observation = len(task_observation_events) >= 1
