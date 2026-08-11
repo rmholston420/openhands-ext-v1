@@ -639,3 +639,12 @@ Entry format:
 - **Files changed:** `config/agent.py` (`build_condenser` docstring + body), `adrs/ADR-0033-*.md` (STATUS AMENDMENT block prepended).
 - **Related BUILD_LOG entry:** 2026-08-11 17:25 EDT
 - **Reusable search keys:** `LLMContextWindowTooSmallError`, `MIN_CONTEXT_WINDOW_TOKENS`, `max_input_tokens`, `condenser`, `LLMSummarizingCondenser.max_tokens`, `context window too small`, `16384`
+
+## 2026-08-11 17:45 EDT — Condenser fires first-turn, agent fabricates summary
+
+- **Symptom:** Phase 3 row-1 smoke: `Condenser token limit exceeded: total_tokens=5495 max_tokens=1024 events=2` on first turn. Only 5 events total (SystemPromptEvent, MessageEvent, Condensation, ActionEvent, ObservationEvent). Agent's FinishObservation returned `"This is a smoke test for the OpenHands benchmark."` — FABRICATED text, not the actual file content (`"OpenHands-Ext v1 Phase 3 smoke target."`).
+- **Affected stage / plugin / port:** Phase 2.4 · config/agent.py::build_condenser · Phase 3 row-1 smoke.
+- **Root cause:** `LLMSummarizingCondenser.max_tokens=1024` (set by ADR-0033 amend #2, 17:25 EDT) is the CONDENSATION TRIGGER threshold (`.venv/.../llm_summarizing_condenser.py:117-118`: `if total_tokens > self.max_tokens: reasons.add(Reason.TOKENS)`), not a summary output cap. System prompt alone is 5495 tokens → condenser fired immediately → agent replanned from a stripped summary and fabricated the file content instead of re-reading.
+- **Fix applied:** `LLMSummarizingCondenser.max_tokens=30000` (safety-net trigger, well above system prompt overhead). Spec §2.4's "1024" intent moved to `LLM.max_output_tokens=1024` on the condenser LLM (caps SUMMARY TEXT length, which is the actual semantic intent). See ADR-0033 STATUS AMENDMENT 2026-08-11 17:47 EDT.
+- **Files changed:** `config/agent.py`, `adrs/ADR-0033-phase-2-4-config-surface-python-not-toml.md`.
+- **Supersedes:** 2026-08-11 17:25 EDT (previous amend that mis-identified `max_tokens` as a summary output cap).

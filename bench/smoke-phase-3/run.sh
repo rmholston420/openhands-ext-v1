@@ -83,9 +83,37 @@ result = conversation.run()
 wall = time.time() - t0
 
 events = list(conversation.state.events)
-has_tool = any(getattr(e, "action", None) or "action" in type(e).__name__.lower() for e in events)
-finish_ok = any("Finish" in type(e).__name__ for e in events)
-final_text = "".join(str(getattr(e, "content", "") or "") for e in events)
+
+# Verdict detection (SDK 1.41 event shape, verified 2026-08-11 17:45 EDT):
+#   ActionEvent.action = <FinishAction | ToolCallAction | ...>
+#   ObservationEvent.observation = <FinishObservation | ...> whose .content is list[TextContent]
+def _event_text_blob(e):
+    parts = []
+    for attr in ("action", "observation"):
+        inner = getattr(e, attr, None)
+        if inner is None:
+            continue
+        content = getattr(inner, "content", None)
+        if isinstance(content, list):
+            for block in content:
+                parts.append(str(getattr(block, "text", "") or ""))
+        elif content is not None:
+            parts.append(str(content))
+        for f in ("message", "summary", "text"):
+            v = getattr(inner, f, None)
+            if v:
+                parts.append(str(v))
+    return " ".join(parts)
+
+has_tool = any(
+    type(getattr(e, "action", None)).__name__ not in ("NoneType", "FinishAction")
+    for e in events if getattr(e, "action", None) is not None
+)
+finish_ok = any(
+    type(getattr(e, "action", None)).__name__ == "FinishAction"
+    for e in events if getattr(e, "action", None) is not None
+)
+final_text = " ".join(_event_text_blob(e) for e in events)
 saw_line = EXPECTED_LINE in final_text
 
 verdict = {

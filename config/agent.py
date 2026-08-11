@@ -184,22 +184,30 @@ def build_condenser(coder: LLM) -> LLMSummarizingCondenser:
     """Condenser reuses the coder endpoint (ADR-0033-7a).
 
     Spec §2.4 verbatim: temperature=0.1, max_input_tokens=1024. Re-interpreted
-    per SDK 1.41 inspection (2026-08-11 17:20 EDT):
+    per SDK 1.41 inspection (2026-08-11 17:20 EDT and 17:45 EDT):
 
       * `max_input_tokens=1024` on the `LLM` is REJECTED by SDK 1.41
-        (MIN_CONTEXT_WINDOW_TOKENS=16384) — spec was authored pre-inspection.
-        The condenser's job is to summarize LONG histories, so shrinking its
-        input window to 1024 is semantically wrong regardless of the SDK
-        floor. The spec's intent (bound the summary length) is honored via
-        `LLMSummarizingCondenser.max_tokens=1024`, which caps summary output.
+        (MIN_CONTEXT_WINDOW_TOKENS=16384). Spec was authored pre-inspection.
       * `temperature=0.1` applied at the LLM level (correct home).
+      * `LLMSummarizingCondenser.max_tokens` is the TRIGGER threshold
+        (`llm_summarizing_condenser.py:117` — "if total_tokens > max_tokens:
+        condense"), NOT a summary-output cap. Setting it to 1024 caused
+        first-turn condensation (system prompt alone is ~5495 tokens),
+        destroying context and forcing the agent to replan from a fabricated
+        summary. See DEBUG_LOG 2026-08-11 17:45 EDT.
+      * Spec's "1024" is honored per ADR-0033 amend #3 (2026-08-11 17:47 EDT)
+        as the condenser LLM's `max_output_tokens=1024`, capping the *summary
+        text* the condenser produces. The trigger threshold is set to 30000
+        tokens — practically all of the coder context — so condensation only
+        fires as a safety net near context exhaustion.
 
     The condenser holds its own LLM reference; if Phase 3 shows degradation,
     swap the LLM argument to a dedicated model without touching call sites.
-    See ADR-0033 STATUS AMENDMENT 2026-08-11 17:25 EDT.
+    See ADR-0033 STATUS AMENDMENTS.
     """
     # A dedicated LLM instance for the condenser role, keyed off the coder
     # endpoint but with condenser-specific sampling.
+    # max_output_tokens=1024 caps the SUMMARY OUTPUT length (spec §2.4 intent).
     condenser_llm = LLM(
         model=CODER_MODEL,
         base_url=CODER_BASE_URL,
@@ -208,11 +216,13 @@ def build_condenser(coder: LLM) -> LLMSummarizingCondenser:
         retry_min_wait=_RETRY_MIN_WAIT,
         retry_max_wait=_RETRY_MAX_WAIT,
         temperature=0.1,
+        max_output_tokens=1024,
         usage_id="condenser",
     )
-    # max_tokens=1024 caps the summary output (spec §2.4 intent).
+    # max_tokens=30000: trigger threshold (SDK checks `total_tokens > max_tokens`).
+    # Set near coder context ceiling so condensation is a safety net, not first-turn.
     # max_size=240 (SDK default) and keep_first=2 (SDK default) unchanged.
-    return LLMSummarizingCondenser(llm=condenser_llm, max_tokens=1024)
+    return LLMSummarizingCondenser(llm=condenser_llm, max_tokens=30000)
 
 
 # ---------------------------------------------------------------------------
