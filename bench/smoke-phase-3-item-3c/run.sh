@@ -65,8 +65,8 @@ OUT_DIR = Path(os.environ["OUT_DIR"])
 IMAGE   = os.environ["IMAGE"]
 TASK    = Path(os.environ["TASK_FILE"]).read_text()
 
-from config.agent import build_agent, build_coder_llm, _load_max_output_tokens
-from openhands.sdk import Conversation, Message, TextContent
+from config.agent import build_agent, build_coder_llm, build_condenser, _load_max_output_tokens
+from openhands.sdk import Agent, Conversation, Message, TextContent
 from openhands.workspace.docker.workspace import DockerWorkspace
 from openhands.sdk.workspace import RemoteWorkspace
 
@@ -82,9 +82,17 @@ from openhands.sdk.workspace import RemoteWorkspace
 # router for this smoke: it exists to verify the DockerWorkspace
 # mechanism, not the router. RouterLLM-under-RemoteConversation is
 # tracked as a separate sign-off item (Phase 3.j to be opened).
-agent = build_agent()
+#
+# Agent is frozen (Pydantic frozen_instance) so we rebuild it with
+# the coder LLM directly rather than mutating agent.llm.
+_template_agent = build_agent()
 mot = _load_max_output_tokens()
-agent.llm = build_coder_llm(mot["coder"])
+coder = build_coder_llm(mot["coder"])
+agent = Agent(
+    llm=coder,
+    condenser=build_condenser(coder),
+    tools=_template_agent.tools,
+)
 
 # Collect events
 events = []
