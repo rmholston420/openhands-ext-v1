@@ -1,0 +1,65 @@
+{
+  "run_metadata": {
+    "tier": "medium",
+    "role": "embedder",
+    "candidate": {
+      "model": "qwen3-embedding-4b-bf16",
+      "quant": "bf16",
+      "format": "safetensors",
+      "runtime": "vllm",
+      "device": "gpu"
+    },
+    "task_set": {
+      "identity": "embedder-medium",
+      "version": "1.0.0",
+      "task_count": 10
+    },
+    "started_at_utc": "2026-08-11T09:57:42Z",
+    "ended_at_utc": "2026-08-11T09:58:04Z",
+    "duration_seconds": 22.108997,
+    "harness_commit_sha": "c1f6c50",
+    "llama_cpp_build_tag": null,
+    "vllm_release_tag": null,
+    "rubric": {
+      "identity": "Phase 0.2 Medium-tier scoring rubric. Timestamped at commit;",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T09:43:00Z"
+    },
+    "notes": "{\"arm\": \"domain\", \"task_id\": \"embedder-medium-domain-openhands-ext\", \"corpus_size\": 42, \"query_count\": 10, \"embed_wall_seconds\": 0.265, \"macro_average\": {\"recall@1\": 0.4, \"recall@5\": 0.7333, \"recall@10\": 0.9167, \"mrr\": 1.0, \"ndcg@10\": 0.8817}, \"per_query\": [{\"query_id\": \"q01\", \"top\": [\"pool/coder-fast-4cells\", \"log/coder-pool-reinstate\", \"code/vllm-launch-hermes\", \"pool/embedder-fast-6cells\", \"adr/0007-fast-methodology\", \"pool/planner-fast-2cells\", \"adr/0014-coder-reinstate\", \"adr/0009-guided-decoding\", \"adr/0011-hermes-default\", \"pool/planner-medium-expected\"], \"recall@1\": 0.3333333333333333, \"recall@5\": 0.3333333333333333, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 0.8797930601107828}, {\"query_id\": \"q02\", \"top\": [\"adr/0015-thinker-planner-unfit\", \"pool/planner-medium-expected\", \"adr/0009-guided-decoding\", \"pool/planner-fast-2cells\", \"adr/0012-dual-role\", \"code/vllm-launch-hermes\", \"spec/section-0-2\", \"rubric/fast-elim-R2\", \"spec/section-0-1\", \"pool/coder-fast-4cells\"], \"recall@1\": 0.3333333333333333, \"recall@5\": 0.6666666666666666, \"recall@10\": 0.6666666666666666, \"mrr\": 1.0, \"ndcg@10\": 0.6280335914305488}, {\"query_id\": \"q03\", \"top\": [\"adr/0016-medium-rubric\", \"log/adr-0016-file\", \"rubric/medium-tiebreak\", \"spec/section-0-2\", \"pool/embedder-fast-6cells\", \"adr/0007-fast-methodology\", \"adr/0016-post-hoc-lock\", \"meta/quality-first-preference\", \"rubric/post-hoc-lock\", \"spec/section-0-0a\"], \"recall@1\": 0.3333333333333333, \"recall@5\": 1.0, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 0.9832184408687481}, {\"query_id\": \"q04\", \"top\": [\"rubric/post-hoc-lock\", \"spec/section-0-0a\", \"adr/0016-post-hoc-lock\", \"adr/0007-fast-methodology\", \"rubric/fast-elim-R2\", \"spec/section-0-2\", \"spec/section-0-1\", \"log/adr-0016-file\", \"meta/quality-first-preference\", \"rubric/medium-tiebreak\"], \"recall@1\": 0.3333333333333333, \"recall@5\": 1.0, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 1.0}, {\"query_id\": \"q05\", \"top\": [\"code/vllm-launch-hermes\", \"adr/0011-hermes-default\", \"adr/0009-guided-decoding\", \"rubric/fast-elim-R2\", \"pool/coder-fast-4cells\", \"pool/planner-fast-2cells\", \"code/harness-candidates\", \"code/harness-runner-probes\", \"adr/0012-dual-role\", \"spec/section-0-2\"], \"recall@1\": 0.3333333333333333, \"recall@5\": 0.6666666666666666, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 0.9690945337173088}, {\"query_id\": \"q06\", \"top\": [\"rubric/fast-elim-R2\", \"rubric/fast-elim-R1\", \"adr/0014-coder-reinstate\", \"rubric/fast-elim-R4\", \"log/debug-search-rule\", \"adr/0009-guided-decoding\", \"log/coder-pool-reinstate\", \"rubric/fast-elim-R3\", \"log/adr-0015-verdict\", \"adr/0011-hermes-default\"], \"recall@1\": 0.5, \"recall@5\": 0.5, \"recall@10\": 0.5, \"mrr\": 1.0, \"ndcg@10\": 0.8262346571285599}, {\"query_id\": \"q07\", \"top\": [\"meta/quality-first-preference\", \"spec/section-0-2\", \"rubric/fast-elim-R2\", \"adr/0009-guided-decoding\", \"adr/0007-fast-methodology\", \"adr/0016-medium-rubric\", \"rubric/medium-tiebreak\", \"log/adr-0016-file\", \"spec/section-0-1\", \"spec/section-0-0a\"], \"recall@1\": 0.5, \"recall@5\": 0.5, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 0.5697222754831122}, {\"query_id\": \"q08\", \"top\": [\"code/harness-runner-nvml\", \"code/harness-runner-main\", \"code/harness-runner-probes\", \"rubric/fast-elim-R2\", \"spec/section-0-2\", \"code/vllm-blackwell\", \"rubric/medium-tiebreak\", \"code/scripts-inspect-raw\", \"meta/colossus-hardware\", \"code/harness-runner-server\"], \"recall@1\": 0.5, \"recall@5\": 1.0, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 1.0}, {\"query_id\": \"q09\", \"top\": [\"rubric/medium-tiebreak\", \"meta/quality-first-preference\", \"spec/section-0-1\", \"adr/0007-fast-methodology\", \"spec/section-0-2\", \"rubric/post-hoc-lock\", \"adr/0009-guided-decoding\", \"spec/section-0-0a\", \"rubric/fast-elim-R2\", \"adr/0016-medium-rubric\"], \"recall@1\": 0.3333333333333333, \"recall@5\": 0.6666666666666666, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 0.9608857006116033}, {\"query_id\": \"q10\", \"top\": [\"meta/colossus-hardware\", \"code/vllm-blackwell\", \"code/harness-runner-nvml\", \"adr/0009-guided-decoding\", \"pool/planner-fast-2cells\", \"pool/embedder-fast-6cells\", \"spec/section-0-2\", \"spec/section-0-1\", \"pool/coder-fast-4cells\", \"rubric/fast-elim-R2\"], \"recall@1\": 0.5, \"recall@5\": 1.0, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 1.0}]}"
+  },
+  "tool_call_behavior": null,
+  "task_outcome": {
+    "verdict": "pass",
+    "verdict_source": "verify",
+    "context_budget_skip": false,
+    "truncated": false,
+    "rubric_score": null
+  },
+  "gpu_envelope": {
+    "vram_peak_mib": 30971.9375,
+    "vram_avg_mib": 30856.9375,
+    "vram_usable_mib": 32607.0,
+    "temp_peak_c": 36.0,
+    "temp_avg_c": 36.0,
+    "power_peak_w": 69.981,
+    "power_avg_w": 69.981,
+    "util_avg_pct": 3.0,
+    "nvml_coverage_pct": 100.0,
+    "throttle_events": 0,
+    "cuda_oom_events": 0,
+    "throttle_ceiling_c": 93.0
+  },
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 0.0,
+    "per_call_warm_ms_p95": 0.0,
+    "cold_start_ms": 21007.304153987207,
+    "per_task_wall_seconds_p50": 0.0,
+    "repeats": 10,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": null,
+    "variance_note": null
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}

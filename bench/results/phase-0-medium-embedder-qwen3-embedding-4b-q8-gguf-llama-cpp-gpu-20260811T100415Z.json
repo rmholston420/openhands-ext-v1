@@ -1,0 +1,65 @@
+{
+  "run_metadata": {
+    "tier": "medium",
+    "role": "embedder",
+    "candidate": {
+      "model": "qwen3-embedding-4b-q8-gguf",
+      "quant": "q8_0",
+      "format": "gguf",
+      "runtime": "llama.cpp",
+      "device": "gpu"
+    },
+    "task_set": {
+      "identity": "embedder-medium",
+      "version": "1.0.0",
+      "task_count": 100
+    },
+    "started_at_utc": "2026-08-11T10:04:15Z",
+    "ended_at_utc": "2026-08-11T10:05:10Z",
+    "duration_seconds": 54.568633,
+    "harness_commit_sha": "c1f6c50",
+    "llama_cpp_build_tag": null,
+    "vllm_release_tag": null,
+    "rubric": {
+      "identity": "Phase 0.2 Medium-tier scoring rubric. Timestamped at commit;",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T09:43:00Z"
+    },
+    "notes": "R2-warning: 1 malformed task (embedder-medium-transport: transport error during embed batch: HTTP 400 Bad Request: '{\"error\":{\"code\":400,\"message\":\"request (6969 tokens) exceeds the available context size (4096 tokens), try increasing it\",\"type\":\"exceed_context_size_error\",\"n_prompt_tokens\":6969,\"n_ctx\":4096}}')"
+  },
+  "tool_call_behavior": null,
+  "task_outcome": {
+    "verdict": "pass",
+    "verdict_source": "verify",
+    "context_budget_skip": false,
+    "truncated": false,
+    "rubric_score": null
+  },
+  "gpu_envelope": {
+    "vram_peak_mib": 6872.9375,
+    "vram_avg_mib": 6778.977191943128,
+    "vram_usable_mib": 32607.0,
+    "temp_peak_c": 64.0,
+    "temp_avg_c": 58.29383886255924,
+    "power_peak_w": 346.3,
+    "power_avg_w": 283.02997156398106,
+    "util_avg_pct": 69.14218009478672,
+    "nvml_coverage_pct": 100.0,
+    "throttle_events": 24,
+    "cuda_oom_events": 0,
+    "throttle_ceiling_c": 93.0
+  },
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 52673.63303701859,
+    "per_call_warm_ms_p95": 52673.63303701859,
+    "cold_start_ms": 1000.4004230140708,
+    "per_task_wall_seconds_p50": 52.67363303701859,
+    "repeats": 1,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": 52.67363303701859,
+    "variance_note": null
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}

@@ -1,0 +1,52 @@
+{
+  "run_metadata": {
+    "tier": "fast",
+    "role": "coder",
+    "candidate": {
+      "model": "qwen3_6-27b-int4-autoround",
+      "quant": "int4-autoround",
+      "format": "safetensors",
+      "runtime": "vllm",
+      "device": "gpu"
+    },
+    "task_set": {
+      "identity": "coder-fast",
+      "version": "1.0.0",
+      "task_count": 5
+    },
+    "started_at_utc": "2026-08-11T07:30:11Z",
+    "ended_at_utc": "2026-08-11T07:33:55Z",
+    "duration_seconds": 224.109913,
+    "harness_commit_sha": "920d7c7",
+    "llama_cpp_build_tag": null,
+    "vllm_release_tag": "0.27.0",
+    "rubric": {
+      "identity": "Phase 0.1 Fast-tier elimination rubric. Timestamped at commi",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T05:51:00Z"
+    },
+    "notes": "R1: launch_failure (early_exit); R4-candidate: possible runtime_version_regression \u2014 verify against pinned runtime version before attributing to model :: server exited with returncode=1 during startup"
+  },
+  "tool_call_behavior": null,
+  "task_outcome": {
+    "verdict": "fail",
+    "verdict_source": "transport",
+    "context_budget_skip": false,
+    "truncated": false,
+    "rubric_score": null
+  },
+  "gpu_envelope": null,
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 0.0,
+    "per_call_warm_ms_p95": 0.0,
+    "cold_start_ms": 0.0,
+    "per_task_wall_seconds_p50": 0.0,
+    "repeats": 0,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": null,
+    "variance_note": "probe not run (launch failure or dry-run)"
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}

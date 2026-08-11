@@ -1,0 +1,51 @@
+{
+  "role": "coder",
+  "notes": "degraded: sdk path stubbed (OpenHands SDK coder path not yet implemented \u2014 use fallback) \u2014 used raw tool-call fallback",
+  "tasks": [
+    {
+      "task_id": "coder-fast-01-read-file",
+      "verdict": "fail",
+      "verdict_source": "trajectory",
+      "wall_seconds": 0.2974243240314536,
+      "detail": "no tool_calls (finish='stop')",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": null, \"refusal\": null, \"annotations\": null, \"audio\": null, \"function_call\": null, \"reasoning\": \"<function=read_file>\\n<parameter=path>\\n/workspace/probe/greeting.txt\\n</parameter>\\n</function>\\n</tool_call>\"}"
+    },
+    {
+      "task_id": "coder-fast-02-str-replace",
+      "verdict": "fail",
+      "verdict_source": "trajectory",
+      "wall_seconds": 0.26378795300843194,
+      "detail": "wrong tool: called='read_file' expected='str_replace_editor'",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": null, \"refusal\": null, \"annotations\": null, \"audio\": null, \"function_call\": null, \"tool_calls\": [{\"id\": \"chatcmpl-tool-afb721c8746c74ab\", \"type\": \"function\", \"function\": {\"name\": \"read_file\", \"arguments\": \"{\\\"path\\\": \\\"/workspace/probe/config.py\\\"}\"}}], \"reasoning\": \"I need to replace the line 'DEBUG = False' with 'DEBUG = True' in the config.py file.\\n\\nLet me first check the content of the file to understand its structure.\\n\"}"
+    },
+    {
+      "task_id": "coder-fast-03-execute-bash",
+      "verdict": "pass",
+      "verdict_source": "trajectory",
+      "wall_seconds": 0.11955448903609067,
+      "detail": "tool=execute_bash args_keys=['command']",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": null, \"refusal\": null, \"annotations\": null, \"audio\": null, \"function_call\": null, \"tool_calls\": [{\"id\": \"chatcmpl-tool-ab8df1d37ab62645\", \"type\": \"function\", \"function\": {\"name\": \"execute_bash\", \"arguments\": \"{\\\"command\\\": \\\"echo probe03\\\"}\"}}], \"reasoning\": null}"
+    },
+    {
+      "task_id": "coder-fast-04-write-file",
+      "verdict": "fail",
+      "verdict_source": "trajectory",
+      "wall_seconds": 0.23939016100484878,
+      "detail": "no tool_calls (finish='stop')",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": null, \"refusal\": null, \"annotations\": null, \"audio\": null, \"function_call\": null, \"reasoning\": \"I'll create a new file at the specified path with the exact content requested.\\n\\n<function=write_file>\\n<parameter=path>\\n/workspace/probe/out/note.txt\\n</parameter>\\n<parameter=content>\\nfrom probe 04\\n\\n</parameter>\\n</function>\\n</tool_call>\"}"
+    },
+    {
+      "task_id": "coder-fast-05-multi-step",
+      "verdict": "pass",
+      "verdict_source": "trajectory",
+      "wall_seconds": 0.279456990014296,
+      "detail": "tool=read_file args_keys=['path']",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": null, \"refusal\": null, \"annotations\": null, \"audio\": null, \"function_call\": null, \"tool_calls\": [{\"id\": \"chatcmpl-tool-9f80deccc8608ee0\", \"type\": \"function\", \"function\": {\"name\": \"read_file\", \"arguments\": \"{\\\"path\\\": \\\"/workspace/probe/manifest.json\\\"}\"}}], \"reasoning\": \"First, I need to read the contents of the manifest.json file to extract the 'title' field. Then, I will create the summary.txt file with only the title value followed by a newline.\\n\"}"
+    }
+  ]
+}

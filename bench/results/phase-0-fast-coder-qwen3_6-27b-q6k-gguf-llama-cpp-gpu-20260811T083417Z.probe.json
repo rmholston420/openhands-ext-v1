@@ -1,0 +1,51 @@
+{
+  "role": "coder",
+  "notes": "degraded: sdk path stubbed (OpenHands SDK coder path not yet implemented \u2014 use fallback) \u2014 used raw tool-call fallback",
+  "tasks": [
+    {
+      "task_id": "coder-fast-01-read-file",
+      "verdict": "pass",
+      "verdict_source": "trajectory",
+      "wall_seconds": 1.7222057320177555,
+      "detail": "tool=read_file args_keys=['path']",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": \"\", \"reasoning_content\": \"The user wants me to read the contents of a file at /workspace/probe/greeting.txt and tell them what it contains. I should not modify the file. I'll use the read_file tool to accomplish this.\\n\", \"tool_calls\": [{\"type\": \"function\", \"function\": {\"name\": \"read_file\", \"arguments\": \"{\\\"path\\\":\\\"/workspace/probe/greeting.txt\\\"}\"}, \"id\": \"k6HVmaxiVZHGlXRTTuc9zw1DXMQ7lZ54\"}]}"
+    },
+    {
+      "task_id": "coder-fast-02-str-replace",
+      "verdict": "pass",
+      "verdict_source": "trajectory",
+      "wall_seconds": 2.806059837981593,
+      "detail": "tool=str_replace_editor args_keys=['new_str', 'old_str', 'path']",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": \"\", \"reasoning_content\": \"The user wants me to replace a specific line in a file. They want to change 'DEBUG = False' to 'DEBUG = True' in /workspace/probe/config.py. They've specified not to run the file and not to use bash.\\n\\nI should use the str_replace_editor tool to make this replacement. Let me call it with:\\n- path: /workspace/probe/config.py\\n- old_str: DEBUG = False\\n- new_str: DEBUG = True\\n\", \"tool_calls\": [{\"type\": \"function\", \"function\": {\"name\": \"str_replace_editor\", \"arguments\": \"{\\\"path\\\":\\\"/workspace/probe/config.py\\\",\\\"old_str\\\":\\\"DEBUG = False\\\",\\\"new_str\\\":\\\"DEBUG = True\\\"}\"}, \"id\": \"ayDBweC5rwTse9VA0yFffmxCq8yRjTFb\"}]}"
+    },
+    {
+      "task_id": "coder-fast-03-execute-bash",
+      "verdict": "pass",
+      "verdict_source": "trajectory",
+      "wall_seconds": 1.4656786159612238,
+      "detail": "tool=execute_bash args_keys=['command']",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": \"\", \"reasoning_content\": \"The user wants me to run a simple bash command 'echo probe03' and report the stdout. This is straightforward - I just need to use the execute_bash tool with the command \\\"echo probe03\\\".\\n\", \"tool_calls\": [{\"type\": \"function\", \"function\": {\"name\": \"execute_bash\", \"arguments\": \"{\\\"command\\\":\\\"echo probe03\\\"}\"}, \"id\": \"CWuYhFfrS9DAfJ8g9cIaFyHaJMJmWXGo\"}]}"
+    },
+    {
+      "task_id": "coder-fast-04-write-file",
+      "verdict": "pass",
+      "verdict_source": "trajectory",
+      "wall_seconds": 2.1799732449580915,
+      "detail": "tool=write_file args_keys=['content', 'path']",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": \"\", \"reasoning_content\": \"The user wants me to create a new file at /workspace/probe/out/note.txt with the exact content \\\"from probe 04\\\\n\\\" (the text followed by a newline). The directory already exists, so I just need to write the file.\\n\\nI'll use the write_file function to create this file with the specified content.\\n\", \"tool_calls\": [{\"type\": \"function\", \"function\": {\"name\": \"write_file\", \"arguments\": \"{\\\"path\\\":\\\"/workspace/probe/out/note.txt\\\",\\\"content\\\":\\\"from probe 04\\\\n\\\"}\"}, \"id\": \"KVtSlXObBFWwulo182WQwee12wmL9UAK\"}]}"
+    },
+    {
+      "task_id": "coder-fast-05-multi-step",
+      "verdict": "pass",
+      "verdict_source": "trajectory",
+      "wall_seconds": 1.7067458600504324,
+      "detail": "tool=read_file args_keys=['path']",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": \"\", \"reasoning_content\": \"The user wants me to:\\n1. Read /workspace/probe/manifest.json\\n2. Extract the 'title' field value\\n3. Create /workspace/probe/out/summary.txt containing only that title value followed by a newline\\n\\nLet me start by reading the manifest.json file.\\n\", \"tool_calls\": [{\"type\": \"function\", \"function\": {\"name\": \"read_file\", \"arguments\": \"{\\\"path\\\":\\\"/workspace/probe/manifest.json\\\"}\"}, \"id\": \"rkr9tqKlxSXnEiF5LoFlwtUzUxGqK3cb\"}]}"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "run_metadata": {
+    "tier": "fast",
+    "role": "coder",
+    "candidate": {
+      "model": "qwen3-30b-a3b-thinking-2507-awq",
+      "quant": "awq-4bit",
+      "format": "safetensors",
+      "runtime": "vllm",
+      "device": "gpu"
+    },
+    "task_set": {
+      "identity": "coder-fast",
+      "version": "1.0.0",
+      "task_count": 5
+    },
+    "started_at_utc": "2026-08-11T07:10:05Z",
+    "ended_at_utc": "2026-08-11T07:10:49Z",
+    "duration_seconds": 43.479797,
+    "harness_commit_sha": "912c964",
+    "llama_cpp_build_tag": null,
+    "vllm_release_tag": null,
+    "rubric": {
+      "identity": "Phase 0.1 Fast-tier elimination rubric. Timestamped at commi",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T05:51:00Z"
+    },
+    "notes": "R2: 5 malformed tasks (>1 threshold): coder-fast-01-read-file: no tool_calls (finish='stop'); coder-fast-02-str-replace: no tool_calls (finish='stop'); coder-fast-03-execute-bash: no tool_calls (finish='stop'); coder-fast-04-write-file: no tool_calls (finish='stop'); coder-fast-05-multi-step: no tool_calls (finish='stop'); degraded: sdk path stubbed (OpenHands SDK coder path not yet implemented \u2014 use fallback) \u2014 used raw tool-call fallback"
+  },
+  "tool_call_behavior": {
+    "attempts": 5,
+    "successes": 0,
+    "malformed": 0,
+    "missing_tool_call": 5,
+    "wrong_tool_selected": 0,
+    "argument_errors": 0,
+    "loop_repetitions": 0,
+    "retries": 0
+  },
+  "task_outcome": {
+    "verdict": "fail",
+    "verdict_source": "trajectory",
+    "context_budget_skip": false,
+    "truncated": false,
+    "rubric_score": null
+  },
+  "gpu_envelope": {
+    "vram_peak_mib": 30681.0,
+    "vram_avg_mib": 30651.829545454544,
+    "vram_usable_mib": 32607.0,
+    "temp_peak_c": 51.0,
+    "temp_avg_c": 48.72727272727273,
+    "power_peak_w": 277.161,
+    "power_avg_w": 252.77827272727274,
+    "util_avg_pct": 95.27272727272727,
+    "nvml_coverage_pct": 100.0,
+    "throttle_events": 0,
+    "cuda_oom_events": 0,
+    "throttle_ceiling_c": 93.0
+  },
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 1279.509546002373,
+    "per_call_warm_ms_p95": 5847.407553985249,
+    "cold_start_ms": 30018.177942023613,
+    "per_task_wall_seconds_p50": 1.279509546002373,
+    "repeats": 5,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": 5.847407553985249,
+    "variance_note": null
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}

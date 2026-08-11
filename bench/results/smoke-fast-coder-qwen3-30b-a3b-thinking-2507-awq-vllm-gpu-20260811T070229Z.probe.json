@@ -1,0 +1,51 @@
+{
+  "role": "coder",
+  "notes": "degraded: sdk path stubbed (OpenHands SDK coder path not yet implemented \u2014 use fallback) \u2014 used raw tool-call fallback",
+  "tasks": [
+    {
+      "task_id": "coder-fast-01-read-file",
+      "verdict": "fail",
+      "verdict_source": "transport",
+      "wall_seconds": 0.0,
+      "detail": "transport error: <HTTPError 400: 'Bad Request'>",
+      "truncated": false,
+      "raw_content": null
+    },
+    {
+      "task_id": "coder-fast-02-str-replace",
+      "verdict": "fail",
+      "verdict_source": "transport",
+      "wall_seconds": 0.0,
+      "detail": "transport error: <HTTPError 400: 'Bad Request'>",
+      "truncated": false,
+      "raw_content": null
+    },
+    {
+      "task_id": "coder-fast-03-execute-bash",
+      "verdict": "fail",
+      "verdict_source": "transport",
+      "wall_seconds": 0.0,
+      "detail": "transport error: <HTTPError 400: 'Bad Request'>",
+      "truncated": false,
+      "raw_content": null
+    },
+    {
+      "task_id": "coder-fast-04-write-file",
+      "verdict": "fail",
+      "verdict_source": "transport",
+      "wall_seconds": 0.0,
+      "detail": "transport error: <HTTPError 400: 'Bad Request'>",
+      "truncated": false,
+      "raw_content": null
+    },
+    {
+      "task_id": "coder-fast-05-multi-step",
+      "verdict": "fail",
+      "verdict_source": "transport",
+      "wall_seconds": 0.0,
+      "detail": "transport error: <HTTPError 400: 'Bad Request'>",
+      "truncated": false,
+      "raw_content": null
+    }
+  ]
+}

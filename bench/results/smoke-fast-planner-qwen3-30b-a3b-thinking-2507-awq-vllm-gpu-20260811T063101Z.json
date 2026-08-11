@@ -1,0 +1,65 @@
+{
+  "run_metadata": {
+    "tier": "fast",
+    "role": "planner",
+    "candidate": {
+      "model": "qwen3-30b-a3b-thinking-2507-awq",
+      "quant": "awq4",
+      "format": "safetensors",
+      "runtime": "vllm",
+      "device": "gpu"
+    },
+    "task_set": {
+      "identity": "planner-fast",
+      "version": "1.0.0",
+      "task_count": 3
+    },
+    "started_at_utc": "2026-08-11T06:31:01Z",
+    "ended_at_utc": "2026-08-11T06:32:25Z",
+    "duration_seconds": 83.65916,
+    "harness_commit_sha": "7604006",
+    "llama_cpp_build_tag": null,
+    "vllm_release_tag": null,
+    "rubric": {
+      "identity": "Phase 0.1 Fast-tier elimination rubric. Timestamped at commi",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T05:51:00Z"
+    },
+    "notes": "R2: 3 malformed tasks (>1 threshold): planner-fast-01-forge-oh-endpoint: schema violation: 'steps' is a required property; planner-fast-02-forge-oh-migration: too few steps (3 < 4); planner-fast-03-forge-oh-refactor: schema violation: 'steps' is a required property"
+  },
+  "tool_call_behavior": null,
+  "task_outcome": {
+    "verdict": "fail",
+    "verdict_source": "verify",
+    "context_budget_skip": false,
+    "truncated": false,
+    "rubric_score": null
+  },
+  "gpu_envelope": {
+    "vram_peak_mib": 30446.1875,
+    "vram_avg_mib": 30411.049225663715,
+    "vram_usable_mib": 32607.0,
+    "temp_peak_c": 53.0,
+    "temp_avg_c": 50.9646017699115,
+    "power_peak_w": 289.649,
+    "power_avg_w": 269.4346814159292,
+    "util_avg_pct": 98.23008849557522,
+    "nvml_coverage_pct": 100.0,
+    "throttle_events": 0,
+    "cuda_oom_events": 0,
+    "throttle_ceiling_c": 93.0
+  },
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 7179.77802598034,
+    "per_call_warm_ms_p95": 14677.972990000853,
+    "cold_start_ms": 53022.8504469851,
+    "per_task_wall_seconds_p50": 7.17977802598034,
+    "repeats": 3,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": 14.677972990000853,
+    "variance_note": null
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}

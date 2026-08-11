@@ -1,0 +1,74 @@
+{
+  "run_metadata": {
+    "tier": "fast",
+    "role": "coder",
+    "candidate": {
+      "model": "qwen3-30b-a3b-thinking-2507-awq",
+      "quant": "awq-4bit",
+      "format": "safetensors",
+      "runtime": "vllm",
+      "device": "gpu"
+    },
+    "task_set": {
+      "identity": "coder-fast",
+      "version": "1.0.0",
+      "task_count": 5
+    },
+    "started_at_utc": "2026-08-11T08:17:49Z",
+    "ended_at_utc": "2026-08-11T08:18:46Z",
+    "duration_seconds": 57.761618,
+    "harness_commit_sha": "fad708b",
+    "llama_cpp_build_tag": null,
+    "vllm_release_tag": "0.27.0",
+    "rubric": {
+      "identity": "Phase 0.1 Fast-tier elimination rubric. Timestamped at commi",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T05:51:00Z"
+    },
+    "notes": "degraded: sdk path stubbed (OpenHands SDK coder path not yet implemented \u2014 use fallback) \u2014 used raw tool-call fallback"
+  },
+  "tool_call_behavior": {
+    "attempts": 5,
+    "successes": 5,
+    "malformed": 0,
+    "missing_tool_call": 0,
+    "wrong_tool_selected": 0,
+    "argument_errors": 0,
+    "loop_repetitions": 0,
+    "retries": 0
+  },
+  "task_outcome": {
+    "verdict": "pass",
+    "verdict_source": "trajectory",
+    "context_budget_skip": false,
+    "truncated": false,
+    "rubric_score": null
+  },
+  "gpu_envelope": {
+    "vram_peak_mib": 30699.0625,
+    "vram_avg_mib": 30664.53205128205,
+    "vram_usable_mib": 32607.0,
+    "temp_peak_c": 50.0,
+    "temp_avg_c": 47.61538461538461,
+    "power_peak_w": 275.005,
+    "power_avg_w": 246.45766666666668,
+    "util_avg_pct": 92.38461538461539,
+    "nvml_coverage_pct": 100.0,
+    "throttle_events": 0,
+    "cuda_oom_events": 0,
+    "throttle_ceiling_c": 93.0
+  },
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 1152.2222749772482,
+    "per_call_warm_ms_p95": 4806.45374499727,
+    "cold_start_ms": 45019.45945195621,
+    "per_task_wall_seconds_p50": 1.1522222749772482,
+    "repeats": 5,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": 4.80645374499727,
+    "variance_note": null
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}

@@ -1,0 +1,74 @@
+{
+  "run_metadata": {
+    "tier": "medium",
+    "role": "coder",
+    "candidate": {
+      "model": "qwen3_6-27b-q6k-gguf",
+      "quant": "q6_k",
+      "format": "gguf",
+      "runtime": "llama.cpp",
+      "device": "gpu"
+    },
+    "task_set": {
+      "identity": "coder-medium",
+      "version": "1.0.0",
+      "task_count": 10
+    },
+    "started_at_utc": "2026-08-11T13:22:35Z",
+    "ended_at_utc": "2026-08-11T13:22:56Z",
+    "duration_seconds": 20.182399,
+    "harness_commit_sha": "36dcace",
+    "llama_cpp_build_tag": "b10356",
+    "vllm_release_tag": "v0.27.0",
+    "rubric": {
+      "identity": "Phase 0.2 Medium-tier scoring rubric. Timestamped at commit;",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T09:43:00Z"
+    },
+    "notes": "R3: latency_outlier (median=1.75s > 5x fastest=0.29s) \u2014 flag for Medium tier, no eliminate at Fast; degraded: sdk path stubbed (OpenHands SDK coder path not yet implemented \u2014 use fallback) \u2014 used raw tool-call fallback"
+  },
+  "tool_call_behavior": {
+    "attempts": 10,
+    "successes": 10,
+    "malformed": 0,
+    "missing_tool_call": 0,
+    "wrong_tool_selected": 0,
+    "argument_errors": 0,
+    "loop_repetitions": 0,
+    "retries": 0
+  },
+  "task_outcome": {
+    "verdict": "pass",
+    "verdict_source": "trajectory",
+    "context_budget_skip": false,
+    "truncated": false,
+    "rubric_score": null
+  },
+  "gpu_envelope": {
+    "vram_peak_mib": 25373.5625,
+    "vram_avg_mib": 25370.885416666668,
+    "vram_usable_mib": 32607.0,
+    "temp_peak_c": 65.0,
+    "temp_avg_c": 61.36363636363637,
+    "power_peak_w": 440.241,
+    "power_avg_w": 397.63242424242424,
+    "util_avg_pct": 88.15151515151516,
+    "nvml_coverage_pct": 100.0,
+    "throttle_events": 2,
+    "cuda_oom_events": 0,
+    "throttle_ceiling_c": 93.0
+  },
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 1648.6774859949946,
+    "per_call_warm_ms_p95": 2472.757444018498,
+    "cold_start_ms": 3425.7321640034206,
+    "per_task_wall_seconds_p50": 1.6486774859949946,
+    "repeats": 10,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": 2.472757444018498,
+    "variance_note": null
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}

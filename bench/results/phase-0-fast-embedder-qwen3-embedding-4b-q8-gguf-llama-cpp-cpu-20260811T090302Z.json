@@ -1,0 +1,52 @@
+{
+  "run_metadata": {
+    "tier": "fast",
+    "role": "embedder",
+    "candidate": {
+      "model": "qwen3-embedding-4b-q8-gguf",
+      "quant": "q8_0",
+      "format": "gguf",
+      "runtime": "llama.cpp",
+      "device": "cpu"
+    },
+    "task_set": {
+      "identity": "embedder-fast",
+      "version": "1.0.0",
+      "task_count": 8
+    },
+    "started_at_utc": "2026-08-11T09:03:02Z",
+    "ended_at_utc": "2026-08-11T09:03:05Z",
+    "duration_seconds": 2.991746,
+    "harness_commit_sha": "3022385",
+    "llama_cpp_build_tag": null,
+    "vllm_release_tag": "0.27.0",
+    "rubric": {
+      "identity": "Phase 0.1 Fast-tier elimination rubric. Timestamped at commi",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T05:51:00Z"
+    },
+    "notes": ""
+  },
+  "tool_call_behavior": null,
+  "task_outcome": {
+    "verdict": "pass",
+    "verdict_source": "verify",
+    "context_budget_skip": false,
+    "truncated": false,
+    "rubric_score": null
+  },
+  "gpu_envelope": null,
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 698.6244979780167,
+    "per_call_warm_ms_p95": 698.6244979780167,
+    "cold_start_ms": 2003.184481000062,
+    "per_task_wall_seconds_p50": 0.6986244979780167,
+    "repeats": 1,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": 0.6986244979780167,
+    "variance_note": null
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}

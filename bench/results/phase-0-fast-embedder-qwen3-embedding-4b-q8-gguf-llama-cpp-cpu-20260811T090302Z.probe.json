@@ -1,0 +1,15 @@
+{
+  "role": "embedder",
+  "notes": "",
+  "tasks": [
+    {
+      "task_id": "embedder-fast-all",
+      "verdict": "pass",
+      "verdict_source": "verify",
+      "wall_seconds": 0.6986244979780167,
+      "detail": "identical=0.9998 orthogonal=0.2287 n_vecs=8",
+      "truncated": false,
+      "raw_content": null
+    }
+  ]
+}

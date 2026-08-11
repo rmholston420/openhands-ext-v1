@@ -1,0 +1,101 @@
+{
+  "$comment": "Auto-generated embedder-medium tier verdict per ADR-0016. Read-only aggregation over bench/results/ .probe.json sidecars. Never mutates sidecars or per-cell result JSONs. Regenerate by re-running scripts/aggregate-embedder-medium-verdict.py.",
+  "schema_version": "1.0.0",
+  "tier": "medium",
+  "role": "embedder",
+  "generated_utc": "20260811T100541Z",
+  "adr_anchor": "adrs/ADR-0016-medium-tier-scoring-rubric-hybrid.md",
+  "rubric_anchor": "bench/rubrics/medium-scored.json",
+  "cells_evaluated": 2,
+  "cells_dropped_below_min_arms": [
+    "qwen3-embedding-0_6b-q8-gguf/llama-cpp/cpu (arms present: ['domain'])",
+    "qwen3-embedding-0_6b-q8-gguf/llama-cpp/gpu (arms present: ['domain'])",
+    "qwen3-embedding-4b-q8-gguf/llama-cpp/cpu (arms present: ['domain'])",
+    "qwen3-embedding-4b-q8-gguf/llama-cpp/gpu (arms present: ['domain'])"
+  ],
+  "quality_metric": "ndcg@10 (cross-arm macro-average)",
+  "tiebreak": "quality-first; ties within 0.03 nDCG@10 (equivalent to 3 points on a 0-100 scale) resolved by lower total embed_wall_seconds (sum across arms)",
+  "cross_cell_summary": {
+    "quality_max": 0.5505,
+    "quality_min": 0.4987,
+    "quality_median": 0.5505
+  },
+  "ranked_cells": [
+    {
+      "cell_id": "qwen3-embedding-4b-bf16/vllm/gpu",
+      "arms_present": [
+        "domain",
+        "portability"
+      ],
+      "per_arm": {
+        "domain": {
+          "task_id": "embedder-medium-domain-openhands-ext",
+          "corpus_size": 42,
+          "query_count": 10,
+          "embed_wall_seconds": 0.265,
+          "macro_average": {
+            "recall@1": 0.4,
+            "recall@5": 0.7333,
+            "recall@10": 0.9167,
+            "mrr": 1.0,
+            "ndcg@10": 0.8817
+          }
+        },
+        "portability": {
+          "task_id": "embedder-medium-beir-scidocs",
+          "corpus_size": 5000,
+          "query_count": 100,
+          "embed_wall_seconds": 53.404,
+          "macro_average": {
+            "recall@1": 0.1133,
+            "recall@5": 0.27,
+            "recall@10": 0.32,
+            "mrr": 0.2111,
+            "ndcg@10": 0.2194
+          }
+        }
+      },
+      "quality_ndcg_at_10_cross_arm": 0.5505,
+      "embed_wall_seconds_total": 53.669,
+      "rank": 1
+    },
+    {
+      "cell_id": "qwen3-embedding-0_6b-bf16/vllm/gpu",
+      "arms_present": [
+        "domain",
+        "portability"
+      ],
+      "per_arm": {
+        "domain": {
+          "task_id": "embedder-medium-domain-openhands-ext",
+          "corpus_size": 42,
+          "query_count": 10,
+          "embed_wall_seconds": 0.101,
+          "macro_average": {
+            "recall@1": 0.3667,
+            "recall@5": 0.7833,
+            "recall@10": 0.8833,
+            "mrr": 0.95,
+            "ndcg@10": 0.8582
+          }
+        },
+        "portability": {
+          "task_id": "embedder-medium-beir-scidocs",
+          "corpus_size": 5000,
+          "query_count": 100,
+          "embed_wall_seconds": 11.316,
+          "macro_average": {
+            "recall@1": 0.07,
+            "recall@5": 0.1333,
+            "recall@10": 0.2133,
+            "mrr": 0.1332,
+            "ndcg@10": 0.1393
+          }
+        }
+      },
+      "quality_ndcg_at_10_cross_arm": 0.4987,
+      "embed_wall_seconds_total": 11.417,
+      "rank": 2
+    }
+  ]
+}

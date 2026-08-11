@@ -1,0 +1,74 @@
+{
+  "run_metadata": {
+    "tier": "fast",
+    "role": "coder",
+    "candidate": {
+      "model": "qwen3-coder-30b-a3b-instruct-awq-4bit",
+      "quant": "awq-4bit",
+      "format": "safetensors",
+      "runtime": "vllm",
+      "device": "gpu"
+    },
+    "task_set": {
+      "identity": "coder-fast",
+      "version": "1.0.0",
+      "task_count": 5
+    },
+    "started_at_utc": "2026-08-11T08:33:45Z",
+    "ended_at_utc": "2026-08-11T08:34:17Z",
+    "duration_seconds": 31.863146,
+    "harness_commit_sha": "abefe9c",
+    "llama_cpp_build_tag": null,
+    "vllm_release_tag": "0.27.0",
+    "rubric": {
+      "identity": "Phase 0.1 Fast-tier elimination rubric. Timestamped at commi",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T05:51:00Z"
+    },
+    "notes": "R2-warning: 1 malformed task (coder-fast-02-str-replace: invoked forbidden tool: ['execute_bash']); degraded: sdk path stubbed (OpenHands SDK coder path not yet implemented \u2014 use fallback) \u2014 used raw tool-call fallback"
+  },
+  "tool_call_behavior": {
+    "attempts": 5,
+    "successes": 4,
+    "malformed": 0,
+    "missing_tool_call": 0,
+    "wrong_tool_selected": 1,
+    "argument_errors": 0,
+    "loop_repetitions": 0,
+    "retries": 0
+  },
+  "task_outcome": {
+    "verdict": "pass",
+    "verdict_source": "trajectory",
+    "context_budget_skip": false,
+    "truncated": false,
+    "rubric_score": null
+  },
+  "gpu_envelope": {
+    "vram_peak_mib": 30595.5,
+    "vram_avg_mib": 30595.5,
+    "vram_usable_mib": 32607.0,
+    "temp_peak_c": 45.0,
+    "temp_avg_c": 39.6,
+    "power_peak_w": 146.155,
+    "power_avg_w": 96.8022,
+    "util_avg_pct": 40.4,
+    "nvml_coverage_pct": 100.0,
+    "throttle_events": 0,
+    "cuda_oom_events": 0,
+    "throttle_ceiling_c": 93.0
+  },
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 238.5665850015357,
+    "per_call_warm_ms_p95": 282.91341703152284,
+    "cold_start_ms": 30011.600105965044,
+    "per_task_wall_seconds_p50": 0.2385665850015357,
+    "repeats": 5,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": 0.28291341703152284,
+    "variance_note": null
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}

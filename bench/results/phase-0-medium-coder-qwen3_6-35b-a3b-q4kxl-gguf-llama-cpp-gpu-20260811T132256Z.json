@@ -1,0 +1,74 @@
+{
+  "run_metadata": {
+    "tier": "medium",
+    "role": "coder",
+    "candidate": {
+      "model": "qwen3_6-35b-a3b-q4kxl-gguf",
+      "quant": "q4_k_xl_ud",
+      "format": "gguf",
+      "runtime": "llama.cpp",
+      "device": "gpu"
+    },
+    "task_set": {
+      "identity": "coder-medium",
+      "version": "1.0.0",
+      "task_count": 10
+    },
+    "started_at_utc": "2026-08-11T13:22:56Z",
+    "ended_at_utc": "2026-08-11T13:23:06Z",
+    "duration_seconds": 9.924893,
+    "harness_commit_sha": "36dcace",
+    "llama_cpp_build_tag": "b10356",
+    "vllm_release_tag": "v0.27.0",
+    "rubric": {
+      "identity": "Phase 0.2 Medium-tier scoring rubric. Timestamped at commit;",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T09:43:00Z"
+    },
+    "notes": "degraded: sdk path stubbed (OpenHands SDK coder path not yet implemented \u2014 use fallback) \u2014 used raw tool-call fallback"
+  },
+  "tool_call_behavior": {
+    "attempts": 10,
+    "successes": 10,
+    "malformed": 0,
+    "missing_tool_call": 0,
+    "wrong_tool_selected": 0,
+    "argument_errors": 0,
+    "loop_repetitions": 0,
+    "retries": 0
+  },
+  "task_outcome": {
+    "verdict": "pass",
+    "verdict_source": "trajectory",
+    "context_budget_skip": false,
+    "truncated": false,
+    "rubric_score": null
+  },
+  "gpu_envelope": {
+    "vram_peak_mib": 24509.5625,
+    "vram_avg_mib": 24505.38,
+    "vram_usable_mib": 32607.0,
+    "temp_peak_c": 59.0,
+    "temp_avg_c": 55.52,
+    "power_peak_w": 329.855,
+    "power_avg_w": 283.38376,
+    "util_avg_pct": 74.6,
+    "nvml_coverage_pct": 100.0,
+    "throttle_events": 1,
+    "cuda_oom_events": 0,
+    "throttle_ceiling_c": 93.0
+  },
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 623.7835750216618,
+    "per_call_warm_ms_p95": 778.4216220024973,
+    "cold_start_ms": 3420.9395779762417,
+    "per_task_wall_seconds_p50": 0.6237835750216618,
+    "repeats": 10,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": 0.7784216220024973,
+    "variance_note": null
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}

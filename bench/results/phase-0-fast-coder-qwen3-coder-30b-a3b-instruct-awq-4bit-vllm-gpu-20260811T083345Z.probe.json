@@ -1,0 +1,51 @@
+{
+  "role": "coder",
+  "notes": "degraded: sdk path stubbed (OpenHands SDK coder path not yet implemented \u2014 use fallback) \u2014 used raw tool-call fallback",
+  "tasks": [
+    {
+      "task_id": "coder-fast-01-read-file",
+      "verdict": "pass",
+      "verdict_source": "trajectory",
+      "wall_seconds": 0.26823601400246844,
+      "detail": "tool=read_file args_keys=['path']",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": null, \"refusal\": null, \"annotations\": null, \"audio\": null, \"function_call\": null, \"tool_calls\": [{\"id\": \"chatcmpl-tool-a3af18397f3173c3\", \"type\": \"function\", \"function\": {\"name\": \"read_file\", \"arguments\": \"{\\\"path\\\": \\\"/workspace/probe/greeting.txt\\\"}\"}}], \"reasoning\": null}"
+    },
+    {
+      "task_id": "coder-fast-02-str-replace",
+      "verdict": "fail",
+      "verdict_source": "trajectory",
+      "wall_seconds": 0.28291341703152284,
+      "detail": "invoked forbidden tool: ['execute_bash']",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": \"I need to replace the line 'DEBUG = False' with 'DEBUG = True' in the config.py file.\\n\\nLet me first check the content of the file to understand its structure.\", \"refusal\": null, \"annotations\": null, \"audio\": null, \"function_call\": null, \"tool_calls\": [{\"id\": \"chatcmpl-tool-b4c223de7b25213c\", \"type\": \"function\", \"function\": {\"name\": \"execute_bash\", \"arguments\": \"{\\\"command\\\": \\\"cat /workspace/probe/config.py\\\"}\"}}], \"reasoning\": null}"
+    },
+    {
+      "task_id": "coder-fast-03-execute-bash",
+      "verdict": "pass",
+      "verdict_source": "trajectory",
+      "wall_seconds": 0.12148929300019518,
+      "detail": "tool=execute_bash args_keys=['command']",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": null, \"refusal\": null, \"annotations\": null, \"audio\": null, \"function_call\": null, \"tool_calls\": [{\"id\": \"chatcmpl-tool-969f05484d242847\", \"type\": \"function\", \"function\": {\"name\": \"execute_bash\", \"arguments\": \"{\\\"command\\\": \\\"echo probe03\\\"}\"}}], \"reasoning\": null}"
+    },
+    {
+      "task_id": "coder-fast-04-write-file",
+      "verdict": "pass",
+      "verdict_source": "trajectory",
+      "wall_seconds": 0.2385665850015357,
+      "detail": "tool=write_file args_keys=['content', 'path']",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": \"I'll create a new file at the specified location with the exact content requested.\", \"refusal\": null, \"annotations\": null, \"audio\": null, \"function_call\": null, \"tool_calls\": [{\"id\": \"chatcmpl-tool-a0df765b86cb86b3\", \"type\": \"function\", \"function\": {\"name\": \"write_file\", \"arguments\": \"{\\\"path\\\": \\\"/workspace/probe/out/note.txt\\\", \\\"content\\\": \\\"from probe 04\\\\n\\\"}\"}}], \"reasoning\": null}"
+    },
+    {
+      "task_id": "coder-fast-05-multi-step",
+      "verdict": "pass",
+      "verdict_source": "trajectory",
+      "wall_seconds": 0.11766101402463391,
+      "detail": "tool=read_file args_keys=['path']",
+      "truncated": false,
+      "raw_content": "{\"role\": \"assistant\", \"content\": null, \"refusal\": null, \"annotations\": null, \"audio\": null, \"function_call\": null, \"tool_calls\": [{\"id\": \"chatcmpl-tool-9f7927711f3d7204\", \"type\": \"function\", \"function\": {\"name\": \"read_file\", \"arguments\": \"{\\\"path\\\": \\\"/workspace/probe/manifest.json\\\"}\"}}], \"reasoning\": null}"
+    }
+  ]
+}

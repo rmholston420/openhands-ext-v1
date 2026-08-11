@@ -1,0 +1,46 @@
+{
+  "run_metadata": {
+    "tier": "fast",
+    "role": "planner",
+    "candidate": {
+      "model": "qwen3_6-27b-q6k-gguf",
+      "quant": "q6_k",
+      "format": "gguf",
+      "runtime": "llama.cpp",
+      "device": "gpu"
+    },
+    "task_set": {
+      "identity": "planner-fast",
+      "version": "1.0.0",
+      "task_count": 3
+    },
+    "started_at_utc": "2026-08-11T06:12:11Z",
+    "ended_at_utc": "2026-08-11T06:12:11Z",
+    "duration_seconds": 9e-06,
+    "harness_commit_sha": "2916193",
+    "llama_cpp_build_tag": null,
+    "vllm_release_tag": null,
+    "rubric": {
+      "identity": "Phase 0.1 Fast-tier elimination rubric. Timestamped at commi",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T05:51:00Z"
+    },
+    "notes": "dry-run scaffold"
+  },
+  "tool_call_behavior": null,
+  "task_outcome": null,
+  "gpu_envelope": null,
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 0.0,
+    "per_call_warm_ms_p95": 0.0,
+    "cold_start_ms": 0.0,
+    "per_task_wall_seconds_p50": 0.0,
+    "repeats": 1,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": null,
+    "variance_note": "dry-run scaffold (\u00a70.0a: no real measurement performed)"
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}

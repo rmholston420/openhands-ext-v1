@@ -1,0 +1,96 @@
+{
+  "role": "embedder",
+  "notes": "{\"arm\": \"domain\", \"task_id\": \"embedder-medium-domain-openhands-ext\", \"corpus_size\": 42, \"query_count\": 10, \"embed_wall_seconds\": 5.304, \"macro_average\": {\"recall@1\": 0.4, \"recall@5\": 0.7333, \"recall@10\": 0.9167, \"mrr\": 1.0, \"ndcg@10\": 0.8806}, \"per_query\": [{\"query_id\": \"q01\", \"top\": [\"pool/coder-fast-4cells\", \"code/vllm-launch-hermes\", \"log/coder-pool-reinstate\", \"pool/embedder-fast-6cells\", \"adr/0007-fast-methodology\", \"pool/planner-fast-2cells\", \"adr/0011-hermes-default\", \"adr/0009-guided-decoding\", \"adr/0014-coder-reinstate\", \"pool/planner-medium-expected\"], \"recall@1\": 0.3333333333333333, \"recall@5\": 0.3333333333333333, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 0.8797930601107828}, {\"query_id\": \"q02\", \"top\": [\"adr/0015-thinker-planner-unfit\", \"pool/planner-medium-expected\", \"adr/0009-guided-decoding\", \"adr/0012-dual-role\", \"pool/planner-fast-2cells\", \"code/vllm-launch-hermes\", \"spec/section-0-2\", \"rubric/fast-elim-R2\", \"pool/coder-fast-4cells\", \"adr/0007-fast-methodology\"], \"recall@1\": 0.3333333333333333, \"recall@5\": 0.6666666666666666, \"recall@10\": 0.6666666666666666, \"mrr\": 1.0, \"ndcg@10\": 0.6361599521541359}, {\"query_id\": \"q03\", \"top\": [\"adr/0016-medium-rubric\", \"log/adr-0016-file\", \"rubric/medium-tiebreak\", \"spec/section-0-2\", \"pool/embedder-fast-6cells\", \"adr/0007-fast-methodology\", \"adr/0016-post-hoc-lock\", \"meta/quality-first-preference\", \"rubric/post-hoc-lock\", \"spec/section-0-0a\"], \"recall@1\": 0.3333333333333333, \"recall@5\": 1.0, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 0.9832184408687481}, {\"query_id\": \"q04\", \"top\": [\"rubric/post-hoc-lock\", \"spec/section-0-0a\", \"adr/0016-post-hoc-lock\", \"adr/0007-fast-methodology\", \"rubric/fast-elim-R2\", \"spec/section-0-2\", \"log/adr-0016-file\", \"meta/quality-first-preference\", \"spec/section-0-1\", \"rubric/medium-tiebreak\"], \"recall@1\": 0.3333333333333333, \"recall@5\": 1.0, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 1.0}, {\"query_id\": \"q05\", \"top\": [\"code/vllm-launch-hermes\", \"adr/0011-hermes-default\", \"adr/0009-guided-decoding\", \"rubric/fast-elim-R2\", \"pool/coder-fast-4cells\", \"pool/planner-fast-2cells\", \"code/harness-candidates\", \"code/harness-runner-probes\", \"adr/0012-dual-role\", \"code/llamacpp-cuda-pin\"], \"recall@1\": 0.3333333333333333, \"recall@5\": 0.6666666666666666, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 0.9690945337173088}, {\"query_id\": \"q06\", \"top\": [\"rubric/fast-elim-R2\", \"rubric/fast-elim-R1\", \"adr/0014-coder-reinstate\", \"rubric/fast-elim-R4\", \"log/debug-search-rule\", \"adr/0009-guided-decoding\", \"log/coder-pool-reinstate\", \"rubric/fast-elim-R3\", \"log/adr-0015-verdict\", \"adr/0011-hermes-default\"], \"recall@1\": 0.5, \"recall@5\": 0.5, \"recall@10\": 0.5, \"mrr\": 1.0, \"ndcg@10\": 0.8262346571285599}, {\"query_id\": \"q07\", \"top\": [\"meta/quality-first-preference\", \"spec/section-0-2\", \"rubric/fast-elim-R2\", \"adr/0007-fast-methodology\", \"adr/0009-guided-decoding\", \"rubric/medium-tiebreak\", \"adr/0016-medium-rubric\", \"log/adr-0016-file\", \"spec/section-0-1\", \"spec/section-0-0a\"], \"recall@1\": 0.5, \"recall@5\": 0.5, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 0.5508231047523733}, {\"query_id\": \"q08\", \"top\": [\"code/harness-runner-nvml\", \"code/harness-runner-main\", \"code/harness-runner-probes\", \"rubric/fast-elim-R2\", \"spec/section-0-2\", \"rubric/medium-tiebreak\", \"code/vllm-blackwell\", \"code/scripts-inspect-raw\", \"code/harness-runner-server\", \"meta/colossus-hardware\"], \"recall@1\": 0.5, \"recall@5\": 1.0, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 1.0}, {\"query_id\": \"q09\", \"top\": [\"rubric/medium-tiebreak\", \"meta/quality-first-preference\", \"spec/section-0-1\", \"adr/0007-fast-methodology\", \"spec/section-0-2\", \"rubric/post-hoc-lock\", \"spec/section-0-0a\", \"adr/0009-guided-decoding\", \"rubric/fast-elim-R2\", \"adr/0016-medium-rubric\"], \"recall@1\": 0.3333333333333333, \"recall@5\": 0.6666666666666666, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 0.9608857006116033}, {\"query_id\": \"q10\", \"top\": [\"meta/colossus-hardware\", \"code/vllm-blackwell\", \"code/harness-runner-nvml\", \"pool/planner-fast-2cells\", \"adr/0009-guided-decoding\", \"pool/embedder-fast-6cells\", \"spec/section-0-2\", \"pool/coder-fast-4cells\", \"spec/section-0-1\", \"code/vllm-launch-hermes\"], \"recall@1\": 0.5, \"recall@5\": 1.0, \"recall@10\": 1.0, \"mrr\": 1.0, \"ndcg@10\": 1.0}]}",
+  "tasks": [
+    {
+      "task_id": "embedder-medium-q01",
+      "verdict": "pass",
+      "verdict_source": "verify",
+      "wall_seconds": 0.0,
+      "detail": "recall@10=1.000 mrr=1.000 ndcg@10=0.880",
+      "truncated": false,
+      "raw_content": null
+    },
+    {
+      "task_id": "embedder-medium-q02",
+      "verdict": "pass",
+      "verdict_source": "verify",
+      "wall_seconds": 0.0,
+      "detail": "recall@10=0.667 mrr=1.000 ndcg@10=0.636",
+      "truncated": false,
+      "raw_content": null
+    },
+    {
+      "task_id": "embedder-medium-q03",
+      "verdict": "pass",
+      "verdict_source": "verify",
+      "wall_seconds": 0.0,
+      "detail": "recall@10=1.000 mrr=1.000 ndcg@10=0.983",
+      "truncated": false,
+      "raw_content": null
+    },
+    {
+      "task_id": "embedder-medium-q04",
+      "verdict": "pass",
+      "verdict_source": "verify",
+      "wall_seconds": 0.0,
+      "detail": "recall@10=1.000 mrr=1.000 ndcg@10=1.000",
+      "truncated": false,
+      "raw_content": null
+    },
+    {
+      "task_id": "embedder-medium-q05",
+      "verdict": "pass",
+      "verdict_source": "verify",
+      "wall_seconds": 0.0,
+      "detail": "recall@10=1.000 mrr=1.000 ndcg@10=0.969",
+      "truncated": false,
+      "raw_content": null
+    },
+    {
+      "task_id": "embedder-medium-q06",
+      "verdict": "pass",
+      "verdict_source": "verify",
+      "wall_seconds": 0.0,
+      "detail": "recall@10=0.500 mrr=1.000 ndcg@10=0.826",
+      "truncated": false,
+      "raw_content": null
+    },
+    {
+      "task_id": "embedder-medium-q07",
+      "verdict": "pass",
+      "verdict_source": "verify",
+      "wall_seconds": 0.0,
+      "detail": "recall@10=1.000 mrr=1.000 ndcg@10=0.551",
+      "truncated": false,
+      "raw_content": null
+    },
+    {
+      "task_id": "embedder-medium-q08",
+      "verdict": "pass",
+      "verdict_source": "verify",
+      "wall_seconds": 0.0,
+      "detail": "recall@10=1.000 mrr=1.000 ndcg@10=1.000",
+      "truncated": false,
+      "raw_content": null
+    },
+    {
+      "task_id": "embedder-medium-q09",
+      "verdict": "pass",
+      "verdict_source": "verify",
+      "wall_seconds": 0.0,
+      "detail": "recall@10=1.000 mrr=1.000 ndcg@10=0.961",
+      "truncated": false,
+      "raw_content": null
+    },
+    {
+      "task_id": "embedder-medium-q10",
+      "verdict": "pass",
+      "verdict_source": "verify",
+      "wall_seconds": 0.0,
+      "detail": "recall@10=1.000 mrr=1.000 ndcg@10=1.000 || macro: recall@10=0.917 mrr=1.000 ndcg@10=0.881",
+      "truncated": false,
+      "raw_content": null
+    }
+  ]
+}

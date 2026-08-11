@@ -1,0 +1,65 @@
+{
+  "run_metadata": {
+    "tier": "fast",
+    "role": "planner",
+    "candidate": {
+      "model": "qwen3-30b-a3b-thinking-2507-awq",
+      "quant": "awq4",
+      "format": "safetensors",
+      "runtime": "vllm",
+      "device": "gpu"
+    },
+    "task_set": {
+      "identity": "planner-fast",
+      "version": "1.0.0",
+      "task_count": 3
+    },
+    "started_at_utc": "2026-08-11T06:47:08Z",
+    "ended_at_utc": "2026-08-11T06:48:09Z",
+    "duration_seconds": 60.974798,
+    "harness_commit_sha": "bd09e1a",
+    "llama_cpp_build_tag": null,
+    "vllm_release_tag": null,
+    "rubric": {
+      "identity": "Phase 0.1 Fast-tier elimination rubric. Timestamped at commi",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T05:51:00Z"
+    },
+    "notes": "R2: 3 malformed tasks (>1 threshold): planner-fast-01-forge-oh-endpoint: schema violation: 'steps' is a required property; planner-fast-02-forge-oh-migration: too few steps (3 < 4); planner-fast-03-forge-oh-refactor: truncated at max_tokens; chat_template_kwargs={\"enable_thinking\": false}"
+  },
+  "tool_call_behavior": null,
+  "task_outcome": {
+    "verdict": "fail",
+    "verdict_source": "verify",
+    "context_budget_skip": false,
+    "truncated": true,
+    "rubric_score": null
+  },
+  "gpu_envelope": {
+    "vram_peak_mib": 30675.6875,
+    "vram_avg_mib": 30644.612390350878,
+    "vram_usable_mib": 32607.0,
+    "temp_peak_c": 54.0,
+    "temp_avg_c": 51.40350877192982,
+    "power_peak_w": 290.68,
+    "power_avg_w": 268.8832456140351,
+    "util_avg_pct": 97.94736842105263,
+    "nvml_coverage_pct": 100.0,
+    "throttle_events": 0,
+    "cuda_oom_events": 0,
+    "throttle_ceiling_c": 93.0
+  },
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 6213.000677991658,
+    "per_call_warm_ms_p95": 16742.920144984964,
+    "cold_start_ms": 30013.94671696471,
+    "per_task_wall_seconds_p50": 6.2130006779916584,
+    "repeats": 3,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": 16.742920144984964,
+    "variance_note": null
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}

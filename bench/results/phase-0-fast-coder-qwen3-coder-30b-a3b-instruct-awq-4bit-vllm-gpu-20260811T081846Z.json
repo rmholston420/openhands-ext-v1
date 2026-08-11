@@ -1,0 +1,74 @@
+{
+  "run_metadata": {
+    "tier": "fast",
+    "role": "coder",
+    "candidate": {
+      "model": "qwen3-coder-30b-a3b-instruct-awq-4bit",
+      "quant": "awq-4bit",
+      "format": "safetensors",
+      "runtime": "vllm",
+      "device": "gpu"
+    },
+    "task_set": {
+      "identity": "coder-fast",
+      "version": "1.0.0",
+      "task_count": 5
+    },
+    "started_at_utc": "2026-08-11T08:18:46Z",
+    "ended_at_utc": "2026-08-11T08:19:50Z",
+    "duration_seconds": 63.921597,
+    "harness_commit_sha": "fad708b",
+    "llama_cpp_build_tag": null,
+    "vllm_release_tag": "0.27.0",
+    "rubric": {
+      "identity": "Phase 0.1 Fast-tier elimination rubric. Timestamped at commi",
+      "version": "1.0.0",
+      "locked_at_utc": "2026-08-11T05:51:00Z"
+    },
+    "notes": "R2: 3 malformed tasks (>1 threshold): coder-fast-01-read-file: no tool_calls (finish='stop'); coder-fast-02-str-replace: wrong tool: called='read_file' expected='str_replace_editor'; coder-fast-04-write-file: no tool_calls (finish='stop'); degraded: sdk path stubbed (OpenHands SDK coder path not yet implemented \u2014 use fallback) \u2014 used raw tool-call fallback"
+  },
+  "tool_call_behavior": {
+    "attempts": 5,
+    "successes": 2,
+    "malformed": 0,
+    "missing_tool_call": 2,
+    "wrong_tool_selected": 1,
+    "argument_errors": 0,
+    "loop_repetitions": 0,
+    "retries": 0
+  },
+  "task_outcome": {
+    "verdict": "fail",
+    "verdict_source": "trajectory",
+    "context_budget_skip": false,
+    "truncated": false,
+    "rubric_score": null
+  },
+  "gpu_envelope": {
+    "vram_peak_mib": 30369.25,
+    "vram_avg_mib": 30369.25,
+    "vram_usable_mib": 32607.0,
+    "temp_peak_c": 44.0,
+    "temp_avg_c": 39.2,
+    "power_peak_w": 131.509,
+    "power_avg_w": 90.16619999999999,
+    "util_avg_pct": 40.0,
+    "nvml_coverage_pct": 100.0,
+    "throttle_events": 0,
+    "cuda_oom_events": 0,
+    "throttle_ceiling_c": 93.0
+  },
+  "cpu_envelope": null,
+  "latency": {
+    "per_call_warm_ms_p50": 263.78795300843194,
+    "per_call_warm_ms_p95": 297.4243240314536,
+    "cold_start_ms": 62020.01596603077,
+    "per_task_wall_seconds_p50": 0.26378795300843194,
+    "repeats": 5,
+    "per_call_warm_ms_max": null,
+    "per_task_wall_seconds_p95": 0.2974243240314536,
+    "variance_note": null
+  },
+  "cross_candidate_contention": null,
+  "schema_version": "1.0.0"
+}
