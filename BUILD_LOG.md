@@ -1538,3 +1538,14 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Stop-condition status:** step 6a re-COMPLETE. Ready to retry step 6b.
 
 ---
+
+## 2026-08-11 14:01 EDT — Phase 0.4 gate-4 SCOPE REDUCTION: docs-only (12 -> 6 cells)
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · ADR-0030 scope-reduction amendment
+- **What changed:** During step 6b execution, CPU embedder throughput on Colossus measured ~10 tok/s prompt processing (4B Q8_0), projecting ~50+ hours per candidate for the 12-cell matrix — not viable. User selected option S1: drop code block, keep 3 candidates × 2 chunkers × docs = 6 cells. ADR-0030 amended in-place with SCOPE-REDUCTION AMENDMENT (dated) explaining the wall-clock trigger, the preserved axes (candidate + chunker), the dropped axis (block), and the reduced-scope labeling on ADR-0031 verdict. Rubric, composite formula, chunk_id primary key, reversal thresholds — unchanged. Post-hoc-edit-locked artifacts (queries, rubric, MANIFEST) — unchanged. 20 code queries retained in queries file for future re-run under different compute envelope.
+- **Files touched:** `adrs/ADR-0030-phase-0-4-embedder-full-tier-re-eval.md`
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0030 amended (still Proposed).
+- **Stop-condition status:** step 6b resumed with `docs` block only. Expected wall-clock: ~90 min for 6 cells (3 candidates × 2 chunkers × 42 docs files).
+
+---

@@ -8,6 +8,16 @@
 
 > **PROGRESS NOTE (2026-08-11 13:23 EDT):** Fixture lock-in step 5 (rubric R2+G2) COMPLETE. `bench/rubrics/full-embedder-scored.json` at 59c4c9b. Composite weights sum-verified to 1.0; V3+W3 reversal predicates encoded as evaluable clauses; labeler instructions embedded verbatim; downsize has stricter single-metric loss guard (no composite-offset). `post_hoc_edit_locked=true`. Step 6 remains.
 
+> **SCOPE-REDUCTION AMENDMENT (2026-08-11 14:00 EDT):** During step 6b execution on Colossus, the CPU-only embedder throughput (~10 tok/s prompt processing at Q8_0 on the 4B candidate) projected the full 12-cell run at ~50+ hours per candidate — not viable in-session. Per user selection (option S1), the matrix is reduced from `3 × 2 × 2 = 12 cells` to `3 × 2 × 1 = 6 cells` by **dropping the `code` block** and running only the `docs` block. Rationale:
+> - The chunker axis (H1 vs H2 structure-aware) is the primary hypothesis test in this phase and is preserved.
+> - The candidate axis (0.6B / 4B / 8B) is preserved.
+> - The block axis (code vs docs) is dropped; docs-only is a smaller but honest reversal test given the CPU envelope.
+> - The reversal criteria (§Reversal Criteria) are unchanged in their thresholds, but their scope is now labeled as `docs_block_only_composite`. Any 8B-flip or 0.6B-downsize verdict filed under this reduced scope must be flagged in ADR-0031 as "reversal test scope: docs-only" and cannot be interpreted as a code-corpus finding.
+> - The 40-query set is unchanged; only the 20 docs queries are used. The 20 code queries remain in the queries file for a future re-run under a different compute envelope.
+> - Pool size drops from `up to 20 × 40 × 12 = 9600` to `up to 20 × 20 × 6 = 2400` unique (query, chunk) pairs before dedup — well within a single Perplexity-Max labeling session's 150-300 label budget for the pruned-to-answered-queries subset.
+>
+> This is a scope-reduction amendment, not a decision-content change. Rubric weights, composite formula, chunk_id primary key, and reversal thresholds are unchanged. Post-hoc-edit-locked artifacts (queries file, rubric file, MANIFEST.json) are unchanged. If a future re-run under GPU or a longer CPU wall-clock envelope produces code-block results, they will be filed as a separate follow-up ADR under a new gate, not folded into ADR-0031.
+
 > **DoD ORDERING AMENDMENT (2026-08-11 13:26 EDT):** The originally listed DoD ordering has steps 6 (qrels labeling) before 7 (runner extension) and 8 (running the 12 cells). This ordering is unexecutable — Perplexity-Max labeling requires the pooled union of top-20 chunks across all 12 cells, which cannot exist until the runner has been extended AND executed once in *pool-only* mode. The amended DoD ordering is:
 >
 > - **6a. Runner extension** — add `probe_embedder_full_multi_block()` to `bench/runner/probes.py` as a peer to existing probes (P1 per user 2026-08-11 13:26 EDT; no refactor of `probe_embedder_full()` inside this gate to preserve Phase 0.3 provenance boundary).
@@ -63,7 +73,9 @@ Open Phase 0.4 gate-4 as a **three-way embedder Full-tier re-eval** with the pre
 
 **File:** `bench/tasks/embedder-full-multi-block.json` (committed this commit; queries deferred to fixture lock-in).
 
-**Shape:** 3 candidates × 2 chunkers × 2 blocks = **12 cells**. Each cell runs 20 queries and returns top-20 chunks per query.
+**Shape (original):** 3 candidates × 2 chunkers × 2 blocks = **12 cells**. Each cell runs 20 queries and returns top-20 chunks per query.
+
+**Shape (SCOPE-REDUCED 2026-08-11 14:00 EDT):** 3 candidates × 2 chunkers × 1 block (docs) = **6 cells**. 20 docs queries × 20 top-k per cell. See SCOPE-REDUCTION AMENDMENT at top.
 
 **Two retrieval blocks:**
 
