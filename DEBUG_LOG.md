@@ -189,3 +189,13 @@ Entry format:
 - **Fix applied:** Task-set-level `chat_template_kwargs` policy (ADR-0008). `planner-fast.json` sets `{"enable_thinking": false}`. `probe_planner` and `probe_coder` (opt-in) forward the kwarg to vLLM. Non-thinking models ignore it. Sidecar `raw_content` will show absence of `<think>` blocks on next run.
 - **Files changed:** `bench/tasks/planner-fast.json`, `bench/runner/probes.py`, `adrs/ADR-0008-fast-tier-thinking-disabled.md`, `adrs/README.md`.
 - **Related BUILD_LOG entry:** 2026-08-11 02:45 EDT
+
+## 2026-08-11 02:50 EDT — Planner-fast R2 mass-failure (post-ADR-0008): prose-instead-of-JSON
+
+- **Symptom:** `smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm-gpu-20260811T064708Z.json` reported `verdict=fail` R2 on all 3 tasks despite `<think>` blocks being absent from sidecar `raw_content` (ADR-0008 confirmed effective). Failures: task 01 `schema violation: 'steps' is a required property` (partial pseudo-JSON, no closing brace); task 02 same schema violation (no JSON at all — model narrated the plan in English for 2000+ chars); task 03 `truncated at max_tokens` inside prose block, still no JSON.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast-tier · planner probe · task-set contract.
+- **Root cause:** Non-thinking Qwen3-30B ignored the "output JSON only" prompt instruction and produced freeform planning prose. Prompt-adherence alone is a lottery on 30B non-thinking models for structural-JSON tasks. The probe had no grammar-level guarantee of JSON output.
+- **Fix applied:** ADR-0009 — probe now sends OpenAI-compat guided decoding (`response_format=json_schema, strict=true`) using the task set's existing `output_schema`. vLLM 0.27 backs this with xgrammar/outlines; the model can only emit schema-conforming JSON tokens.
+- **Files changed:** `bench/runner/probes.py`, `adrs/ADR-0009-fast-tier-guided-decoding.md`, `adrs/README.md`.
+- **Related BUILD_LOG entry:** 2026-08-11 02:50 EDT
+- **Supersedes:** 2026-08-11 02:45 EDT (R2 diagnosis: prior fix ADR-0008 was necessary but not sufficient; this entry closes the diagnosis).

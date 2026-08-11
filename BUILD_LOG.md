@@ -334,3 +334,12 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** planner + coder probe surface (task-set contract gains one optional field).
 - **PORTING_LEDGER / ADR updated:** ADR-0008 filed.
 - **Stop-condition status:** in-progress — next planner smoke should show `<think>` absent from sidecar `raw_content`, JSON emitted directly, R2 pass expected on tasks 01/02/03.
+
+## 2026-08-11 02:50 EDT — Fast-tier planner uses guided decoding (ADR-0009)
+
+- **Stage / plugin / port:** Phase 0.1 · Fast-tier planner probe · response_format contract.
+- **What changed:** `probe_planner` now emits OpenAI-compat `response_format={"type":"json_schema","json_schema":{"name":"plan","schema":<task_set.output_schema>,"strict":true}}` on every /v1/chat/completions call. Sidecar `notes` records `response_format=json_schema` for provenance (joined with any `chat_template_kwargs=...` note). Task set unchanged; probe reads `output_schema` verbatim.
+- **Files touched:** `bench/runner/probes.py`, `adrs/ADR-0009-fast-tier-guided-decoding.md`, `adrs/README.md`.
+- **Ports / adapters affected:** planner probe (contract gain: `response_format` is now non-optional when `output_schema` is present).
+- **PORTING_LEDGER / ADR updated:** ADR-0009 filed.
+- **Stop-condition status:** in-progress — next planner smoke should show `verdict=pass` on all three tasks (or a residual `truncated at max_tokens` if any grammar-constrained JSON exceeds 4096 tokens, which is unlikely for the current 3-task set).

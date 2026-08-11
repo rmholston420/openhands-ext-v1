@@ -106,13 +106,24 @@ def probe_planner(
     check DAG."""
     from jsonschema import Draft202012Validator, ValidationError
 
-    validator = Draft202012Validator(task_set["output_schema"])
+    schema = task_set["output_schema"]
+    validator = Draft202012Validator(schema)
     # Task-set-level chat_template_kwargs (e.g. {"enable_thinking": false}).
     # See ADR-0008: Fast-tier planner disables thinking mode.
     ctk = task_set.get("chat_template_kwargs") or {}
+    # ADR-0009: Fast-tier planner uses OpenAI-compat guided decoding
+    # (response_format=json_schema) so the model can only emit schema-conforming
+    # JSON. Eliminates "planning prose instead of JSON" R2 failures observed
+    # after ADR-0008 disabled thinking mode.
+    response_format = {
+        "type": "json_schema",
+        "json_schema": {"name": "plan", "schema": schema, "strict": True},
+    }
     result = ProbeResult(role="planner")
+    notes_parts = ["response_format=json_schema"]
     if ctk:
-        result.notes = f"chat_template_kwargs={json.dumps(ctk)}"
+        notes_parts.append(f"chat_template_kwargs={json.dumps(ctk)}")
+    result.notes = " ".join(notes_parts)
     for t in task_set["tasks"]:
         tr = TaskResult(task_id=t["id"], verdict="fail", verdict_source="verify",
                         wall_seconds=0.0)
@@ -122,6 +133,7 @@ def probe_planner(
             "temperature": 0.6,
             "top_p": 0.95,
             "max_tokens": budget_tokens,
+            "response_format": response_format,
         }
         if ctk:
             payload["chat_template_kwargs"] = ctk
