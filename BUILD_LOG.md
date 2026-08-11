@@ -372,3 +372,16 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** none. No ADR required — this is a probe-dispatcher defect fix, not a design decision.
 - **Stop-condition status:** ready for coder-fast smoke re-run. Next run should reach the fallback path and produce a sidecar with per-task tool-call diagnostics.
+
+## 2026-08-11 03:06 EDT — ADR-0010 + VLLMServer per-role flags + probe HttpPostError surface
+
+- **Stage / plugin / port:** Phase 0.1 · Fast-tier runner · `bench/runner/server.py::VLLMServer` (launch flags) + `bench/runner/main.py::_make_server` (role plumbing) + `bench/runner/probes.py::_http_post` (error surface).
+- **What changed:**
+  - Filed **ADR-0010**: Fast-tier vLLM per-role launch flags. Coder → `--enable-auto-tool-choice --tool-call-parser qwen3_coder --reasoning-parser qwen3`. Planner → `--reasoning-parser qwen3`. Embedder → none. Mirrors `LlamaCppServer.ROLE_FLAGS` pattern.
+  - `VLLMServer.__init__` gains required `role` keyword and `ROLE_FLAGS` dict; role flags prepended to launch cmd before caller `extra_flags`; unknown role raises `ValueError`.
+  - `_make_server` passes `role=role_str` into `VLLMServer(...)`.
+  - New `HttpPostError` in `probes.py` surfaces `HTTPError.read()` body (up to 1024 chars) into probe `detail`. All three probe transport-error branches (planner / embedder / coder-fallback) now catch it.
+- **Files touched:** `adrs/ADR-0010-fast-tier-vllm-role-flags.md` (new), `adrs/README.md`, `bench/runner/server.py`, `bench/runner/main.py`, `bench/runner/probes.py`.
+- **Ports / adapters affected:** none (runtime plumbing, not a port contract).
+- **PORTING_LEDGER / ADR updated:** ADR-0010 filed; ADR index refreshed. No new vendored component.
+- **Stop-condition status:** ready for coder-fast smoke re-run. Fallback path is now reachable *and* the underlying vLLM tool-call API is enabled server-side. Expected next R2 signal: whether the thinking model at 4096-token budget emits tool_calls cleanly, or narrates in `<think>` and starves — that outcome determines whether a follow-up ADR flips coder task-set opt-in for `enable_thinking=false`.

@@ -313,12 +313,39 @@ class BaseServer:
 
 
 class VLLMServer(BaseServer):
-    """`.venv/bin/vllm serve <model_dir> --port N ...`
+    """`.venv/bin/vllm serve <model_dir> --port N ...` with per-role parser flags.
+
+    Role-flag policy per ADR-0010:
+      - coder:    OpenAI-compatible tool-call API is only enabled when the
+                  server is launched with `--enable-auto-tool-choice` +
+                  `--tool-call-parser qwen3_coder`. Qwen3-Thinking family
+                  additionally needs `--reasoning-parser qwen3` for vLLM 0.27
+                  to accept `tool_choice="auto"` requests (otherwise every
+                  /v1/chat/completions call returns HTTP 400 at API-validation
+                  before touching the model — observed 2026-08-11).
+      - planner:  `--reasoning-parser qwen3` so vLLM strips <think> blocks
+                  server-side and structured-output (guided decoding) works
+                  in cooperation with thinking mode.
+      - embedder: no parser flags.
 
     Progress-visibility notes:
       - launched with `python -u -m ...`-equivalent line buffering via bufsize=1.
       - Emits `[<cell>] ` prefixed lines for every vLLM log line in real time.
     """
+
+    # Per-role vLLM launch flags. Prepended to the caller's `extra_flags`
+    # (caller flags win on any conflict via later position). See ADR-0010.
+    ROLE_FLAGS: dict[str, list[str]] = {
+        "coder": [
+            "--enable-auto-tool-choice",
+            "--tool-call-parser", "qwen3_coder",
+            "--reasoning-parser", "qwen3",
+        ],
+        "planner": [
+            "--reasoning-parser", "qwen3",
+        ],
+        "embedder": [],
+    }
 
     def __init__(
         self,
@@ -327,6 +354,7 @@ class VLLMServer(BaseServer):
         model_dir: Path,
         port: int,
         served_name: str,
+        role: str,
         progress: Progress,
         log_dir: Path,
         max_model_len: int = 32768,
@@ -335,6 +363,11 @@ class VLLMServer(BaseServer):
         min_free_vram_gib: float = 20.0,
         env: Optional[dict] = None,
     ) -> None:
+        if role not in self.ROLE_FLAGS:
+            raise ValueError(
+                f"VLLMServer: unknown role {role!r}; "
+                f"expected one of {sorted(self.ROLE_FLAGS)}"
+            )
         vllm_bin = REPO_ROOT / ".venv" / "bin" / "vllm"
         cmd = [
             str(vllm_bin), "serve", str(model_dir),
@@ -345,6 +378,9 @@ class VLLMServer(BaseServer):
             "--served-model-name", served_name,
             "--trust-remote-code",
         ]
+        # Role flags first (defaults); caller extras appended after so caller
+        # can override on collision by re-specifying the same flag.
+        cmd.extend(self.ROLE_FLAGS[role])
         if extra_flags:
             cmd.extend(extra_flags)
 
@@ -362,6 +398,7 @@ class VLLMServer(BaseServer):
         self._model_dir = model_dir
         self.port = port
         self.served_name = served_name
+        self.role = role
 
     def start(self) -> None:
         self._preflight_binary(self._vllm_bin,

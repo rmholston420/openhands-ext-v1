@@ -32,6 +32,18 @@ from typing import Any, Optional
 # --- Shared helpers ---------------------------------------------------------
 
 
+class HttpPostError(Exception):
+    """HTTP error with the server's response body captured.
+
+    urllib.request.urlopen raises HTTPError on non-2xx and does NOT expose
+    the response body via str(exc) — by default only the status line is
+    surfaced (e.g. `<HTTPError 400: 'Bad Request'>`), which hides the actual
+    validation error emitted by vLLM's OpenAI-compatible API. This wrapper
+    reads the error body (best-effort) and includes it in the message so
+    probe `detail` fields carry the real cause.
+    """
+
+
 def _http_post(url: str, payload: dict, *, timeout: int = 300) -> tuple[dict, float]:
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
@@ -39,8 +51,22 @@ def _http_post(url: str, payload: dict, *, timeout: int = 300) -> tuple[dict, fl
         headers={"Content-Type": "application/json", "Accept": "application/json"},
     )
     t0 = time.monotonic()
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        raw = resp.read()
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read()
+    except urllib.error.HTTPError as exc:
+        # Best-effort body capture; the file object may already be consumed
+        # or the server may have sent no body. Truncate to keep detail bounded.
+        err_body = ""
+        try:
+            err_body = exc.read().decode("utf-8", errors="replace")
+        except Exception:
+            pass
+        snippet = err_body[:1024]
+        raise HttpPostError(
+            f"HTTP {exc.code} {exc.reason}: {snippet!r}"
+            + (" [...truncated]" if len(err_body) > 1024 else "")
+        ) from exc
     wall = time.monotonic() - t0
     return json.loads(raw.decode("utf-8")), wall
 
@@ -139,6 +165,12 @@ def probe_planner(
             payload["chat_template_kwargs"] = ctk
         try:
             resp, wall = _http_post(f"{endpoint}/v1/chat/completions", payload, timeout=180)
+        except HttpPostError as exc:
+            tr.wall_seconds = 0.0
+            tr.verdict_source = "transport"
+            tr.detail = f"transport error: {exc}"
+            result.tasks.append(tr)
+            continue
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             tr.wall_seconds = 0.0
             tr.verdict_source = "transport"
@@ -265,6 +297,11 @@ def probe_embedder(
                     wall_seconds=0.0)
     try:
         resp, wall = _http_post(f"{endpoint}/v1/embeddings", payload, timeout=120)
+    except HttpPostError as exc:
+        tr.detail = f"transport error: {exc}"
+        tr.verdict_source = "transport"
+        result.tasks.append(tr)
+        return result
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         tr.detail = f"transport error: {exc!r}"
         tr.verdict_source = "transport"
@@ -512,6 +549,12 @@ def _probe_coder_fallback(
             payload["chat_template_kwargs"] = ctk
         try:
             resp, wall = _http_post(f"{endpoint}/v1/chat/completions", payload, timeout=180)
+        except HttpPostError as exc:
+            tr.detail = f"transport error: {exc}"
+            tr.verdict_source = "transport"
+            tr.tool_malformed = 1
+            result.tasks.append(tr)
+            continue
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             tr.detail = f"transport error: {exc!r}"
             tr.verdict_source = "transport"

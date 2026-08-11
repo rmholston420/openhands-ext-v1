@@ -399,6 +399,7 @@ def _make_server(
             model_dir=cand.local_model_dir,
             port=port,
             served_name=cand.slug,
+            role=role_str,
             progress=progress,
             log_dir=log_dir,
             env={

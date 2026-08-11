@@ -232,3 +232,23 @@ Entry format:
 - **Fix applied:** Widened dispatcher in `bench/runner/probes.py::probe_coder` to also catch `NotImplementedError` from `_probe_coder_sdk` and fall through to `_probe_coder_fallback` (SDK path is spec-adequate stub per ADR-0007). `sdk_unavailable_reason` records the underlying cause so the sidecar `notes` distinguishes `openhands-sdk unavailable` from `sdk path stubbed`. Fallback behavior is unchanged.
 - **Files changed:** `bench/runner/probes.py` (dispatcher only; `_probe_coder_sdk` stub intentionally preserved).
 - **Related BUILD_LOG entry:** 2026-08-11 03:01 EDT.
+
+## 2026-08-11 03:06 EDT — coder probe: vLLM HTTP 400 on every tool-call request
+
+- **Symptom:**
+  ```
+  PROBE: coder/qwen3-30b-a3b-thinking-2507-awq/vllm/gpu probing role=coder ... elapsed=0s
+  [api_server] "POST /v1/chat/completions HTTP/1.1" 400 Bad Request  (x5)
+  transport error: <HTTPError 400: 'Bad Request'>
+  CELL: [1/1] END coder/qwen3-30b-a3b-thinking-2507-awq/vllm/gpu verdict=fail
+  ```
+  All 5 coder-fast tasks failed at the transport layer. Every request rejected in <1s. `_http_post` swallowed the response body; `detail` only showed `<HTTPError 400: 'Bad Request'>`. `raw_content` empty because envelope-parsing runs after `_http_post` returns.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast-tier runner · `bench/runner/server.py::VLLMServer` (launch flags) + `bench/runner/probes.py::_http_post` (error surface).
+- **Root cause (primary — 400 rejection):** `VLLMServer` launched without `--enable-auto-tool-choice --tool-call-parser qwen3_coder --reasoning-parser qwen3`. vLLM 0.27's OpenAI-compatible API server rejects any request carrying `tool_choice="auto"` + `tools=[...]` at the validation layer when no auto-tool-choice parser is registered. Confirmed by server-log config dump: `structured_outputs_config=StructuredOutputsConfig(... reasoning_parser='' ...)`, and launch cmd shows only `--trust-remote-code --served-model-name --max-model-len --gpu-memory-utilization --host --port`. Rejection occurs before the model is invoked, which is why elapsed=0s and no `<think>` block or tool_call ever emitted.
+- **Root cause (secondary — hidden error body):** `urllib.request.urlopen` raises `HTTPError` on non-2xx; `str(HTTPError)` only surfaces the status line. `_http_post` did not read `exc.read()` so vLLM's validation error body never reached probe `detail`. Hid the primary cause behind a generic 400.
+- **Fix applied:**
+  - `bench/runner/server.py`: `VLLMServer.__init__` gains a required `role` keyword and `ROLE_FLAGS: dict[str, list[str]]` matching the `LlamaCppServer.ROLE_FLAGS` pattern. Fast-tier defaults: coder → `--enable-auto-tool-choice --tool-call-parser qwen3_coder --reasoning-parser qwen3`; planner → `--reasoning-parser qwen3`; embedder → none. Role flags prepended; caller `extra_flags` appended so caller wins on collision. Unknown role raises `ValueError` at construction. Locked in via ADR-0010.
+  - `bench/runner/main.py::_make_server`: passes `role=role_str` into `VLLMServer(...)`.
+  - `bench/runner/probes.py`: new `HttpPostError` wraps `HTTPError` and includes best-effort `exc.read()` body (1024 char cap) in the message. All three probe branches (planner, embedder, coder-fallback) catch `HttpPostError` in addition to the generic transport tuple. Future 400s will show the actual vLLM validation error in `detail`.
+- **Files changed:** `bench/runner/server.py`, `bench/runner/main.py`, `bench/runner/probes.py`, `adrs/ADR-0010-fast-tier-vllm-role-flags.md`, `adrs/README.md`.
+- **Related BUILD_LOG entry:** 2026-08-11 03:06 EDT.
