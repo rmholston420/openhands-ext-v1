@@ -1,0 +1,12 @@
+{
+  "phase": "-1",
+  "component": "openhands-sdk-stack",
+  "fetched_at_utc": "2026-08-11T03:52:13+00:00",
+  "source": "pypi.org live",
+  "versions": {
+    "openhands-sdk":         "1.41.0",
+    "openhands-tools":       "1.41.0",
+    "openhands-workspace":   "1.41.0",
+    "openhands-agent-server": "1.41.0"
+  }
+}
