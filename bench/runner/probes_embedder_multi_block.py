@@ -306,6 +306,8 @@ def probe_embedder_full_multi_block(
     qrels: dict | None = None,
     rubric: dict | None = None,
     embed_batch_size: int = 32,
+    query_prefix: str = "",
+    corpus_prefix: str = "",
 ) -> ProbeResult:
     """See module docstring for contract."""
     result = ProbeResult(role="embedder")
@@ -354,8 +356,10 @@ def probe_embedder_full_multi_block(
     chunk_wall = time.monotonic() - t_chunk
 
     # Embed corpus
-    corpus_texts = [c["text"] for c in chunks]
-    query_texts = [q["text"] for q in queries]
+    # Per-candidate asymmetric prefixes (added 2026-08-11 15:00 EDT for nomic-embed-code).
+    # Empty strings for Qwen candidates preserve prior behavior byte-for-byte.
+    corpus_texts = [(corpus_prefix + c["text"]) if corpus_prefix else c["text"] for c in chunks]
+    query_texts = [(query_prefix + q["text"]) if query_prefix else q["text"] for q in queries]
 
     t_embed = time.monotonic()
     try:

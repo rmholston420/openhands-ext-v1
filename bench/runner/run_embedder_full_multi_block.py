@@ -49,11 +49,14 @@ MANIFEST_PATH = REPO_ROOT / "bench/corpus/embedder-full-multi-block/MANIFEST.jso
 QUERIES_PATH = REPO_ROOT / "bench/tasks/embedder-full-multi-block.queries.json"
 RUBRIC_PATH = REPO_ROOT / "bench/rubrics/full-embedder-scored.json"
 
-# Cell registry: (candidate_cell, model_gguf_basename, expected_size_gib)
+# Cell registry: (candidate_cell, model_gguf_basename, expected_size_gib, query_prefix, corpus_prefix)
+# query_prefix / corpus_prefix added 2026-08-11 15:00 EDT for cross-family sanity check (nomic-embed-code).
+# Qwen candidates use empty strings — identical to prior behavior.
 CELLS = {
-    "e04b_q8_cpu":   ("qwen3-embedding-4B-Q8_0.gguf",   3.99),
-    "e08b_q6k_cpu":  ("qwen3-embedding-8B-Q6_K.gguf",   5.79),
-    "e006b_q8_cpu":  ("qwen3-embedding-0.6B-Q8_0.gguf", 0.60),
+    "e04b_q8_cpu":     ("qwen3-embedding-4B-Q8_0.gguf",   3.99, "", ""),
+    "e08b_q6k_cpu":    ("qwen3-embedding-8B-Q6_K.gguf",   5.79, "", ""),
+    "e006b_q8_cpu":    ("qwen3-embedding-0.6B-Q8_0.gguf", 0.60, "", ""),
+    "enomicc_q6k_gpu": ("nomic-embed-code.Q6_K.gguf",     5.41, "Represent this query for searching relevant code:", ""),
 }
 CHUNKERS = ["H1_fixed_512_64", "H2_structure_aware"]
 BLOCKS = ["code", "docs"]
@@ -118,6 +121,11 @@ def cmd_pool(args) -> None:
     _ensure_corpus(args.corpus_root, manifest)
     queries = _load_queries_block(args.block)
 
+    # CELLS entry: (gguf_basename, size_gib, query_prefix, corpus_prefix)
+    _, _, q_prefix, c_prefix = CELLS[args.candidate]
+    if q_prefix or c_prefix:
+        print(f"[probe] prefix mode: query={q_prefix!r} corpus={c_prefix!r}", file=sys.stderr)
+
     print(f"[probe] cell={args.candidate} chunker={args.chunker} block={args.block} queries={len(queries)}", file=sys.stderr)
     t0 = time.monotonic()
     result = probe_embedder_full_multi_block(
@@ -131,6 +139,8 @@ def cmd_pool(args) -> None:
         corpus_root=args.corpus_root,
         top_k=20,
         mode="pool",
+        query_prefix=q_prefix,
+        corpus_prefix=c_prefix,
     )
     wall = time.monotonic() - t0
     print(f"[probe] done in {wall:.1f}s", file=sys.stderr)
@@ -215,6 +225,7 @@ def cmd_pool_all(args) -> None:
             current_candidate = cand
 
         queries = _load_queries_block(bl)
+        _, _, q_prefix, c_prefix = CELLS[cand]
         cell_out = session_dir / f"pool_{cand}_{ch}_{bl}.jsonl"
         print(f"[all] cell {i + 1}/{len(cells_ordered)}: {cand} / {ch} / {bl} -> {cell_out.name}", file=sys.stderr)
         t0 = time.monotonic()
@@ -230,6 +241,8 @@ def cmd_pool_all(args) -> None:
                 corpus_root=args.corpus_root,
                 top_k=20,
                 mode="pool",
+                query_prefix=q_prefix,
+                corpus_prefix=c_prefix,
             )
             wall = time.monotonic() - t0
             if not result.notes:

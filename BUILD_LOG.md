@@ -1562,3 +1562,13 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (runner unchanged; llama.cpp binary path change is a runtime concern for the launch script, not the runner)
 - **PORTING_LEDGER / ADR updated:** ADR-0030 amended (still Proposed); ADR-0030b filed as Proposed.
 - **Stop-condition status:** ready to execute 12-cell GPU cold run. e04b_q8 GPU server already up on port 8085 (`~/llama.cpp/build-cuda/bin/llama-server`, 6854 MiB VRAM, 34 °C GPU).
+
+## 2026-08-11 15:00 EDT — Phase 0.4 gate-4 CROSS-FAMILY SANITY-CHECK amendment: nomic-embed-code added (12 -> 16 cells)
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · ADR-0030 amendment (nomic-embed-code as sanity_check_crossfamily)
+- **What changed:** Added 4th candidate `enomicc_q6k_gpu` (nomic-embed-code.Q6_K.gguf, 5.41 GiB, base Qwen2.5-Coder-7B) as `sanity_check_crossfamily` role designation per Path C selection (user 2026-08-11 15:00 EDT). Matrix expands 12→16 cells (4 candidates × 2 chunkers × 2 blocks). Reversal criteria (V3+W3) remain hardcoded to the original 3-candidate scope — nomic is informational only, not a challenger. Query prefix required per nomic model card: `"Represent this query for searching relevant code:"` applied to query embeds only, both blocks (X-1 strategy). Runner extended with `query_prefix` / `corpus_prefix` args; Qwen candidates use empty strings (byte-for-byte identical to prior behavior). Q6_K quant chosen for consistency with 8B-Q6_K challenger_upsize. Timing: amendment applied BEFORE step 6c qrels labeling — no post-hoc scoring bias possible.
+- **Files touched:** `bench/candidates/embedder-full-pool.json` (append), `bench/rubrics/full-embedder-scored.json` (candidate_pool + matrix_shape extended; reversal_criteria unchanged), `bench/tasks/embedder-full-multi-block.json` (candidates_locked extended, candidates_reversal_scope added), `bench/runner/probes_embedder_multi_block.py` (query_prefix/corpus_prefix kwargs on probe function), `bench/runner/run_embedder_full_multi_block.py` (CELLS registry extended to 5-tuple with prefix strings; pool + pool-all pass prefixes through), `adrs/ADR-0030-phase-0-4-embedder-full-tier-re-eval.md` (CROSS-FAMILY SANITY-CHECK AMENDMENT block + Sub-decision 1 table extended)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** ADR-0030 amended (still Proposed).
+- **Model provenance:** downloaded 2026-08-11 15:02 EDT from `nomic-ai/nomic-embed-code-GGUF` (nomic-embed-code.Q6_K.gguf, 5.5 GiB observed). Symlinked at `~/models/nomic-embed-code-Q6_K.gguf` → `~/dev/openhands-ext-v1/models/nomic-embed-code-q6k-gguf/nomic-embed-code.Q6_K.gguf`.
+- **Stop-condition status:** ready to execute 16-cell GPU cold run.

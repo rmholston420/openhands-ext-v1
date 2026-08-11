@@ -27,6 +27,26 @@
 >
 > Rationale for supersession: the 2026-08-11 14:00 EDT amendment was authored under two false assumptions (CPU throughput is fundamental, coder+planner co-run). Both were corrected within the same session, before qrels labeling, so no post-hoc scoring bias is introduced. All labeled artifacts remain untouched.
 
+> **CROSS-FAMILY SANITY-CHECK AMENDMENT (2026-08-11 15:00 EDT):** Added a 4th candidate `enomicc_q6k_gpu` (nomic-embed-code Q6_K, 5.41 GiB, base Qwen2.5-Coder-7B) as a **sanity_check_crossfamily** entry. Rationale: the original 3-candidate pool is entirely Qwen3 embedding family; a same-tier cross-family reference (nomic-embed-code is a widely-recognized code retrieval baseline) tests whether the Qwen3 family systematically over- or under-scores on this bench without requiring a second full re-run later. Path C selection per user 2026-08-11 15:00 EDT.
+>
+> **Amended decisions:**
+> - **4th candidate added:** `enomicc_q6k_gpu` (nomic-embed-code.Q6_K.gguf) on llama.cpp GPU. Cell ID uses `_gpu` suffix because it was authored after the placement amendment and has no ADR-0017-amend-#3 legacy to preserve.
+> - **Matrix expands 12 → 16 cells** (4 candidates × 2 chunkers × 2 blocks). Reversal criteria still operate over the original 3-candidate / 12-cell scope. Nomic composite is reported for observability only.
+> - **Query prefix required (X-1 strategy):** nomic-embed-code was trained with asymmetric embeddings — queries require the prefix `"Represent this query for searching relevant code:"` per the model card. This prefix is applied to query embeds only, on both code and docs blocks. Corpus prefix is empty. Docs-block underperformance is expected and informative for a sanity check. Runner extended with optional `query_prefix` / `corpus_prefix` args; Qwen candidates use empty strings (byte-for-byte identical to prior behavior).
+> - **Rubric and task-spec surgical extensions (append-only):**
+>   - `bench/candidates/embedder-full-pool.json` — 4th entry appended.
+>   - `bench/rubrics/full-embedder-scored.json` — `candidate_pool.sanity_check_crossfamily` added; `matrix_shape.candidates` 3→4, `cells_total` 12→16; `reversal_criteria` **unchanged**; `matrix_shape.candidates_reversal_scope=3` + `cells_reversal_scope=12` document the split. Rubric was `post_hoc_edit_locked=true`; this edit is defensible because qrels labeling (step 6c) has not yet started, so no post-hoc scoring bias is possible. `_amendment_note` fields record the change.
+>   - `bench/tasks/embedder-full-multi-block.json` — `candidates_locked` extended; `candidates_reversal_scope` added. Task file was `post_hoc_edit_locked=false` (lock triggers on Ratification).
+> - **Rubric non-changes:** composite formula, chunk_id primary key, weights, reversal predicates (V3+W3), grading schema, labeler instructions — **all unchanged**. Only the candidate registry and matrix shape were extended.
+>
+> **Unchanged:**
+> - Reversal criteria for confirm/flip. The 4th candidate cannot trigger a flip.
+> - Qwen3 candidate cells behave byte-for-byte identically to pre-amendment behavior (empty prefixes are a no-op).
+> - Corpus MANIFEST + pinned SHAs.
+> - Query set (40 queries, unchanged).
+>
+> Rationale for adding before qrels labeling (step 6c): pooled union-of-top-20 across all candidates is what labelers grade. Adding nomic **before** pooling means labelers see nomic chunks in the pool and grade them under the same rubric; adding **after** would require re-labeling. Timing is defensibly pre-label; no scoring bias possible.
+
 > **DoD ORDERING AMENDMENT (2026-08-11 13:26 EDT):** The originally listed DoD ordering has steps 6 (qrels labeling) before 7 (runner extension) and 8 (running the 12 cells). This ordering is unexecutable — Perplexity-Max labeling requires the pooled union of top-20 chunks across all 12 cells, which cannot exist until the runner has been extended AND executed once in *pool-only* mode. The amended DoD ordering is:
 >
 > - **6a. Runner extension** — add `probe_embedder_full_multi_block()` to `bench/runner/probes.py` as a peer to existing probes (P1 per user 2026-08-11 13:26 EDT; no refactor of `probe_embedder_full()` inside this gate to preserve Phase 0.3 provenance boundary).
@@ -73,8 +93,9 @@ Open Phase 0.4 gate-4 as a **three-way embedder Full-tier re-eval** with the pre
 | `e04b_q8_cpu` | `qwen3-embedding-4B-Q8_0.gguf` | llama.cpp | GPU | 3.99 | **incumbent** |
 | `e08b_q6k_cpu` | `qwen3-embedding-8B-Q6_K.gguf` | llama.cpp | GPU | 5.79 | challenger_upsize |
 | `e006b_q8_cpu` | `qwen3-embedding-0.6B-Q8_0.gguf` | llama.cpp | GPU | 0.60 | challenger_downsize |
+| `enomicc_q6k_gpu` | `nomic-embed-code.Q6_K.gguf` | llama.cpp | GPU | 5.41 | sanity_check_crossfamily (**no reversal**) |
 
-**All three on llama.cpp GPU** per the corrected co-residency contract (SCOPE-RESTORATION + PLACEMENT-SPLIT AMENDMENT 2026-08-11 14:55 EDT). Cold one-at-a-time; deployment viability under contention is measured separately in ADR-0030b. **Note:** Cell IDs retain `_cpu` suffix as immutable identifiers per the locked schema; the Device column reflects the actual runtime placement (GPU) after the placement amendment.
+**All four on llama.cpp GPU** per the corrected co-residency contract (SCOPE-RESTORATION + PLACEMENT-SPLIT AMENDMENT 2026-08-11 14:55 EDT + CROSS-FAMILY SANITY-CHECK AMENDMENT 2026-08-11 15:00 EDT). Cold one-at-a-time; deployment viability under contention is measured separately in ADR-0030b. **Notes:** (1) Qwen cell IDs retain `_cpu` suffix as immutable identifiers per the locked schema; the Device column reflects actual GPU runtime placement. (2) The nomic cell uses `_gpu` suffix (authored post-placement-amendment; no legacy). (3) Nomic requires the query prefix `"Represent this query for searching relevant code:"` applied to query embeds only, both blocks (X-1).
 
 **8B-Q6_K verified** at `Qwen/Qwen3-Embedding-8B-GGUF/Qwen3-Embedding-8B-Q6_K.gguf` (5.79 GiB) via HF API 2026-08-11 13:04 EDT before locking. Q6_K chosen over Q8_0 (7.49 GiB) on quality-parity grounds; Q8_0 is a fallback if Q6_K exhibits pathological loss (unlikely for embedder weights).
 

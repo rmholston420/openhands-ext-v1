@@ -21,16 +21,20 @@
     "$comment": "Anchored to bench/candidates/embedder-full-pool.json; pinned here for provenance.",
     "incumbent":            {"cell": "e04b_q8_cpu",   "model_id": "qwen3-embedding-4B-Q8_0.gguf",   "role": "incumbent",           "size_gib": 3.99},
     "challenger_upsize":    {"cell": "e08b_q6k_cpu",  "model_id": "qwen3-embedding-8B-Q6_K.gguf",   "role": "challenger_upsize",   "size_gib": 5.79},
-    "challenger_downsize":  {"cell": "e006b_q8_cpu",  "model_id": "qwen3-embedding-0.6B-Q8_0.gguf", "role": "challenger_downsize", "size_gib": 0.60}
+    "challenger_downsize":  {"cell": "e006b_q8_cpu",  "model_id": "qwen3-embedding-0.6B-Q8_0.gguf", "role": "challenger_downsize", "size_gib": 0.60},
+    "sanity_check_crossfamily": {"cell": "enomicc_q6k_gpu", "model_id": "nomic-embed-code.Q6_K.gguf", "role": "sanity_check_crossfamily", "size_gib": 5.41, "query_prefix": "Represent this query for searching relevant code:", "reversal_participation": false, "_amendment_note": "Added 2026-08-11 15:00 EDT. Cross-family informational baseline. NOT evaluated by reversal_criteria — reversal_criteria remain hardcoded to the original 3-candidate set. Composite scores computed and reported for observability only."}
   },
 
   "matrix_shape": {
-    "candidates": 3,
+    "candidates": 4,
+    "candidates_reversal_scope": 3,
     "chunkers": ["H1_fixed_512_64", "H2_structure_aware"],
     "blocks":    ["code", "docs"],
-    "cells_total": 12,
+    "cells_total": 16,
+    "cells_reversal_scope": 12,
     "queries_per_cell": 40,
-    "retrieval_top_k": 20
+    "retrieval_top_k": 20,
+    "_amendment_note": "Amended 2026-08-11 15:00 EDT: 4th candidate (enomicc_q6k_gpu, sanity_check_crossfamily) added → 16 cells total, but reversal_criteria still operate over the original 3-candidate / 12-cell scope. See candidate_pool.sanity_check_crossfamily.reversal_participation=false."
   },
 
   "metrics": {

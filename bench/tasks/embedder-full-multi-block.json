@@ -10,7 +10,9 @@
   "post_hoc_edit_lockin_trigger": "ADR-0030 status flip Proposed→Ratified upon fixture lock-in",
 
   "candidate_pool_ref": "bench/candidates/embedder-full-pool.json",
-  "candidates_locked": ["e04b_q8_cpu", "e08b_q6k_cpu", "e006b_q8_cpu"],
+  "candidates_locked": ["e04b_q8_cpu", "e08b_q6k_cpu", "e006b_q8_cpu", "enomicc_q6k_gpu"],
+  "candidates_reversal_scope": ["e04b_q8_cpu", "e08b_q6k_cpu", "e006b_q8_cpu"],
+  "candidates_amendment_note": "Amended 2026-08-11 15:00 EDT: enomicc_q6k_gpu (nomic-embed-code Q6_K) added as sanity_check_crossfamily. Not in reversal scope. See candidate_pool.enomicc_q6k_gpu.reversal_participation=false.",
 
   "co_residency_contract": {
     "vram_budget_gib": 32,
