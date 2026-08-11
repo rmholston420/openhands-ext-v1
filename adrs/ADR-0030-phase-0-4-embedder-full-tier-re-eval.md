@@ -8,15 +8,24 @@
 
 > **PROGRESS NOTE (2026-08-11 13:23 EDT):** Fixture lock-in step 5 (rubric R2+G2) COMPLETE. `bench/rubrics/full-embedder-scored.json` at 59c4c9b. Composite weights sum-verified to 1.0; V3+W3 reversal predicates encoded as evaluable clauses; labeler instructions embedded verbatim; downsize has stricter single-metric loss guard (no composite-offset). `post_hoc_edit_locked=true`. Step 6 remains.
 
-> **SCOPE-REDUCTION AMENDMENT (2026-08-11 14:00 EDT):** During step 6b execution on Colossus, the CPU-only embedder throughput (~10 tok/s prompt processing at Q8_0 on the 4B candidate) projected the full 12-cell run at ~50+ hours per candidate — not viable in-session. Per user selection (option S1), the matrix is reduced from `3 × 2 × 2 = 12 cells` to `3 × 2 × 1 = 6 cells` by **dropping the `code` block** and running only the `docs` block. Rationale:
-> - The chunker axis (H1 vs H2 structure-aware) is the primary hypothesis test in this phase and is preserved.
-> - The candidate axis (0.6B / 4B / 8B) is preserved.
-> - The block axis (code vs docs) is dropped; docs-only is a smaller but honest reversal test given the CPU envelope.
-> - The reversal criteria (§Reversal Criteria) are unchanged in their thresholds, but their scope is now labeled as `docs_block_only_composite`. Any 8B-flip or 0.6B-downsize verdict filed under this reduced scope must be flagged in ADR-0031 as "reversal test scope: docs-only" and cannot be interpreted as a code-corpus finding.
-> - The 40-query set is unchanged; only the 20 docs queries are used. The 20 code queries remain in the queries file for a future re-run under a different compute envelope.
-> - Pool size drops from `up to 20 × 40 × 12 = 9600` to `up to 20 × 20 × 6 = 2400` unique (query, chunk) pairs before dedup — well within a single Perplexity-Max labeling session's 150-300 label budget for the pruned-to-answered-queries subset.
+> **SCOPE-RESTORATION + PLACEMENT-SPLIT AMENDMENT (2026-08-11 14:55 EDT):** Supersedes the prior SCOPE-REDUCTION AMENDMENT (2026-08-11 14:00 EDT) in full. During step 6b execution, two facts emerged that invalidated both the CPU placement and the docs-only scope reduction:
 >
-> This is a scope-reduction amendment, not a decision-content change. Rubric weights, composite formula, chunk_id primary key, and reversal thresholds are unchanged. Post-hoc-edit-locked artifacts (queries file, rubric file, MANIFEST.json) are unchanged. If a future re-run under GPU or a longer CPU wall-clock envelope produces code-block results, they will be filed as a separate follow-up ADR under a new gate, not folded into ADR-0031.
+> 1. **CPU throughput was thermally-limited, not architecturally-limited.** The observed ~10 tok/s prompt processing was measured while a second `llama-server` on port 8090 (Rigpa-LMS embedder) was competing for CPU cores, and while the Ryzen 9 7900X was pegged at Tctl 88-90°C. After killing the competing process, sustained throughput on the same CPU embedder climbed to ~100 tok/s. This is still slow enough to justify GPU, but it invalidates the "50+ hours per candidate" projection that motivated the scope reduction.
+> 2. **The CPU placement constraint was mis-scoped.** Per user 2026-08-11 14:43 EDT: the coder and planner **never co-run** — they are mutually exclusive per Phase 1 orchestration. The correct co-residency contract is `coder XOR planner + embedder`, not `coder + planner + embedder`. This is a fundamental correction to the VRAM budget assumed in ADR-0017 amend #3. Under the corrected contract, all three embedder candidates fit on GPU alongside either coder or planner (VRAM math filed in ADR-0030b).
+>
+> **Amended decisions:**
+> - **Scope RESTORED to the original 12-cell matrix** (3 candidates × 2 chunkers × 2 blocks = 12 cells). The docs-only reduction is withdrawn.
+> - **Placement switched from CPU to GPU** for all three cells. Runtime remains `llama.cpp` with `-ngl 999` (all layers offloaded). **Cell IDs retain the `_cpu` suffix** as immutable identifiers in the locked schema (rubric, queries, task spec) — the suffix is now a *label* referring to the original ADR-0017 amend #3 placement decision, not a runtime device declaration. The Device column in Sub-decision 1 reflects the actual runtime placement (GPU).
+> - **Bench mode = cold GPU one-at-a-time.** For Phase 1 (quality-only) measurement, no coder or planner is running. This isolates retrieval-quality signal from deployment-viability signal.
+> - **Deployment viability deferred to ADR-0030b (new, Proposed).** ADR-0030b measures live co-residency: for each surviving candidate from ADR-0030, run `coder + embedder` and `planner + embedder` under contention and record p50/p99 embed latency, coder/planner throughput degradation, and VRAM peak. ADR-0031 verdict combines ADR-0030 quality with ADR-0030b viability.
+>
+> **Unchanged:**
+> - Rubric weights, composite formula, chunk_id primary key, reversal thresholds, and their scope-labels (composite is now `full_matrix_composite` again, per the original intent).
+> - Post-hoc-edit-locked artifacts: queries file (40 queries, both blocks used), rubric file, MANIFEST.json.
+> - The DoD ordering amendment (2026-08-11 13:26 EDT) — 6a runner-ext → 6b pool-only → 6c label → 6d score → 7 verdict.
+> - Alternatives §1 (GPU sub-cells rejected) is invalidated by the corrected co-residency contract; the ADR-0030b Proposed status carries the new methodology forward.
+>
+> Rationale for supersession: the 2026-08-11 14:00 EDT amendment was authored under two false assumptions (CPU throughput is fundamental, coder+planner co-run). Both were corrected within the same session, before qrels labeling, so no post-hoc scoring bias is introduced. All labeled artifacts remain untouched.
 
 > **DoD ORDERING AMENDMENT (2026-08-11 13:26 EDT):** The originally listed DoD ordering has steps 6 (qrels labeling) before 7 (runner extension) and 8 (running the 12 cells). This ordering is unexecutable — Perplexity-Max labeling requires the pooled union of top-20 chunks across all 12 cells, which cannot exist until the runner has been extended AND executed once in *pool-only* mode. The amended DoD ordering is:
 >
@@ -61,11 +70,11 @@ Open Phase 0.4 gate-4 as a **three-way embedder Full-tier re-eval** with the pre
 
 | Cell ID | Model | Runtime | Device | Weight (GiB) | Role designation |
 |---|---|---|---|---:|---|
-| `e04b_q8_cpu` | `qwen3-embedding-4B-Q8_0.gguf` | llama.cpp | CPU | 3.99 | **incumbent** |
-| `e08b_q6k_cpu` | `qwen3-embedding-8B-Q6_K.gguf` | llama.cpp | CPU | 5.79 | challenger_upsize |
-| `e006b_q8_cpu` | `qwen3-embedding-0.6B-Q8_0.gguf` | llama.cpp | CPU | 0.60 | challenger_downsize |
+| `e04b_q8_cpu` | `qwen3-embedding-4B-Q8_0.gguf` | llama.cpp | GPU | 3.99 | **incumbent** |
+| `e08b_q6k_cpu` | `qwen3-embedding-8B-Q6_K.gguf` | llama.cpp | GPU | 5.79 | challenger_upsize |
+| `e006b_q8_cpu` | `qwen3-embedding-0.6B-Q8_0.gguf` | llama.cpp | GPU | 0.60 | challenger_downsize |
 
-**All three on llama.cpp CPU** per the co-residency contract inherited from ADR-0017 amend #3. GPU sub-cells rejected (see Alternatives §1).
+**All three on llama.cpp GPU** per the corrected co-residency contract (SCOPE-RESTORATION + PLACEMENT-SPLIT AMENDMENT 2026-08-11 14:55 EDT). Cold one-at-a-time; deployment viability under contention is measured separately in ADR-0030b. **Note:** Cell IDs retain `_cpu` suffix as immutable identifiers per the locked schema; the Device column reflects the actual runtime placement (GPU) after the placement amendment.
 
 **8B-Q6_K verified** at `Qwen/Qwen3-Embedding-8B-GGUF/Qwen3-Embedding-8B-Q6_K.gguf` (5.79 GiB) via HF API 2026-08-11 13:04 EDT before locking. Q6_K chosen over Q8_0 (7.49 GiB) on quality-parity grounds; Q8_0 is a fallback if Q6_K exhibits pathological loss (unlikely for embedder weights).
 
@@ -75,7 +84,7 @@ Open Phase 0.4 gate-4 as a **three-way embedder Full-tier re-eval** with the pre
 
 **Shape (original):** 3 candidates × 2 chunkers × 2 blocks = **12 cells**. Each cell runs 20 queries and returns top-20 chunks per query.
 
-**Shape (SCOPE-REDUCED 2026-08-11 14:00 EDT):** 3 candidates × 2 chunkers × 1 block (docs) = **6 cells**. 20 docs queries × 20 top-k per cell. See SCOPE-REDUCTION AMENDMENT at top.
+**Shape (SCOPE-RESTORED 2026-08-11 14:55 EDT):** 3 candidates × 2 chunkers × 2 blocks = **12 cells** (as originally decided). 40 queries × 20 top-k per cell. See SCOPE-RESTORATION + PLACEMENT-SPLIT AMENDMENT at top.
 
 **Two retrieval blocks:**
 

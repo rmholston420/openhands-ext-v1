@@ -1549,3 +1549,16 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Stop-condition status:** step 6b resumed with `docs` block only. Expected wall-clock: ~90 min for 6 cells (3 candidates × 2 chunkers × 42 docs files).
 
 ---
+
+## 2026-08-11 14:55 EDT — Phase 0.4 gate-4 SCOPE RESTORATION + PLACEMENT SPLIT: GPU cold + ADR-0030b filed
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · ADR-0030 scope-restoration amendment + new ADR-0030b (Proposed)
+- **What changed:** Two independent facts corrected the scope reduction from 14:01 EDT:
+  1. CPU throughput was thermally-throttled, not architecturally-limited. Killing the competing :8090 `llama-server` (Rigpa-LMS embedder) restored throughput to ~100 tok/s on the same 4B Q8_0 CPU cell. The 50+ hour projection was invalid.
+  2. Per user 2026-08-11 14:43 EDT: coder XOR planner in Phase 1 orchestration — they never co-run. Corrected co-residency contract is `coder XOR planner + embedder`, not `coder + planner + embedder`. VRAM math shows all three embedder candidates fit alongside coder or planner on 32 GB VRAM (with 8B tight in planner scenario).
+  Consequently ADR-0030 SCOPE-REDUCTION (14:01) is superseded in full by SCOPE-RESTORATION + PLACEMENT-SPLIT (14:55): matrix restored to 12 cells, placement switched from CPU to GPU (llama.cpp `-ngl 999`), bench mode = cold one-at-a-time. Cell IDs retain `_cpu` suffix as immutable identifiers in the locked schema (rubric, queries) — Device column in the ADR table now reflects actual runtime placement (GPU). Deployment viability (contention testing) deferred to new ADR-0030b (Proposed) which will measure surviving candidates from ADR-0030 quality gate under coder+embedder and planner+embedder contention. ADR-0031 verdict now combines ADR-0030 quality + ADR-0030b viability.
+- **llama.cpp CUDA build:** built `~/llama.cpp/build-cuda/bin/llama-server` with `-DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=120 -DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.0/bin/nvcc` (CUDA 13 accepts gcc 15; CUDA 12.8 rejects it). SM_120a Blackwell native. Smoke test on e04b_q8: 45 ms single embed, 65 ms batch-16.
+- **Files touched:** `adrs/ADR-0030-phase-0-4-embedder-full-tier-re-eval.md` (in-place amend), `adrs/ADR-0030b-embedder-co-residency-viability.md` (new), `adrs/README.md` (index row for 0030 updated + new 0030b row)
+- **Ports / adapters affected:** none (runner unchanged; llama.cpp binary path change is a runtime concern for the launch script, not the runner)
+- **PORTING_LEDGER / ADR updated:** ADR-0030 amended (still Proposed); ADR-0030b filed as Proposed.
+- **Stop-condition status:** ready to execute 12-cell GPU cold run. e04b_q8 GPU server already up on port 8085 (`~/llama.cpp/build-cuda/bin/llama-server`, 6854 MiB VRAM, 34 °C GPU).
