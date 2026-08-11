@@ -1,31 +1,35 @@
-# Kosmos Session Handoff — 2026-08-11 17:20 EDT
+# Kosmos Session Handoff — 2026-08-11 17:25 EDT
 
 ## Current build-sequencing position
 
-- **Stage / phase:** Phase 2.4 (Tiered multi-LLM routing) — authoring COMPLETE; awaiting user to populate `config/max-output-tokens.json` on Colossus, then Phase 3 verification (row-1 smoke + row-2 role-switch).
-- **Plugin / kernel component:** config surface (`config/agent.py`, `config/router.py`), Phase 3 smoke harness (`bench/smoke-phase-3/`).
-- **Port(s) in progress:** none new. ADR-0033 (Ratified, amended 17:20 EDT) locks the config surface. Router uses SDK 1.41 `RouterLLM` base; dispatch via `LLMCallContext.metadata["role"]` (option 6c). Condenser reuses coder endpoint (option 7a).
+- **Stage / phase:** Phase 2.4 (Tiered multi-LLM routing) — **DoD MET**. Phase 3 (verification) unblocked.
+- **Plugin / kernel component:** config surface + Phase 3 smoke harness.
+- **Port(s) in progress:** none. ADR-0033 Ratified with two status amendments (17:20 EDT provenance, 17:25 EDT condenser cap placement).
 
 ## Completed this session
 
-- 17:10 EDT — ADR-0033 Ratified; `config/agent.py` + `config/router.py` + `bench/smoke-phase-3/` authored; commit `c01c1e4` pushed.
-- 17:20 EDT — ADR-0033 amended: `max_output_tokens` provenance flipped from EMPIRICAL to SPEC_SHEET after Colossus investigation confirmed Phase 0.x bench harness records zero output-token fields. Replaced `extract-max-output-tokens.sh` with `populate-max-output-tokens.sh` (spec-sheet ceiling 8192 for both roles, provenance flavor SPEC_SHEET, empirical override deferred to ADR-0035).
+- 17:10 EDT — ADR-0033 Ratified; `config/agent.py` + `config/router.py` + `bench/smoke-phase-3/` authored (`c01c1e4`).
+- 17:20 EDT — ADR-0033 amended: `max_output_tokens` provenance flipped to `SPEC_SHEET` (Phase 0.x bench harness records zero output-token fields). `scripts/populate-max-output-tokens.sh` (`335929d`).
+- 17:25 EDT — ADR-0033 amended: condenser 1024 cap moved from `LLM.max_input_tokens` to `LLMSummarizingCondenser.max_tokens` (spec value was semantically mis-placed; SDK 1.41 enforces `MIN_CONTEXT_WINDOW_TOKENS=16384`). `b6dd540`.
+- 17:25 EDT — Colossus verified `build_agent() OK: Agent`. Phase 2.4 DoD MET.
 
 ## Remaining before current Definition of Done
 
-- User runs on Colossus:
-  1. `cd ~/dev/openhands-ext-v1 && git pull`
-  2. `bash scripts/populate-max-output-tokens.sh`
-  3. `cat config/max-output-tokens.json`
-  4. `.venv/bin/python -c "from config.agent import build_agent; a = build_agent(); print('build_agent OK', type(a).__name__)"`
-- Then Phase 3 verification:
-  - Row 1: `bash bench/smoke-phase-3/run.sh` (trivial task, coder endpoint, expects event stream + FinishAction, wall < 60s).
-  - Row 2: role-switch via `DelegateTool` with `call_context.metadata["role"]="planner"` — likely triggers the SDK 1.41 `RouterLLM.completion()` non-forwarding contingency; decide Path A (override `completion()` in `CoderPlannerRouter`) vs Path B (`fallback_message_heuristic=True`) during execution. Path A is preferred per ADR-0033 §Contingencies.
+- **Phase 2.4:** none. DoD met.
+- **Phase 3 row 1 (smoke):**
+  1. Start coder endpoint (separate terminal): `bash scripts/serve-coder.sh` (must be pre-existing; if not, need to author).
+  2. Run smoke: `bash bench/smoke-phase-3/run.sh`.
+  3. Expect: event stream + tool calls + FinishAction, wall < 60s.
+- **Phase 3 row 2 (role-switch):** Delegate via `DelegateTool` with `call_context.metadata["role"]="planner"`. Likely triggers the SDK 1.41 `RouterLLM.completion()` non-forwarding contingency; decide Path A (override `completion()` in `CoderPlannerRouter`) vs Path B (`fallback_message_heuristic=True` + `[role:planner]` marker) during execution. Path A preferred per ADR-0033 §Contingencies.
 
 ## Open questions / awaiting user answer
 
-- None. The `SPEC_SHEET` provenance flavor was chosen agent-side under the "make the optimal choice when the spec or evidence makes it clear" clause (spec-sheet ceilings are conservative upper bounds; empirical measurement path is preserved via ADR-0035 deferral).
+- Does `scripts/serve-coder.sh` already exist on Colossus? If not, we need to author it before Phase 3 row-1 can run. Confirm with:
+
+  ```bash
+  ls -la ~/dev/openhands-ext-v1/scripts/serve-coder.sh 2>&1
+  ```
 
 ## Exact next action
 
-- User: run the four Colossus commands above (`git pull`, `populate-max-output-tokens.sh`, `cat`, `build_agent` import test). Paste output. Then Phase 3 row-1 smoke.
+- User: check for `scripts/serve-coder.sh`. If present, start it in a separate terminal, then run `bash bench/smoke-phase-3/run.sh` and paste result. If absent, request authoring.

@@ -1662,3 +1662,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** ADR-0033 amended (still Ratified; core decision unchanged, only condenser cap placement corrected).
 - **Stop-condition status:** Phase 2.4 authoring + populable. NEXT: user re-runs `.venv/bin/python -c "from config.agent import build_agent; a = build_agent(); print('build_agent OK:', type(a).__name__)"` on Colossus. If OK, proceed to Phase 3 row-1 smoke.
+
+## 2026-08-11 17:25 EDT — Phase 2.4 DoD MET: build_agent() end-to-end wiring verified on Colossus
+
+- **Stage / plugin / port:** Phase 2.4 (Tiered multi-LLM routing) — CLOSED
+- **What changed:** Colossus verification: `.venv/bin/python -c "from config.agent import build_agent; a = build_agent(); print('build_agent OK:', type(a).__name__)"` returned `build_agent OK: Agent`. All five factory functions (`build_coder_llm`, `build_planner_llm`, `build_embedder_llm`, `build_router`, `build_condenser`) succeed. RouterLLM emitted expected construction-time INFO logs ("No active LLM, using first LLM for attribute ...") — these are SDK 1.41 behavior for pre-completion attribute reads and do NOT indicate a wiring bug.
+- **Files touched:** none (verification only)
+- **Ports / adapters affected:** all Phase 2.4 factories confirmed constructible
+- **PORTING_LEDGER / ADR updated:** ADR-0033 remains Ratified with 2 status amendments (17:20 EDT provenance flavor, 17:25 EDT condenser cap placement). Both amendments preserved the core decision (Python config surface, option 6c, option 7a).
+- **Stop-condition status:** Phase 2.4 Definition of Done MET. Phase 3 verification (row 1 smoke + row 2 role-switch) unblocked. NEXT: user runs `bash bench/smoke-phase-3/run.sh` after starting the coder endpoint (`scripts/serve-coder.sh` in a separate terminal).
