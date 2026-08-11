@@ -138,8 +138,15 @@ final_text = " ".join(_event_text_blob(e) for e in events)
 mentions_target_file = "task/definition.py" in final_text
 mentions_line_198 = bool(re.search(r"\b198\b", final_text))
 _has_py_path = bool(re.search(r"[\w./-]+\.py\b", final_text))
+# Match a "line" citation phrase near a bare integer, tolerating markdown
+# emphasis (**), punctuation (:, -), whitespace, and newlines between the
+# word 'line' and the number. Also accept the inline path:line form.
 _has_line_number_phrase = bool(
-    re.search(r"line\s*(?:number|no\.?|#)?\s*[:\-]?\s*\d+", final_text, re.IGNORECASE)
+    re.search(
+        r"line\s*\**\s*(?:number|no\.?|#)?\s*\**\s*[:\-]?\s*\d+",
+        final_text,
+        re.IGNORECASE | re.DOTALL,
+    )
     or re.search(r"[\w./-]+\.py[:\s]+\d+", final_text)
 )
 has_any_path_citation = _has_py_path and _has_line_number_phrase
