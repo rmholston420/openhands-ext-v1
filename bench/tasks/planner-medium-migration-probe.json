@@ -1,0 +1,86 @@
+{
+  "$comment": "Phase 0.3 planner migration-ordering probe task set. Pre-registered by ADR-0023 §5 and locked by ADR-0024. Four structural-JSON plan-generation tasks that stress zero-downtime schema-migration ordering. Purpose: determine whether qwen3_6-35b-a3b-q4kxl-gguf's failure on planner-medium-02 (deploys application code before executing DB migration) is a systematic weakness (planner ranking confirmed per ADR-0023) or a one-off (planner ranking reconsidered). Scored under the same rubric as planner-medium (bench/rubrics/medium-scored.json, planner: perplexity_gold shape, 0-100 range). Task-set is frozen: any change requires a superseding ADR and a version bump.",
+  "schema_version": "1.0.0",
+  "tier": "medium",
+  "role": "planner",
+  "probe_kind": "migration-ordering",
+  "authored_utc": "2026-08-11T13:56:00Z",
+  "adr_anchor": "adrs/ADR-0024-planner-migration-ordering-probe.md",
+  "pre_registration_anchor": "adrs/ADR-0023-phase-0-3-router-selection-post-medium.md#5-phase-03-planner-re-eval",
+  "rubric_anchor": "bench/rubrics/medium-scored.json",
+  "gold_dir": "bench/gold/planner-medium-migration-probe",
+  "budget_tokens": 4096,
+  "chat_template_kwargs": {"enable_thinking": false},
+  "cells_to_score": [
+    {"cell": "qwen3_6-27b-q6k-gguf/llama-cpp/gpu", "role": "planner", "pool_anchor": "bench/candidates/planner-medium-pool.json"},
+    {"cell": "qwen3_6-35b-a3b-q4kxl-gguf/llama-cpp/gpu", "role": "planner", "pool_anchor": "bench/candidates/planner-medium-pool.json"}
+  ],
+  "co_residency_protocol": {
+    "policy": "option-2-single-role-at-a-time",
+    "note": "Coder must be stopped before either planner cell starts. Embedder is CPU-resident and unaffected. Sequential block: all probe tasks on cell 1, teardown, then all probe tasks on cell 2. Matches ADR-0022 Decision 4 shape.",
+    "adr_anchor": "adrs/ADR-0017-production-role-selection-pre-medium.md"
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["steps"],
+    "properties": {
+      "steps": {
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 10,
+        "items": {
+          "type": "object",
+          "required": ["id", "desc", "deps"],
+          "properties": {
+            "id": {"type": "string", "pattern": "^s[0-9]+$"},
+            "desc": {"type": "string", "minLength": 8},
+            "deps": {"type": "array", "items": {"type": "string", "pattern": "^s[0-9]+$"}}
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "additionalProperties": false
+  },
+  "gold_hashes": {
+    "planner-migration-probe-01-expand-backfill-contract": "aa778e1d4278f8b01515ec89a18cab0d77b45952a333475fdcba1234e7557d4f",
+    "planner-migration-probe-02-rename-via-expand-contract": "4c5d989d21831e707f48d9248d8e98a1e0a331e4571e19c9a54299a1eead077b",
+    "planner-migration-probe-03-fk-with-cleanup": "9c62557494a306b5ba56e2b9db4b16084016b6f6ef83dd665d26f6b42a1af559",
+    "planner-migration-probe-04-concurrent-index-rebuild": "760208808e899450bfd44eb8d9adebb8abc5091bf4af548c0ac442a18786a937"
+  },
+  "reversal_criteria": {
+    "$comment": "Decision rule for whether this probe reverses the ADR-0023 planner ordering. Pre-registered here before scoring so it cannot be moved post-hoc.",
+    "if_35b_a3b_q4kxl_scores_ge_90_on_all_four": "Reconsider planner ordering — file superseding ADR that flips planner back to 35b-a3b-q4kxl on wall-time tiebreak grounds, given quality parity.",
+    "if_35b_a3b_q4kxl_scores_lt_70_on_any_task": "Confirm planner ordering per ADR-0023 (27b-q6k retained as primary planner).",
+    "if_intermediate_70_89_on_any_task_and_ge_90_on_others": "Confirm planner ordering per ADR-0023; log per-task band mix as evidence.",
+    "if_27b_q6k_scores_lower_than_35b_a3b_q4kxl_by_gt_3_points_macro_avg": "Reconsider planner ordering — quality-first rule now favors 35b-a3b-q4kxl by more than the tiebreak band. File superseding ADR.",
+    "self_scoring_prohibited": true,
+    "scoring_authority": "Perplexity Max (Claude Sonnet 4.6 via Perplexity Computer)"
+  },
+  "tasks": [
+    {
+      "id": "planner-migration-probe-01-expand-backfill-contract",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for a zero-downtime rollout that adds a non-nullable country_code VARCHAR(2) column to a large existing users table (approximately 50 million rows). New signups must populate country_code from a geolocation service; existing rows must be backfilled from the same service; the final schema must have country_code NOT NULL with a CHECK constraint enforcing ISO-3166 alpha-2 format (^[A-Z]{2}$). The application currently reads and writes the users table on every signup and profile update. Include migration authoring, deployment gates, dual-write application deploy, backfill job, verification, NOT-NULL/CHECK migration, and tests. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 6,
+      "notes": "Three-phase expand-migrate-contract on a large table. Discriminator: nullable ADD → dual-write → backfill → NOT NULL/CHECK, with correct interleaving so no writes land NULL after NOT NULL and no writes are lost during backfill."
+    },
+    {
+      "id": "planner-migration-probe-02-rename-via-expand-contract",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for a zero-downtime rename of the email column on the accounts table to primary_email, across a service with multiple deployed application replicas that read and write the column concurrently. Direct ALTER TABLE ... RENAME COLUMN is not acceptable because in-flight replicas would break. Use expand-contract: add new column, dual-write phase, backfill, switch readers with a fallback (COALESCE) safety net, then bake, then drop the old column. Include migration authoring, application deploys R1/R2/R3, backfill job, and tests. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 6,
+      "notes": "Expand-contract rename with multi-replica coordination. Discriminator: dual-write precedes backfill; COALESCE fallback bridges dual-write to primary_email-only reads; DROP COLUMN happens strictly last after all replicas have rolled."
+    },
+    {
+      "id": "planner-migration-probe-03-fk-with-cleanup",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for adding a foreign-key constraint from orders.customer_id to customers.id with ON DELETE RESTRICT, zero-downtime, on a Postgres backend. The orders table contains approximately 4,000 orphan rows whose customer_id does not exist in customers. Naive ADD CONSTRAINT will fail on the first orphan. Include orphan identification, cleanup policy, application-layer guard against new orphans, cleanup execution, ADD CONSTRAINT NOT VALID split from VALIDATE CONSTRAINT (to avoid a full-table exclusive lock), and tests. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 6,
+      "notes": "Referential-integrity cleanup before constraint addition. Discriminator: cleanup precedes ADD CONSTRAINT; app-guard is deployed before cleanup runs; NOT VALID / VALIDATE split is used instead of a single ADD CONSTRAINT."
+    },
+    {
+      "id": "planner-migration-probe-04-concurrent-index-rebuild",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for a zero-downtime index change on a hot Postgres table (events, approximately 1.2 billion rows, 8,000 queries per second read+write). Replace the existing plain btree index idx_events_created_at with a partial index CREATE INDEX ... ON events (created_at) WHERE processed_at IS NULL to accelerate the unprocessed-events queue query. The old index cannot be dropped until the new one is serving the workload and query planners have adopted it. Include EXPLAIN baseline, CREATE INDEX CONCURRENTLY, invalid-index recovery contingency, ANALYZE, planner-adoption verification, bake period, DROP INDEX CONCURRENTLY, and runbook entry. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 6,
+      "notes": "CONCURRENTLY discipline on hot table. Discriminator: CREATE INDEX CONCURRENTLY (not plain CREATE INDEX); DROP INDEX CONCURRENTLY; bake period between new-index-live and old-index-drop; ANALYZE step present."
+    }
+  ]
+}

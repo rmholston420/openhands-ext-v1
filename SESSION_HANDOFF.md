@@ -1,39 +1,45 @@
-# OpenHands-Ext v1 Session Handoff — 2026-08-11 09:49 EDT
+# OpenHands-Ext v1 Session Handoff — 2026-08-11 09:56 EDT
 
 ## Current build-sequencing position
-- **Stage / phase:** Phase 0.3 gate-1 (router-selection lock-in)
-- **Plugin / kernel component:** production role selection (coder + planner + embedder)
-- **Port(s) in progress:** none (planner endpoint 8082 unchanged; model file swap only)
+- **Stage / phase:** Phase 0.3 gate-1 (post-ADR-0023 planner re-eval; probe authored, awaiting run)
+- **Plugin / kernel component:** planner role · migration-ordering probe
+- **Port(s) in progress:** none (probe is bench-only)
 
 ## Completed this session
-- Phase 0.2 Medium-tier verdicts filed for coder (3 cells, single-turn capture, ceiling 85) and planner (2 cells, full-plan capture). Pushed as commit `8681ebb`.
-- ADR-0023 filed as post-Medium Phase 0.3 router-selection ADR. Amends ADR-0017 planner row per rubric quality-first tiebreak rule.
-  - **Coder:** UNCHANGED (`qwen3-coder-30b-a3b-instruct-awq-4bit/vllm/gpu:8100`). Wins 3-point tiebreak on wall time.
-  - **Planner:** CHANGED — `qwen3_6-35b-a3b-q4kxl-gguf` → `qwen3_6-27b-q6k-gguf` (llama.cpp/gpu:8082). Quality delta 4.3 pts outside tiebreak band.
-  - **Embedder:** UNCHANGED (CPU-resident per ADR-0017 amendment #3).
-- Coder pool cleanup: `qwen3_6-27b-q6k-gguf` removed from `bench/candidates/coder-medium-pool.json` (dominated). Retained in planner pool.
-- Files updated (commit pending): ADR-0023 new, ADR-0017 status amendment #4, `adrs/README.md`, `bench/candidates/production-selection.json`, `bench/candidates/coder-medium-pool.json`, `scripts/serve-planner.sh`, `BUILD_LOG.md`.
-- Phase 0.3 planner re-eval: migration-ordering probe (3–5 tasks) pre-registered in ADR-0023 §5.
+- Phase 0.2 Medium-tier verdicts filed (commit `8681ebb`).
+- ADR-0023 filed: Phase 0.3 router-selection post-Medium (commit `40255c4`).
+  - Planner flipped `qwen3_6-35b-a3b-q4kxl-gguf` → `qwen3_6-27b-q6k-gguf` on quality-first tiebreak (4.3-pt gap, outside 3-pt band).
+  - Coder + embedder unchanged.
+- ADR-0024 filed: planner migration-ordering probe (pending push).
+  - 4 tasks: expand-migrate-contract, rename via expand-contract, FK with cleanup, CONCURRENTLY index rebuild.
+  - 4 gold references authored, SHA-256 hashed and frozen in task-set JSON.
+  - 5-branch pre-registered reversal criteria locked in `bench/tasks/planner-medium-migration-probe.json#/reversal_criteria`.
+  - Cells: 27b-q6k (current planner) + 35b-a3b-q4kxl (fallback on trial).
 
 ## Remaining before current Definition of Done
-- Commit + push ADR-0023 fan-out.
+- Commit + push ADR-0024 fan-out.
 - User pull on Colossus.
-- User verifies planner GGUF present at `models/qwen3_6-27b-q6k-gguf/Qwen3.6-27B-Q6_K.gguf`. If missing, run:
-  `huggingface-cli download unsloth/Qwen3.6-27B-GGUF Qwen3.6-27B-Q6_K.gguf --local-dir ~/dev/openhands-ext-v1/models/qwen3_6-27b-q6k-gguf`
-- Author Phase 0.3 planner migration-ordering probe task-set (3–5 tasks). Then re-eval 35b-a3b-q4kxl on it — if it passes all, reconsider planner ordering.
-- Open items from Phase 0.2 (deferred to Phase 0.3+):
-  - Coder multi-turn correctness harness upgrade (currently captures only first tool call per task; ceiling 85 applied to Medium coder scores as a consequence).
+- Run the probe on both cells (sequential-block co-residency; ~30 min per cell):
+  - `bash scripts/stop-large-model.sh coder` (if coder is hot)
+  - Cell 1: 27b-q6k on `bench/tasks/planner-medium-migration-probe.json` (all 4 tasks)
+  - `bash scripts/stop-large-model.sh planner`
+  - Cell 2: 35b-a3b-q4kxl on same task-set (all 4 tasks)
+  - Save outputs under `bench/scoring/planner-migration-probe-<ts>/<cell>/*.json`
+- Dump stripped outputs and score via Perplexity Max against the 4 gold files.
+- File follow-up ADR (0025 or later) that either **confirms ADR-0023 planner ordering** (27b-q6k retained) or **flips planner back to 35b-a3b-q4kxl** — decision fully determined by the pre-registered reversal criteria; no post-hoc interpretation.
+- Open items unchanged from prior session:
+  - Coder multi-turn correctness harness upgrade (Medium coder ceiling 85 stems from single-turn capture).
 
 ## Open questions / awaiting user answer
-- None. All post-Medium decisions taken under rubric locked in ADR-0016 + ADR-0022.
+- None. Probe is fully specified.
 
 ## Exact next action
-Pull on Colossus and verify planner model file exists before next planner start:
+Pull the ADR-0024 commit and inspect the probe artifacts:
 
 ```bash
 cd ~/dev/openhands-ext-v1
 git pull
-ls -lh models/qwen3_6-27b-q6k-gguf/Qwen3.6-27B-Q6_K.gguf 2>/dev/null || \
-  huggingface-cli download unsloth/Qwen3.6-27B-GGUF Qwen3.6-27B-Q6_K.gguf \
-    --local-dir models/qwen3_6-27b-q6k-gguf
+ls -1 bench/tasks/planner-medium-migration-probe.json bench/gold/planner-medium-migration-probe/
 ```
+
+Then when ready to run the probe, ping this thread for the exact bench harness invocation.

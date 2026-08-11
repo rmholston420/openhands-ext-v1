@@ -1092,3 +1092,24 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (planner endpoint 8082 unchanged; only model file swapped)
 - **PORTING_LEDGER / ADR updated:** ADR-0023 new; ADR-0017 amendment #4; ADR index updated
 - **Stop-condition status:** met for Phase 0.3 gate-1 selection. Awaits user pull + validation that new planner GGUF is present at `models/qwen3_6-27b-q6k-gguf/Qwen3.6-27B-Q6_K.gguf` before next planner start.
+
+## 2026-08-11 09:56 EDT — ADR-0024 filed: planner migration-ordering probe (4 tasks + gold + reversal criteria)
+
+- **Stage / plugin / port:** OpenHands-Ext v1 · Phase 0.3 gate-1 · planner re-eval per ADR-0023 §5 pre-registration.
+- **What changed:** Filled in the four surfaces ADR-0023 §5 left unspecified for the planner migration-ordering probe:
+  - **Task set:** `bench/tasks/planner-medium-migration-probe.json` — 4 structural-JSON plan tasks (expand-migrate-contract, expand-contract rename, FK-with-cleanup, CONCURRENTLY index rebuild). Same schema/budget/chat_template_kwargs as `planner-medium.json`.
+  - **Gold references:** `bench/gold/planner-medium-migration-probe/planner-migration-probe-{01..04}.md` — each with task summary, canonical plan, and 5-band per-task rubric (90-100, 70-89, 40-69, 10-39, 0-9). Ordering-failure class explicitly captured in 70-89 band.
+  - **Hash-freeze:** SHA-256 for all 4 golds stored in task-set JSON `#/gold_hashes`; verified hash-match at authoring time.
+  - **Cells:** exactly 2 (27b-q6k current planner + 35b-a3b-q4kxl fallback on trial). Sequential-block co-residency protocol from ADR-0022 Decision 4.
+  - **Reversal criteria:** pre-registered in `#/reversal_criteria` before scoring, per post-hoc-edit lock. Five-branch decision rule covers all plausible outcomes.
+- **Files touched:**
+  - `adrs/ADR-0024-planner-migration-ordering-probe.md` (new)
+  - `adrs/README.md` (new index row)
+  - `bench/tasks/planner-medium-migration-probe.json` (new)
+  - `bench/gold/planner-medium-migration-probe/planner-migration-probe-01-expand-backfill-contract.md` (new)
+  - `bench/gold/planner-medium-migration-probe/planner-migration-probe-02-rename-via-expand-contract.md` (new)
+  - `bench/gold/planner-medium-migration-probe/planner-migration-probe-03-fk-with-cleanup.md` (new)
+  - `bench/gold/planner-medium-migration-probe/planner-migration-probe-04-concurrent-index-rebuild.md` (new)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** ADR-0024 new; ADR index updated. Global rubric `bench/rubrics/medium-scored.json` unchanged (per-task band criteria live in gold files, not global rubric).
+- **Stop-condition status:** met for Phase 0.3 probe authoring. Awaits user pull + bench run on Colossus. Follow-up ADR (either confirming ADR-0023 or superseding planner row) files after Perplexity-Max scores per pre-registered reversal criteria.

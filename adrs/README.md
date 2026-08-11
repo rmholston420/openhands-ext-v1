@@ -31,6 +31,7 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0021 | [Live UI Playwright smoke test](ADR-0021-live-ui-playwright-smoke.md) | Ratified | Phase 1 |
 | 0022 | [Phase 0.2 coder + planner Medium-tier task-set, gold-reference, and co-residency protocol](ADR-0022-phase-0-2-coder-planner-medium-task-and-gold-protocol.md) | Ratified | Phase 0.2 |
 | 0023 | [Phase 0.3 router-selection: post-Medium production role update (planner flips 35B-a3b-q4kxl → 27B-q6k on quality-first)](ADR-0023-phase-0-3-router-selection-post-medium.md) | Ratified | Phase 0.3 gate-1 |
+| 0024 | [Planner migration-ordering probe (Phase 0.3 pre-registered re-eval): 4-task probe + pre-registered reversal criteria for ADR-0023 planner ordering](ADR-0024-planner-migration-ordering-probe.md) | Ratified | Phase 0.3 gate-1 |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 
