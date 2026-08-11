@@ -870,3 +870,24 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0018 filed.
 - **Stop-condition status:** met. Exit condition satisfied per `docs/PHASE-MINUS-1-VERIFICATION.md`.
+
+## 2026-08-11 07:18 EDT — Phase 2.1, 2.2, 2.3 implemented (light-touch)
+
+- **Stage / plugin / port:** Phase 2 · Suite-Wide Configuration · docs + wrappers only. No runtime services introduced.
+- **What changed:** Delivered §2.1 (deployment mode selection), §2.2 (MCP-via-supergateway install pattern + port allocation), §2.3 (retroactive skills convention). §2.4 explicitly UNTOUCHED (Phase 0.3-gated). §2.5 deferred.
+- **§2.1:** `scripts/openhands-mode.sh` three-way dispatcher (tui/serve/headless). Headless requires `--acknowledge-low-risk` as first positional (per ADR-0019 D1). Fails loud if `openhands` CLI missing with install instructions. `serve` validates Docker daemon.
+- **§2.2:** Port range 8110–8199 reserved for Phases 5–7 MCP servers (ADR-0019 D2). `scripts/mcp-supergateway.sh` template: rejects out-of-range ports, verifies `supergateway` prereq, binds-or-fails-loud, writes pid+log to /tmp. `docs/MCP_PORT_ALLOCATION.md` is the append-only allocation table.
+- **§2.3:** `<repo>/.agents/skills/` (committed) vs `~/.agents/skills/` (personal) split ratified in ADR-0019 D3. Retroactive-only capture per spec discipline.
+- **Prereqs deliberately not auto-installed:** `openhands` CLI and `supergateway` (npm). Wrappers fail-loud with exact install commands. Consistent with "target Colossus first" and "never introduce cloud/multi-user assumptions" — these are user-scoped installs.
+- **Files touched:**
+  - `docs/PHASE-2-CONFIG.md` (new)
+  - `docs/MCP_PORT_ALLOCATION.md` (new)
+  - `scripts/openhands-mode.sh` (new, +x)
+  - `scripts/mcp-supergateway.sh` (new, +x)
+  - `.agents/skills/README.md` (new)
+  - `.agents/skills/.gitkeep` (new)
+  - `adrs/ADR-0019-phase-2-mcp-port-range-and-mode-wrapper.md` (new)
+  - `adrs/README.md` (ADR-0019 row)
+- **Ports / adapters affected:** none (Phase 2 introduces conventions, not services).
+- **PORTING_LEDGER / ADR updated:** ADR-0019 filed (D1/D2/D3).
+- **Stop-condition status:** met for 2.1/2.2/2.3. Definition of Done: (a) mode wrapper syntax-clean and fails-loud on missing CLI — verified with `bash -n`. (b) MCP port range + launcher template documented and rejects out-of-range — verified with smoke run. (c) skills convention documented with committed README + retirement rule.
