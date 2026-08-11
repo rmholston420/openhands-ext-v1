@@ -35,7 +35,10 @@
         "duration_seconds",
         "harness_commit_sha",
         "llama_cpp_build_tag",
-        "vllm_release_tag"
+        "vllm_release_tag",
+        "harness_version",
+        "openhands_sdk_version",
+        "docker_image"
       ],
       "additionalProperties": false,
       "properties": {
@@ -82,6 +85,18 @@
         "vllm_release_tag": {
           "type": ["string", "null"],
           "description": "Exact vLLM release tag (e.g. v0.11.0). Null if run did not use vLLM."
+        },
+        "harness_version": {
+          "type": ["string", "null"],
+          "description": "Harness generation label (e.g. 'v1' for ADR-0026 multi-turn harness). Null on legacy pre-v1 runs."
+        },
+        "openhands_sdk_version": {
+          "type": ["string", "null"],
+          "description": "openhands-sdk package version at run time (e.g. '1.41.0'). Null if run did not use openhands-sdk."
+        },
+        "docker_image": {
+          "type": ["string", "null"],
+          "description": "Container image used by DockerWorkspace (e.g. 'ghcr.io/openhands/agent-server:latest-python'). Null for non-DockerWorkspace runs."
         },
         "rubric": {
           "description": "For roles that use a fixed rubric (planner). Timestamp locks pre-first-scored-output. Null for roles without a rubric.",

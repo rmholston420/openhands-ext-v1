@@ -111,6 +111,9 @@ class RunMetadata:
     harness_commit_sha: str
     llama_cpp_build_tag: Optional[str]
     vllm_release_tag: Optional[str]
+    harness_version: Optional[str] = None
+    openhands_sdk_version: Optional[str] = None
+    docker_image: Optional[str] = None
     rubric: Optional[Rubric] = None
     notes: Optional[str] = None
 

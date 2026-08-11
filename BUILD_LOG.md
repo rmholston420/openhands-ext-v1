@@ -1174,3 +1174,25 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** bench harness will consume these next (`_probe_coder_sdk` implementation slice)
 - **PORTING_LEDGER / ADR updated:** —
 - **Stop-condition status:** Prior single-turn coder-medium.json (ADR-0022) intact and locked. New task-set + gold set locked (post_hoc_edit_locked per ADR-0016 + ADR-0022). Any change requires superseding ADR + version bump.
+
+## 2026-08-11 10:41 EDT — Phase 0.3 gate-2 · schema extension + `_probe_coder_sdk` implementation
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · bench schema · coder correctness harness v1 implementation
+- **What changed:**
+  - `bench/schema/run.schema.json`: added `harness_version`, `openhands_sdk_version`, `docker_image` to `run_metadata.required` and to the `properties` block (all three nullable strings). Schema JSON validates.
+  - `bench/schema/run.py`: added three new `Optional[str]` fields to `RunMetadata` dataclass in same order. Backwards-compatible (all defaults None).
+  - `bench/runner/probes.py`: promoted `_probe_coder_sdk` from `NotImplementedError` stub to full implementation per ADR-0026 amendment 2 contract. Added helper `_run_sdk_task` for the per-task driver. Implementation:
+    * One `DockerWorkspace(working_dir="/workspace", enable_gpu=False, health_check_timeout=120.0)` per cell (auto-boots container).
+    * `try/finally ws.cleanup()` guarantees teardown even on exception.
+    * `LLM(model=f"openai/{served_name}", base_url=f"{endpoint}/v1", api_key=SecretStr("sk-local"), temperature=0.7, top_p=0.8, top_k=20, max_output_tokens=budget_tokens)` — one per cell.
+    * Per task: wipe (`rm -rf /workspace/repo && mkdir -p /workspace/repo`) → seed fixtures via `ws.file_upload` (host tempfile pattern) → task-08 special case: init git repo with modified files → build `Conversation(agent=agent, workspace=ws, callbacks=[on_event], max_iteration_per_run=20)` → `conv.send_message(task["prompt"])` → `conv.run()`.
+    * Event capture callback tracks `ActionEvent` count + tool_name (best-effort via multiple attrs), `AgentErrorEvent` count, and short observation/message summaries. Bounded to last 40 events in artifact.
+    * Final-state verification: `ws.execute_command(f"cat {path}")` for each path in `expected_final_state`; stores actual + expected + exit_code.
+    * Smoke test: `ws.execute_command(smoke_cmd, cwd="/workspace/repo", timeout=30.0)` when task has a `smoke_test_command`; captures exit + stdout/stderr (1024-char bounded).
+    * Coarse verdict (pass/fail): `run_error is None AND action_count > 0 AND (smoke is None OR smoke exit == 0)`. Task-08 (`no_changes_expected`) uses `action_count > 0 AND agent_errors == 0` instead. Fine-grained 0-100 scoring deferred to Perplexity-Max stage.
+    * TaskResult.detail packs a JSON artifact: `harness_version`, `task_id`, `turn_count`, `hit_iteration_cap`, `agent_error_count`, `tool_trace`, `expected_tool_sequence`, `preferred_tools`, `dispreferred_tools`, `expected_final_state_mode`, `final_states`, `smoke_test_command`, `smoke_result`, `run_error`, `events_tail[-40:]`.
+    * ImportError guard converts SDK-import failure back to `NotImplementedError` so `probe_coder` still degrades gracefully to fallback.
+- **Files touched:** bench/schema/run.schema.json, bench/schema/run.py, bench/runner/probes.py
+- **Ports / adapters affected:** bench harness `_probe_coder_sdk` now real; ready for smoke run.
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** ADR-0026 stop conditions 1-2 satisfied (SDK, DockerWorkspace). Condition 3 (turn count > 20) enforced natively via `max_iteration_per_run=20`. Condition 4 (fixture seed failure) handled explicitly with `seed_failures` list and `verdict_source=transport`.
