@@ -440,3 +440,19 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0013 Ratified.
 - **Stop-condition status:** POOL not closed. Coder-fast has 1 vLLM survivor (`qwen3-30b-a3b-thinking-2507-awq`) after ADR-0013 exclusions. Registry now lists 4 coder entries: 1 vLLM survivor + 2 llama.cpp (unverified for VL-taint) + 1 vLLM bf16 (OOM-gated by design). To meet §0.0b `min_pool=3` for a real elimination, either (a) verify + smoke the two llama.cpp GGUF cells, or (b) pull additional text-only vLLM coder candidates (e.g. `Qwen3-Coder-30B-A3B-Instruct` variants, DeepSeek-Coder AWQ, Codestral AWQ). Awaiting user decision.
+
+## 2026-08-11 03:52 EDT — Phase 0.1 coder-fast POOL CLOSED — 3/3 pass across vLLM + llama.cpp
+
+- **Stage / plugin / port:** Phase 0.1 · Fast tier · coder pool · combined vLLM + llama.cpp slice.
+- **What changed:** Ran combined coder-fast POOL against `bench/candidates/coder-fast-pool.json` (3 cells: 1 vLLM + 2 llama.cpp). All 3 cells passed. §0.0b guard satisfied (pool=3, min=3). Runner exit_code=0.
+  - `qwen3-30b-a3b-thinking-2507-awq` (vLLM 0.27.0) — **pass**. Cold ready 38s.
+  - `qwen3_6-27b-q6k-gguf` (llama.cpp b10356) — **pass**. Cold ready 13s. Dense 27B Q6_K.
+  - `qwen3_6-35b-a3b-q4kxl-gguf` (llama.cpp b10356) — **pass**. Cold ready 19s. MoE 35B/A3B Q4_K_XL.
+- **Files touched:**
+  - `bench/candidates/coder-fast-pool.json` (new, canonical POOL file — supersedes coder-fast-vllm.json and coder-fast-llama-cpp.json for Phase 0.1 coder-fast).
+  - `bench/results/phase-0-fast-coder-*-20260811T075*.json` (3 result JSONs + .probe.json companions on Colossus).
+  - `bench/results/server-logs/coder_*-2026*.log` (per-cell server logs on Colossus).
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none this entry. Combined-pool authoring pattern (single file spanning runtimes to satisfy §0.0b) is idiomatic and does not need a new ADR — the guard's per-invocation scope was already clear from `main.py`.
+- **Stop-condition status:** **POOL CLOSED**. All 3 candidates advance to Phase 0.2 slow tier per ADR-0007. No R1 eliminations at fast tier for coder role. Note: this is the "no elimination" outcome; slow tier will do quality-based ranking rather than gate-based elimination.
+- **Next action:** pull `cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit` as a fourth coder candidate — purpose-built coder-instruct belongs in the pool alongside the thinker on principle, even with 3 survivors already. Registry entry + `pull-models.sh` invocation to follow.

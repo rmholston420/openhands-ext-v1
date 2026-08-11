@@ -1,36 +1,39 @@
-# Kosmos Session Handoff — 2026-08-11 03:37 EDT
+# Kosmos Session Handoff — 2026-08-11 03:52 EDT
 
 ## Current build-sequencing position
 
-- **Stage / phase:** Phase 0.1 · Fast tier
-- **Plugin / kernel component:** coder pool composition (`bench/candidates/registry.json` `roles.coder`)
-- **Port(s) in progress:** none active; coder-fast POOL not closed — needs repopulation before §0.0b `min_pool=3` is met with real text-only candidates
+- **Stage / phase:** Phase 0.1 → Phase 0.2 (transitioning)
+- **Plugin / kernel component:** coder-fast POOL closed with 3 survivors; Phase 0.2 slow tier is next for coder role (quality ranking)
+- **Port(s) in progress:** none active
 
 ## Completed this session
 
-- Launcher-flag mechanism verified (ADR-0010 amended by ADR-0011; both ratified in-practice; commit `f76f307` / `84adc1a`).
-- Registry amended for dual-role 30B thinker (ADR-0012 ratified; commit `9a42313` / `920d7c7`).
-- Ran real Phase 0.1 coder-fast POOL against `bench/candidates/coder-fast-vllm.json` (3 vLLM cells):
-  - `qwen3-30b-a3b-thinking-2507-awq` — **PASS**. 5/5 tool_calls; wall p50=1.14s, p95=5.06s, cold=29.0s. VRAM peak 30660 MiB, util 94.9%, temp 51 °C.
-  - `qwen3_6-27b-int4-autoround` — **R1 launch_failure** (torch.OutOfMemoryError during KV profiling; Qwen3.5-VL multimodal, vision tower consumed ~12 GiB beyond text weights).
-  - `qwen3_6-35b-a3b-awq` — **R1 launch_failure** (same class of failure; Qwen3.5-VL, 22.23 GiB weights + vision + KV → OOM).
-- ADR-0013 filed and ratified: Qwen3.5-VL (`Qwen3_5*ForConditionalGeneration`) excluded from coder + planner pools; registry-authoring rule added (`architectures[0]` must end in `ForCausalLM`, or model card must document text-only path).
-- `bench/candidates/registry.json` amended: removed `qwen3_6-27b-int4-autoround` + `qwen3_6-35b-a3b-awq`. Registry now lists 4 coder entries.
-- Logs current: DEBUG_LOG entry (multimodal-in-coder-pool → torch.OutOfMemoryError symptom + fix + files) and BUILD_LOG entry (pool run + verdicts + stop-condition status). This SESSION_HANDOFF overwritten.
+- ADR-0011 ratified in-practice (fast-tier coder tool-call parser = hermes; commit `f76f307`).
+- ADR-0012 ratified (30B thinker is dual-role coder+planner; commit `9a42313` / `920d7c7`).
+- Ran real Phase 0.1 coder-fast POOL (vLLM slice only, 3 cells): 1 PASS + 2 R1 eliminated (Qwen3.5-VL multimodal, coder role has no use for vision tower).
+- ADR-0013 ratified (registry exclusion: Qwen3.5-VL not coder-pool; registry-authoring rule added; commit `4aa257d`).
+- GGUF metadata verified 2026-08-11 03:45 EDT: both `qwen3_6-27b-q6k-gguf` and `qwen3_6-35b-a3b-q4kxl-gguf` are text-only (0 VL tensors of 851/733; arch `qwen35` and `qwen35moe`).
+- llama.cpp build state confirmed: vendor built at tag `b10356` with CUDA 13.0 + gcc-13 + SM_120 per ADR-0004. `/usr/local/cuda → cuda-13.0`, RUNPATH baked in, `llama-server --version` clean.
+- Added `bench/candidates/coder-fast-pool.json` — canonical combined pool file spanning vLLM + llama.cpp cells to satisfy §0.0b min_pool=3 in one runner invocation (commit `58a741e`).
+- Ran combined coder-fast POOL 2026-08-11 03:50-03:52 EDT: **3/3 PASS**.
+  - `qwen3-30b-a3b-thinking-2507-awq` (vLLM 0.27.0) — pass, cold 38s.
+  - `qwen3_6-27b-q6k-gguf` (llama.cpp b10356) — pass, cold 13s.
+  - `qwen3_6-35b-a3b-q4kxl-gguf` (llama.cpp b10356) — pass, cold 19s.
+- BUILD_LOG entries current for both pool runs. DEBUG_LOG has the multimodal-in-coder-pool root-cause entry from earlier this session. This SESSION_HANDOFF overwritten.
 
 ## Remaining before current Definition of Done
 
-- Coder-fast pool has **1 vLLM survivor** — below `min_pool=3` for a real Phase 0.1 fast-tier elimination. To close the coder-fast gate for real, either:
-  - (a) Verify the two llama.cpp GGUF entries (`qwen3_6-27b-q6k-gguf`, `qwen3_6-35b-a3b-q4kxl-gguf`) are text-only (check GGUF metadata via `llama-gguf-inspect` or the model card, not just the file), and smoke them via the llama.cpp launcher (`LlamaCppServer.ROLE_FLAGS`). If they are Qwen3.5-VL GGUFs, they must be excluded under ADR-0013 too.
-  - (b) Pull additional text-only vLLM coder candidates. Concrete options to add to `bench/candidates/registry.json`: `Qwen3-Coder-30B-A3B-Instruct-*-AWQ` (Alibaba official coder), `DeepSeek-Coder-V2-Lite-16B-AWQ`, `Codestral-22B-v0.1-AWQ`. Each must have `config.json.architectures[0]` ending in `ForCausalLM` per ADR-0013.
-- Local uncommitted changes (unpushed): `adrs/ADR-0013-*.md`, `adrs/README.md`, `bench/candidates/registry.json`, `BUILD_LOG.md`, `DEBUG_LOG.md`, this `SESSION_HANDOFF.md`. Result files already exist on Colossus at `bench/results/phase-0-fast-coder-*20260811T07*.json` — those live in the Colossus checkout and should be committed on that side alongside the ADR-0013 pull.
-- No open ADRs; no open guard suppression.
+- **Coder-fast POOL is CLOSED.** All 3 candidates advance to Phase 0.2 slow tier per ADR-0007 methodology. Phase 0.1 coder role Definition of Done met.
+- **Optional pre-Phase 0.2 enrichment:** pull `cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit` — purpose-built coder-instruct. Belongs in coder pool on principle alongside the thinker. Would give Phase 0.2 four candidates instead of three, adding architectural diversity (coder-instruct trained specifically for tool-calling & code, distinct from thinker+parser combo). Registry entry + pull invocation pending.
+- **Planner-fast POOL:** registry has only 1 planner entry (the dual-role 30B thinker via ADR-0012). §0.0b min_pool=3 for planner-fast will fail without new candidates. Deferred until user directs — options: (a) pull additional planner-flavored models, (b) use `--smoke` for verification only, (c) skip planner and go embedder-fast first (registry has 4 embedder entries, guard passes).
+- **Embedder-fast POOL:** registry has 4 embedder entries (0.6B bf16, 0.6B q8 GGUF, 4B bf16, 4B q8 GGUF). Would pass §0.0b at min_pool=4. Requires embedder ROLE_FLAGS already defined; llama.cpp embedder side is `--embedding -c 4096`. vLLM embedder side needs a mode flag (`--task embed`?). To be inspected before running.
+- Uncommitted at `/tmp/oh-ext`: `BUILD_LOG.md`, `SESSION_HANDOFF.md`. Need push.
 
 ## Open questions / awaiting user answer
 
-1. Verify + include the two GGUF cells (path a), or pull new text-only vLLM candidates (path b), or both. My recommendation is (b) — the coder role wants a real coder-instruct model; the 30B thinker passed only because ADR-0011 got the parser right, not because a thinker is the best coder. Path (a) may reveal the GGUFs are also VL-tainted, giving no net pool growth.
-2. Result files landed in Colossus checkout (`bench/results/phase-0-fast-coder-*`) but were not committed. Confirm whether to submit them in the next commit or leave them in Colossus's working tree.
+1. Pull `cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit` now to give Phase 0.2 four candidates? (My recommendation: yes.)
+2. After that: which POOL next — planner (needs candidates pulled first) or embedder (already ready)? (My recommendation: embedder first — the pool is ready, guard passes, and it exercises the embedder-role code path which is otherwise unvalidated.)
 
 ## Exact next action
 
-Commit + push the three docs + ADR-0013 + registry amendment from this session (agent checkout `/tmp/oh-ext`). Then pull on Colossus and decide between path (a) and (b) for pool repopulation.
+Commit + push these two log files, then pull `cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit` — registry patch + `pull-models.sh --slug qwen3-coder-30b-a3b-instruct-awq` (or equivalent) + verify `config.json.architectures[0]` ends in `ForCausalLM` per ADR-0013 rule before adding to `roles.coder`.
