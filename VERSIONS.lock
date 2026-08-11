@@ -1,0 +1,79 @@
+# VERSIONS.lock — Live-Fetched Version Baseline
+
+**Fetch timestamp (UTC):** `2026-08-11T03:24:45Z`
+**Fetched by:** Perplexity Computer session `a97513e8-710d-484b-a54a-2e2e18ae0c24`
+**Purpose:** Machine-readable record of the exact upstream versions verified live at
+project bootstrap. Phase -1 on Colossus MUST re-fetch these before pinning anything;
+this file is a **freshness reference**, not authority.
+
+Per spec §-1.1 and Perplexity Computer Custom Instruction #1:
+> NEVER hardcode a version number for OpenHands, openhands-sdk/tools/workspace/agent-server,
+> agent-canvas, llama.cpp, or vLLM from this plan or any cached knowledge. Always re-fetch
+> the live GitHub releases page or `pip show`/`npm ls` output immediately before pinning,
+> and log the fetched tag + timestamp.
+
+---
+
+## OpenHands ecosystem
+
+| Component | Source | Version | Published |
+|---|---|---|---|
+| `OpenHands/software-agent-sdk` | GitHub releases/latest | `v1.41.0` | 2026-08-06T13:29:11Z |
+| `OpenHands/OpenHands` | GitHub releases/latest | `v1.12.0` | 2026-08-07T19:33:40Z |
+| `OpenHands/agent-canvas` | GitHub releases/latest | `v1.6.1` | 2026-07-24T19:31:56Z |
+| `openhands-sdk` | PyPI | `1.41.0` | 2026-08-06T13:29:42Z |
+| `openhands-tools` | PyPI | `1.41.0` | 2026-08-06T13:29:43Z |
+| `openhands-workspace` | PyPI | `1.41.0` | 2026-08-06T13:29:44Z |
+| `openhands-agent-server` | PyPI | `1.41.0` | 2026-08-06T13:29:40Z |
+| `@openhands/agent-canvas` | npm | `1.12.0` | 2026-08-07T19:41:56Z |
+
+**Note:** PyPI `openhands-*` line has caught up with the SDK monorepo tag (both `1.41.0`),
+resolving the v16 spec's cached observation that PyPI lags. The npm agent-canvas package
+tracks the OpenHands app tag (`1.12.0`), separately from the agent-canvas GitHub release tag
+(`v1.6.1`). Verify at Phase -1 which of these the SDK actually loads.
+
+## Serving runtimes
+
+| Component | Source | Version | Published |
+|---|---|---|---|
+| `ggml-org/llama.cpp` | GitHub releases/latest | `b10356` | 2026-08-11T02:46:08Z |
+| `vllm-project/vllm` | GitHub releases/latest | `v0.27.0` | 2026-08-10T21:18:11Z |
+
+**llama.cpp:** rolling build-tag stream. `b10356` is the top-of-releases tag at fetch
+time — it will have advanced by the time Phase -1 runs on Colossus. Re-fetch.
+
+**vLLM:** `v0.27.0` is the top-listed non-prerelease tag. Spec §-1.2 reconciliation
+rule applies — do not carry this forward; re-fetch at Phase -1.
+
+---
+
+## Blackwell / SM_120 target confirmation
+
+Required CMake flag for llama.cpp on RTX 5090:
+```
+-DCMAKE_CUDA_ARCHITECTURES=120
+```
+
+Do not rely on the generic `-DGGML_CUDA=ON` default — spec §-1.4 warning.
+
+## Re-fetch procedure (execute on Colossus at Phase -1)
+
+```bash
+# GitHub live tags
+curl -sf https://api.github.com/repos/OpenHands/software-agent-sdk/releases/latest | jq -r .tag_name
+curl -sf https://api.github.com/repos/OpenHands/OpenHands/releases/latest | jq -r .tag_name
+curl -sf https://api.github.com/repos/OpenHands/agent-canvas/releases/latest | jq -r .tag_name
+curl -sf https://api.github.com/repos/ggml-org/llama.cpp/releases/latest | jq -r .tag_name
+curl -sf https://api.github.com/repos/vllm-project/vllm/releases/latest | jq -r .tag_name
+
+# PyPI live
+for pkg in openhands-sdk openhands-tools openhands-workspace openhands-agent-server vllm; do
+  curl -sf "https://pypi.org/pypi/$pkg/json" | jq -r '.info.version'
+done
+
+# npm live
+curl -sf https://registry.npmjs.org/@openhands/agent-canvas | jq -r '."dist-tags".latest'
+```
+
+Compare the results against this file. Every drift MUST be re-recorded in the Phase 0.0c
+Category 7 run metadata as **fresh fetches**, not carried forward from this file.
