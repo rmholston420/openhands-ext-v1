@@ -8,6 +8,7 @@
 #   - docs/specs/**            (the v16 spec itself quotes the term)
 #   - docs/donor-inventory.md
 #   - docs/verification/**     (verification checklists quote spec Phase 1 verbatim)
+#   - docs/BENCHMARK_UNPAUSE_GATES.md   (references the ADR-0002 policy by name)
 #   - adrs/**                  (ADRs describe the decision, must quote the term)
 #   - PORTING_LEDGER.md
 #   - BUILD_LOG.md
@@ -36,7 +37,7 @@ else
 fi
 
 # Allow-list regex — a file matching this is exempt.
-ALLOW_RE='^(docs/specs/|docs/donor-inventory\.md$|docs/verification/|adrs/|PORTING_LEDGER\.md$|BUILD_LOG\.md$|DEBUG_LOG\.md$|KNOWN_ISSUES\.md$|SESSION_HANDOFF\.md$|hooks/pre-commit/no-localworkspace\.sh$|hooks/pre-commit/dispatch\.sh$|hooks/pre-commit/size-guard\.sh$|hooks/pre-push/no-diverged-remote\.sh$|scripts/install-hooks\.sh$|scripts/session-start\.sh$|scripts/session-end\.sh$|.*/tests?/|.*\.test\.[a-z]+$|.*_test\.py$|.*/test_.*)'
+ALLOW_RE='^(docs/specs/|docs/donor-inventory\.md$|docs/verification/|docs/BENCHMARK_UNPAUSE_GATES\.md$|adrs/|PORTING_LEDGER\.md$|BUILD_LOG\.md$|DEBUG_LOG\.md$|KNOWN_ISSUES\.md$|SESSION_HANDOFF\.md$|hooks/pre-commit/no-localworkspace\.sh$|hooks/pre-commit/dispatch\.sh$|hooks/pre-commit/size-guard\.sh$|hooks/pre-push/no-diverged-remote\.sh$|scripts/install-hooks\.sh$|scripts/session-start\.sh$|scripts/session-end\.sh$|.*/tests?/|.*\.test\.[a-z]+$|.*_test\.py$|.*/test_.*)'
 
 VIOLATIONS=""
 while IFS= read -r f; do

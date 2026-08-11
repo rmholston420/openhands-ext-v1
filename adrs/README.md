@@ -40,6 +40,7 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0030 | [Phase 0.4 embedder Full-tier re-eval opener (three-way: 4B-Q8 incumbent vs 8B-Q6_K vs 0.6B-Q8; all llama.cpp GPU cold; 2 blocks × 2 chunkers × 3 candidates = 12 cells; 40 queries; V3+W3 reversal criteria pre-locked; amended 2026-08-11 to restore scope + switch placement CPU→GPU)](ADR-0030-phase-0-4-embedder-full-tier-re-eval.md) | Proposed (Ratifies on fixture lock-in) | Phase 0.4 gate-4 |
 | 0030b | [Embedder co-residency viability under coder XOR planner (methodology + verdict criteria for ADR-0030 quality winners; VRAM math + contention protocol + startup swap cost)](ADR-0030b-embedder-co-residency-viability.md) | Proposed · deferred (execution conditional on future full re-eval per ADR-0031) | Phase 0.4 gate-4 |
 | 0031 | [Phase 0.4 gate-4 embedder verdict: DEFER (accept 4-query calibration, retain 4B-Q8 incumbent; N=4 below rubric N=20/block threshold; step-6b pool + calibration qrels persist for future re-eval)](ADR-0031-phase-0-4-embedder-verdict-defer.md) | Ratified | Phase 0.4 gate-4 |
+| 0032 | [Phase 1 spec-scope closure: 1.1 DockerWorkspace-only policy CLOSED (hook clean full-tree); 1.2 code-explorer registration DEFERRED to §2.4/Phase 3 where the runtime tool registry actually gets scaffolded; docs/BENCHMARK_UNPAUSE_GATES.md added to hook allow-list](ADR-0032-phase-1-spec-scope-closure-and-1-2-defer.md) | Ratified | Phase 1 |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 

@@ -1626,3 +1626,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** ADR-0031 (new, Ratified); ADR-0030 (status amendment, still Proposed, execution deferred); ADR-0030b (status update, still Proposed, deferred)
 - **Stop-condition status:** MET. Phase 0.4 gate-4 execution deferred. No open blockers on this gate. Future re-eval is an intentional queue item, not a WIP.
+
+## 2026-08-11 16:50 EDT — Phase 1 spec-scope CLOSED (1.1) + 1.2 deferred to Phase 2.4/3 (ADR-0032)
+
+- **Stage / plugin / port:** Phase 1 · DockerWorkspace-only policy · pre-commit guard (ADR-0002)
+- **What changed:** User confirmed installer executed on Colossus (`.git/hooks/pre-commit -> hooks/pre-commit/dispatch.sh`, 811 bytes, mtime Aug 11 00:15). Initial dispatch self-check flagged `docs/BENCHMARK_UNPAUSE_GATES.md` L81 — a legitimate docs mention of the ADR-0002 policy by name. Amended hook allow-list to exempt that path; hook now exits clean full-tree. Registered `code-explorer` (Phase 1.2) as deferred into Phase 2.4/3 runtime-tool-registry work per ADR-0032 (scaffolding a config surface just to register one built-in tool is out of scope; §2.4 is where the router config + tool registry actually gets built). Spec §Phase 1 L292 amended with deferral footnote.
+- **Files touched:** `hooks/pre-commit/no-localworkspace.sh` (allow-list + comment header), `docs/specs/integration-execution-plan-v16.md` (§Phase 1 L292 deferral footnote), `adrs/ADR-0032-phase-1-spec-scope-closure-and-1-2-defer.md` (new, Ratified), `adrs/README.md` (index row)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** ADR-0032 (new, Ratified). ADR-0002 status unchanged.
+- **Stop-condition status:** MET for 1.1. Phase 1 gate closed as scoped; 1.2 tracked as Phase 2.4/3 DoD line item per ADR-0032.

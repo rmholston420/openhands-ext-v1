@@ -289,7 +289,7 @@ No `LocalWorkspace` fallback anywhere in configuration, scripts, or documentatio
 If llama.cpp or vLLM run inside the same container boundary as the agent-server sandbox (rather than as host-level services, this plan's default topology), their pinned versions must be baked into the custom base image per OpenHands's `BASE_IMAGE` build-arg pattern — verify this only applies if the topology changes.[^2]
 
 - **1.1** Security analyzer (§0.6) and loop-guard (Phase 9) run as agent-server-side hooks outside the container — not disable-able by anything inside the sandbox they police.[^1]
-- **1.2** Register `code-explorer` (built into `openhands-tools`, read-only) for investigation tasks.[^1]
+- **1.2** Register `code-explorer` (built into `openhands-tools`, read-only) for investigation tasks.[^1] **DEFERRED to §2.4 / Phase 3 per ADR-0032** — registration lands with the runtime tool registry alongside the router table, once the runtime config surface is scaffolded.
 
 ### Phase 1 Verification
 
