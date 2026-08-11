@@ -1220,3 +1220,31 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (test-only)
 - **PORTING_LEDGER / ADR updated:** —
 - **Stop-condition status:** Prerequisite for stage-2 runner smoke. Purpose is to catch SDK-surface mismatches in ~30 s instead of burning a full 45-minute vLLM cell cycle. If step 3 or 4 reports unexpected attribute names, the harness will need a small edit before stage-2 proceeds.
+
+## 2026-08-11 10:52 EDT — Phase 0.3 gate-2 stage-1 smoke: PASS (SDK surface locked)
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · stage-1 result
+- **What changed:** no code. Records the smoke result and locks the SDK-surface assumptions the harness makes.
+- **Files touched:** —
+- **Ports / adapters affected:** —
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** All 9 steps `status: ok`; 15 s total. Locked findings:
+  * `openhands-sdk` version reported at run time: **1.41.0** (matches freeze file).
+  * DockerWorkspace boot: **4.4 s** (faster than the 10.5 s observed earlier; likely image cache warm).
+  * `execute_command` returns `CommandResult` with **`stdout` + `exit_code`** attributes (not `output`/`returncode`). Harness `getattr(..., "stdout", None) or getattr(..., "output", ...)` fallback is safe (stdout always present); no edit required.
+  * `Conversation(agent, workspace=DockerWorkspace(...), callbacks=[cb], max_iteration_per_run=20)` returns **`RemoteConversation`** as expected per ADR-0026 amendment 2.
+  * `file_upload(host_path, container_path)` round-trip verified — file arrives byte-identical.
+  * `mkdir -p a/b/c` works via `execute_command`; recursive parent creation OK.
+  * `LLM(model="openai/<name>", base_url=..., api_key=SecretStr("sk-local"), temperature, top_p, top_k)` constructs without contacting the base_url. Confirms no eager auth or ping.
+  * `send_message` fires 4 synchronous events into the callback: `ConversationStateUpdateEvent`, `SystemPromptEvent`, `MessageEvent`, `ConversationStateUpdateEvent`. Two of these (`ConversationStateUpdateEvent`, `SystemPromptEvent`) are NOT in the harness's `isinstance` dispatch — they land in `events_recorded` with just `{"kind": ...}`. Non-blocking (they don't affect action_count, tool_trace, or coarse verdict) but they inflate the `events_tail[-40:]` artifact. Consider filtering in a later slice if the trace budget bites.
+  * `ws.cleanup()`: **6.9 s** teardown.
+- Container image ships SDK v1.36.0; host is 1.41.0. Documented mismatch, not blocking.
+- **Decision:** proceed to stage-2 (one-task runner smoke) without harness edits.
+
+## 2026-08-11 10:52 EDT — Phase 0.3 gate-2 stage-2: port-usage check
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · stage-2 preflight
+- **What changed:** no code.
+- **Files touched:** —
+- **Ports / adapters affected:** —
+- **Stop-condition status:** Verified `PORTS[("vllm","coder")] = 8501` in `bench/runner/main.py` (not 8100). The runner launches its own vLLM instance on :8501; any pre-existing vLLM on :8100 does not conflict and does not need to be torn down. `_probe_coder_sdk`'s endpoint is set from `server.port` and therefore points at :8501 in production runs. Earlier SESSION_HANDOFF references to :8100 for the coder cell are stale — corrected in the next handoff overwrite.

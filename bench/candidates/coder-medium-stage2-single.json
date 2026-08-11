@@ -1,0 +1,17 @@
+{
+  "$comment": "Stage-2 smoke: single coder cell for one-task runner smoke of the v1 SDK harness. See ADR-0026 and BUILD_LOG 2026-08-11.",
+  "candidates": [
+    {
+      "model": "qwen3-coder-30b-a3b-instruct-awq-4bit",
+      "hf_repo": "cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit",
+      "format": "safetensors",
+      "runtime": "vllm",
+      "device": "gpu",
+      "role": "coder",
+      "quant": "awq-4bit",
+      "approx_size_gib": 17,
+      "tool_call_parser": "qwen3_coder",
+      "notes": "Stage-2 single-cell smoke for ADR-0026 v1 harness. Model + parser lock per ADR-0014 / ADR-0011 amendment 1."
+    }
+  ]
+}
