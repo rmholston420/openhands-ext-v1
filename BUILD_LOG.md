@@ -848,3 +848,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** none — enforces existing ADR-0008 without amendment.
 - **Stop-condition status:** in-progress. Gate 4 verification re-run pending.
+
+## 2026-08-11 07:07 EDT — Gate 4 GREEN; all un-pause gates satisfied
+
+- **Stage / plugin / port:** Un-pause · Gate 4 (planner VRAM verification) · verification-only.
+- **What changed:** Planner verification round-trip completed: `stop coder → serve planner → check-production-endpoints (planner PASS chat 205 ms, "OK COLOSSUS PLANNER", out_tokens=7) → stop planner → serve coder → check-production-endpoints (coder PASS chat 185 ms, "OK COLOSSUS CODER")`. Embedder PASS in both rounds (CPU-resident, dim=2560). Gate 4 flipped to GREEN. All 9 un-pause gates now GREEN. `docs/BENCHMARK_UNPAUSE_GATES.md` status header updated to `ALL GATES GREEN · UN-PAUSE COMPLETE`.
+- **Files touched:** `docs/BENCHMARK_UNPAUSE_GATES.md`.
+- **Ports / adapters affected:** none (verification-only).
+- **PORTING_LEDGER / ADR updated:** none.
+- **Stop-condition status:** met. Un-pause complete. Phase-1 authoring may open.

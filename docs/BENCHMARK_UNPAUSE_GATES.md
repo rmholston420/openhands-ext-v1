@@ -1,6 +1,6 @@
 # Benchmark Un-Pause Gates
 
-**Status:** DRAFT · 2026-08-11 06:57 EDT
+**Status:** ALL GATES GREEN · UN-PAUSE COMPLETE · 2026-08-11 07:07 EDT
 **Owner:** rmholston
 **Referenced from:** `SESSION_HANDOFF.md`, ADR-0017 (production role selection)
 
@@ -37,11 +37,11 @@ Update the status column when a gate changes. Do not delete gates — record the
 
 ## Gate 4 — VRAM budget verified for both large-model roles
 
-**Status:** GREEN for coder (2026-08-11 06:52 EDT) · UNVERIFIED for planner
+**Status:** GREEN (2026-08-11 07:07 EDT)
 
-- coder: 16.96 GiB weights + 9.61 GiB KV + 0.58 GiB CUDA graphs = 27.15 GiB used at 0.90 util (28.25 GiB budgeted). Fits with ~4 GiB free at startup.
-- planner: not yet started this session. Expected ~21 GiB weights (Q4_K_XL) + Q8_0 KV. `serve-planner.sh` `MIN_FREE_GIB` gate is 24 GiB.
-- Un-pause requires one successful `serve-planner.sh` → PASS on `check-production-endpoints.sh` → clean stop.
+- coder: 16.96 GiB weights + 9.61 GiB KV + 0.58 GiB CUDA graphs = 27.15 GiB used at 0.90 util (28.25 GiB budgeted). PASS chat 185 ms.
+- planner: boot verified 2026-08-11 07:06 EDT. `/v1/models` PASS 9 ms, chat PASS 205 ms, out_tokens=7, reply="OK COLOSSUS PLANNER". Co-residency Option 2 (mutually exclusive with coder) confirmed working via `stop-large-model.sh coder` → `serve-planner.sh` → stop planner → `serve-coder.sh` cycle.
+- Probe fix required to close this gate: `scripts/check-production-endpoints.sh` was violating ADR-0008 by not forwarding `chat_template_kwargs.enable_thinking=false` — fixed in commit 4a2a66f.
 
 ## Gate 5 — Blackwell + CUDA 12.8 workarounds documented
 
