@@ -1,6 +1,16 @@
 # ADR-0004 — llama.cpp CUDA Toolchain Pin: CUDA 13.0 + gcc-13 + SM_120
 
-**Status:** Ratified
+> **STATUS AMENDMENT (2026-08-11):** CUDA 13.0.88 alone does NOT resolve the
+> glibc-2.43 conflict. It fixes `cospi`/`sinpi`/`cospif`/`sinpif` (4 of the
+> original 6 mismatches from CUDA 12.8) but its `crt/math_functions.h` still
+> declares `rsqrt`/`rsqrtf` without `noexcept(true)`, which conflicts with
+> glibc 2.43. The completing measure is `scripts/patch-cuda-headers.sh`,
+> which patches the CUDA header idempotently under a `#if __GLIBC_MINOR__ >= 42`
+> guard. Approach documented in llama.cpp's own `docs/build.md`. The CUDA-13
+> pin decision itself stands — CUDA 12.8 would still require patching four
+> more declarations and adds no offsetting benefit.
+
+**Status:** Amended (2026-08-11)
 **Lock-in phase:** Phase -1 (llama.cpp build)
 **Supersedes:** —
 

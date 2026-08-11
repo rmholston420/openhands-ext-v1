@@ -1,4 +1,4 @@
-# OpenHands-Ext v1 — Session Handoff — 2026-08-11 00:15 EDT
+# OpenHands-Ext v1 — Session Handoff — 2026-08-11 00:20 EDT
 
 ## Current build-sequencing position
 
@@ -34,13 +34,19 @@
 
 ## Exact next action
 
-On Colossus:
+On Colossus. The build script now patches CUDA's `math_functions.h` in place
+(idempotent, backed up, glibc-version-guarded) before running cmake. This will
+prompt for sudo once.
 
 ```bash
 cd ~/dev/openhands-ext-v1
 git pull origin main
 bash scripts/install-hooks.sh
-bash scripts/build-llama-cpp.sh
+bash scripts/build-llama-cpp.sh    # will invoke sudo for the header patch
 ```
 
-If the build succeeds, paste the tail of its log (or just say "build ok") and I'll walk you through freeing VRAM + running the two smoke tests. If it fails, paste the error and I'll diagnose.
+If the patch step fails, run standalone:  
+`sudo -E bash scripts/patch-cuda-headers.sh`  
+Then re-run `bash scripts/build-llama-cpp.sh`.
+
+If the build succeeds, paste the tail of its log (or say "build ok") and I'll walk you through freeing VRAM + running the two smoke tests. If it fails at cmake or ninja, paste the error and I'll diagnose.

@@ -80,3 +80,15 @@ Entry format:
 - **Fix applied:** ADR-0003 amendment (filed 2026-08-11). `session-end.sh` now scans `bench/results/phase-neg-1-smoke-{llama-cpp,vllm}-*.json` for the most recent `status` field and (a) refuses any commit subject claiming green/complete when both are not `pass`, (b) appends `smoke.llama-cpp: <status>` and `smoke.vllm: <status>` lines to every commit body. Bypass via `ALLOW_GREEN_OVERRIDE=1` is available but leaves an explicit marker. Commit 535bc35 is NOT rewritten (never rewrite pushed history); a corrective follow-up commit and this DEBUG_LOG entry are the audit trail.
 - **Files changed:** `scripts/session-end.sh`, `adrs/ADR-0003-repo-colossus-mirror-discipline.md` (amendment block), `scripts/smoke-test-llama-cpp.sh` (added `status: pass` field), `scripts/smoke-test-vllm.sh` (added `status: pass` field).
 - **Related BUILD_LOG entry:** 2026-08-11 00:15 EDT
+
+## 2026-08-11 00:15 EDT — CUDA 13.0 still fails glibc 2.43 on rsqrt/rsqrtf
+
+- **Symptom:** `/usr/include/x86_64-linux-gnu/bits/mathcalls.h(206): error: exception specification is incompatible with that of previous function "rsqrt" (declared at line 629 of /usr/local/cuda-13.0/bin/../targets/x86_64-linux/include/crt/math_functions.h)` — plus the same for `rsqrtf` at line 653. Emitted by cudafe++ during CMake's CUDA-compiler-identification probe. 2 errors instead of the earlier 6 under CUDA 12.8.
+- **Affected stage / plugin / port:** Phase -1 · llama.cpp CUDA build
+- **Root cause:** CUDA 13.0.88 fixed `cospi`/`sinpi` `noexcept` decls upstream but not `rsqrt`/`rsqrtf`. Ubuntu 26.04 glibc 2.43 declares both with `noexcept(true)`; CUDA's `crt/math_functions.h` still declares them without any exception spec. cudafe++ under C++17 treats this as a hard error. My ADR-0004 hypothesis (CUDA 13 alone resolves the issue) was PARTIAL — it eliminated 4 of 6 mismatches but not the last two.
+- **Fix applied:** New `scripts/patch-cuda-headers.sh` — idempotent in-place patch that wraps `rsqrt`, `rsqrtf`, and (for CUDA-12.8 fallback) `cospi`/`cospif`/`sinpi`/`sinpif` decls in `#if __GLIBC_MINOR__ >= 42` (rsqrt) / `>= 41` (cospi/sinpi) guards that add `noexcept(true)`. Backs up original to `<header>.orig`. Marker line prevents double-patching. `build-llama-cpp.sh` step 3.5 invokes it (with `sudo -E` fallback if header is root-owned). Approach documented in llama.cpp's own `docs/build.md` ("Fixing Compatibility Issues with Old CUDA and New glibc") and the joanbm Gentoo gist for glibc 2.42.
+- **Files changed:**
+  - `scripts/patch-cuda-headers.sh` (new)
+  - `scripts/build-llama-cpp.sh` (added step 3.5 call, removed deprecated `-DLLAMA_CURL=ON`)
+- **Related BUILD_LOG entry:** 2026-08-11 00:20 EDT
+- **Supersedes hypothesis in:** 2026-08-11 00:12 EDT (CUDA-12.8/glibc entry — the "fix" of moving to CUDA 13 was insufficient on its own)

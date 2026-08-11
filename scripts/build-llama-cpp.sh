@@ -95,6 +95,18 @@ SM_ARCH="120"
   export CUDA_PATH="$CUDA_ROOT"
   export LD_LIBRARY_PATH="$CUDA_ROOT/lib64:${LD_LIBRARY_PATH:-}"
 
+  # 3.5. Patch CUDA math_functions.h for glibc 2.43 compatibility.
+  # CUDA 13.0.88's rsqrt/rsqrtf decls omit `noexcept(true)` while glibc
+  # 2.43 declares them WITH it; cudafe++ treats this as a hard error.
+  # See DEBUG_LOG.md 2026-08-11 and scripts/patch-cuda-headers.sh.
+  echo ""
+  echo "--- patching CUDA headers (idempotent, requires sudo) ---"
+  if [ -w "$CUDA_ROOT/targets/x86_64-linux/include/crt/math_functions.h" ]; then
+    CUDA_ROOT="$CUDA_ROOT" bash "$REPO_ROOT/scripts/patch-cuda-headers.sh"
+  else
+    CUDA_ROOT="$CUDA_ROOT" sudo -E bash "$REPO_ROOT/scripts/patch-cuda-headers.sh"
+  fi
+
   echo ""
   echo "--- cmake configure ---"
   rm -rf build
@@ -106,8 +118,7 @@ SM_ARCH="120"
     -DCMAKE_CUDA_HOST_COMPILER="$HOST_CC" \
     -DCMAKE_C_COMPILER="$HOST_CC" \
     -DCMAKE_CXX_COMPILER="$HOST_CXX" \
-    -DCUDAToolkit_ROOT="$CUDA_ROOT" \
-    -DLLAMA_CURL=ON
+    -DCUDAToolkit_ROOT="$CUDA_ROOT"
 
   # 4. Build
   echo ""

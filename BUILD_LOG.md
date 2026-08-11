@@ -117,3 +117,15 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** none — governance + toolchain only.
 - **PORTING_LEDGER / ADR updated:** ADR-0003 amended, ADR-0004 ratified. PORTING_LEDGER.md not updated in this commit; a llama.cpp entry will land after the CUDA-13 build actually succeeds on Colossus.
 - **Stop-condition status:** blocked pending re-execution on Colossus. Phase -1 §-1 Verification table is NOT green until both smoke tests emit `status: pass` JSONs.
+
+## 2026-08-11 00:20 EDT — CUDA header patch for glibc 2.43 rsqrt/rsqrtf
+
+- **Stage / plugin / port:** Phase -1 · llama.cpp CUDA build
+- **What changed:** Added `scripts/patch-cuda-headers.sh` — idempotent, guarded, in-place patch of `crt/math_functions.h` to add `noexcept(true)` to rsqrt/rsqrtf (and cospi/sinpi fallbacks for CUDA 12.8) under `#if __GLIBC_MINOR__ >= 42/41` guards. Backs up original. `build-llama-cpp.sh` step 3.5 invokes it (sudo -E fallback). Removed deprecated `-DLLAMA_CURL=ON` from cmake configure (llama.cpp b6773+ ignores it). Amended ADR-0004: CUDA-13 pin alone is necessary but not sufficient; header patch is the completing measure.
+- **Files touched:**
+  - `scripts/patch-cuda-headers.sh` (new, 200 lines, tested against synthetic header for dry-run, real-apply, idempotency, restore-and-repatch)
+  - `scripts/build-llama-cpp.sh` (step 3.5 + removed LLAMA_CURL)
+  - `DEBUG_LOG.md` (rsqrt entry)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0004 amended below.
+- **Stop-condition status:** blocked pending Colossus re-run. Phase -1 §-1 remains NOT green.
