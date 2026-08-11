@@ -1,54 +1,36 @@
-# Kosmos Session Handoff — 2026-08-11 04:07 EDT
+# OpenHands-Ext v1 Session Handoff — 2026-08-11 04:38 EDT
 
 ## Current build-sequencing position
-
-- **Stage / phase:** Phase 0.1 · Fast tier
-- **Plugin / kernel component:** coder-fast POOL — expanding from 3 to 4 cells; parser plumbing complete
-- **Port(s) in progress:** none active. Runner-internal changes only.
+- **Stage / phase:** Phase 0.1 · Fast tier · coder pool
+- **Plugin / kernel component:** bench runner (candidate list + rubric)
+- **Port(s) in progress:** none (config-only change)
 
 ## Completed this session
+- ADR-0011 amend 1 (per-cell tool-call parser) — plumbing wired (prior).
+- ADR-0011 amend 2 (per-cell reasoning parser) — plumbing wired + verified via 4-cell POOL re-run.
+- ADR-0011 ratified v25 (2026-08-11 04:38 EDT).
+- Coder-Instruct (`qwen3-coder-30b-a3b-instruct-awq-4bit`) eliminated from `bench/candidates/coder-fast-pool.json`. Registry entry retained.
+- BUILD_LOG + DEBUG_LOG entries appended.
 
-- Interpreted 2026-08-11 03:52 EDT combined 3-cell coder-fast POOL result: **3/3 PASS** (vLLM thinker 38s cold, llama.cpp 27B Q6_K 13s cold, llama.cpp 35B/A3B Q4_K_XL 19s cold). Runner exit_code=0. §0.0b guard satisfied. All 3 advance to Phase 0.2 slow tier per ADR-0007.
-- Committed pool-closed ledger (`1cd1a30`).
-- Verified `cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit` via web search + llm-explorer metadata: `Qwen3MoeForCausalLM`, `qwen3_moe`, no `vision_config`, Apache-2.0, 16.9 GiB. Committed registry addition (`8cab7b5`).
-- Pulled candidate (193s, rev `4bd30395b72e`, rollup sha `1c0f6074f956`). Manifest §0.0a snapshot for all 5 coder candidates at 04:05 EDT.
-- Inspected `models/qwen3-coder-30b-a3b-instruct-awq-4bit/chat_template.jinja` (6211 chars). Confirmed Qwen3-Coder XML wire format: outer `<tool_call>` wrapping `<function=name><parameter=arg>value</parameter></function>`. Requires `--tool-call-parser qwen3_coder`, NOT the ROLE_FLAGS default `hermes`.
-- Amended ADR-0011: parser is per-cell (default hermes; per-cell override via `tool_call_parser` field). Locked in registry-authoring rule mapping chat_template signature → required parser.
-- Wired per-cell parser through the stack:
-  - `ExpandedCandidate.tool_call_parser: Optional[str] = None` (new field).
-  - `expand_for_role()` propagates from registry (GPU + CPU-embedder cells).
-  - `_from_candidate_dict` propagates from `--candidate-file` rows.
-  - `_make_server` for vLLM coder cells appends `--tool-call-parser <value>` to `extra_flags`.
-  - `VLLMServer.__init__` unchanged (already accepted `extra_flags`; last-value-wins).
-- Registry and pool file updated: `hermes` explicit on thinker, `qwen3_coder` on coder-instruct.
-- All 4 files syntax-checked (2 Python parse OK, 2 JSON valid).
-- DEBUG_LOG search-first done: 4 prior parser entries found (03:06/03:15/03:18 EDT). New territory (per-cell mechanism) not previously covered. Appended 2 new DEBUG_LOG entries (per-cell parser plumbing + verdict-print KeyError from post-run inspection tooling).
-- BUILD_LOG appended. This SESSION_HANDOFF overwritten.
+## Fast-tier coder pool (locked, 3 cells)
+1. `qwen3-30b-a3b-thinking-2507-awq` — vLLM, hermes tool-parser, qwen3 reasoning-parser (thinking).
+2. `qwen3_6-27b-q6k-gguf` — llama.cpp, dense 27B Q6_K.
+3. `qwen3_6-35b-a3b-q4kxl-gguf` — llama.cpp, MoE 35B/A3B Q4_K_XL UD.
 
 ## Remaining before current Definition of Done
-
-- Commit + push these changes to origin/main.
-- **Run 4-cell coder-fast POOL** to verify the new coder-instruct passes with the qwen3_coder parser (must show `--tool-call-parser qwen3_coder` in server log launch cmd + non-empty `tool_calls[]` in the sidecar for the new cell).
-- Expected outcome: all 4 pass. If coder-instruct fails with `tool_calls=[]`, the parser choice or the plumbing has a defect — inspect the sidecar's `raw_content` before reverting anything.
-- After 4-cell pass: Phase 0.1 coder-fast POOL is fully closed with 4 survivors. Move to Phase 0.2 slow tier for coder role (gold-standard scoring against Perplexity Max), OR pivot to embedder-fast POOL first (registry has 4 embedder entries; §0.0b passes at min_pool=4).
+- Re-run 3-cell coder-fast POOL to confirm all three pass with the reduced pool (fast smoke; ~2 min).
+- Move on to next Phase 0.1 slice (planner tier, or slow tier — user decides).
 
 ## Open questions / awaiting user answer
-
-1. After the 4-cell coder-fast POOL passes: which comes next — Phase 0.2 slow tier for coder role (quality-ranked gold-scoring), or embedder-fast POOL first (already-ready pool)? My recommendation: **embedder-fast first** — it's the fastest to execute given the pool is already sized correctly, and it validates the embedder code path which is otherwise unexercised. Slow tier for coder is a bigger investment (needs a Perplexity-gold suite generated first).
+- Whether to keep Coder-Instruct in scope for slow-tier evaluation (registry entry retained; not blocked either way).
 
 ## Exact next action
-
-Commit + push the parser-plumbing changeset, then user runs:
-
 ```bash
-cd ~/dev/openhands-ext-v1
-git pull --ff-only
-.venv/bin/python -m bench.runner.main \
-  --candidate-file bench/candidates/coder-fast-pool.json \
+cd ~/dev/openhands-ext-v1 && git pull
+scripts/benchmark-tier-runner.py \
   --tier fast --role coder \
-  --rubric bench/rubrics/fast-tier-coder-r1.json
+  --task-set bench/tasks/coder-fast.json \
+  --rubric bench/rubrics/fast-elimination.json \
+  --candidate-file bench/candidates/coder-fast-pool.json \
+  --vllm-release 0.27.0
 ```
-
-(Substitute actual entry-point invocation if different — runner CLI unchanged from the prior 3-cell run.)
-
-Then paste the run log so we can verify (a) launch cmd for cell 4 shows `--tool-call-parser qwen3_coder`, (b) all 4 cells reach `verdict=pass`, (c) sidecar for cell 4 shows non-empty `tool_calls[]` (not the DEBUG_LOG 03:15 EDT parser-mismatch failure mode).

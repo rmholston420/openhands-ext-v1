@@ -354,3 +354,13 @@ Entry format:
 - **Fix applied:** ADR-0011 amend 2 — `--reasoning-parser` is now per-cell. Removed from `ROLE_FLAGS` defaults. Thinking models set `reasoning_parser="qwen3"` explicitly; non-thinking coders leave it unset.
 - **Files changed:** `bench/runner/candidates.py`, `bench/runner/main.py`, `bench/runner/server.py`, `bench/candidates/registry.json`, `bench/candidates/coder-fast-pool.json`, `adrs/ADR-0011-fast-tier-coder-tool-call-parser-hermes.md`.
 - **Related BUILD_LOG entry:** 2026-08-11 04:26 EDT.
+
+
+## 2026-08-11 04:38 EDT — Coder-Instruct fails fast-elimination on model semantic (not plumbing)
+
+- **Symptom:** Coder-fast POOL Cell 2 `qwen3-coder-30b-a3b-instruct-awq-4bit` verdict=fail after ADR-0011 amend 2 landed. Launch cmd confirmed correct (`--tool-call-parser qwen3_coder`, no `--reasoning-parser`; engine config shows `reasoning_parser=''`). Sidecar raw_content shows proper `tool_calls=[{name,args}]` with `reasoning=null` on ALL 5 tasks. Prior failure mode (content=null, tool_calls=[], reasoning='<function=…>') is fully resolved.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast tier · rubric evaluation (not runtime).
+- **Root cause:** Task 02 (change `DEBUG = False` → `DEBUG = True` in config.py). Model chose `execute_bash` with `cat /workspace/probe/config.py` instead of an editor tool. Rubric detail: `invoked forbidden tool: ['execute_bash']`. This is a **model tool-selection error**, not a parser or config bug. Qwen3-Coder-Instruct defaults to bash for a file-edit intent under fast-tier sampling.
+- **Fix applied:** Elimination, not repair. Removed the candidate from `bench/candidates/coder-fast-pool.json` (registry entry retained). Rationale per user rule "quality over speed, ties within 3 points → faster wins": Cell 2 is not within 3 points of the thinker on this rubric (it failed a task the thinker probably passes) and the failure is a legitimate model-quality strike.
+- **Files changed:** `bench/candidates/coder-fast-pool.json`, `adrs/ADR-0011-fast-tier-coder-tool-call-parser-hermes.md`, `adrs/README.md`, `BUILD_LOG.md`.
+- **Related BUILD_LOG entry:** 2026-08-11 04:38 EDT.

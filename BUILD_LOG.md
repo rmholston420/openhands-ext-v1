@@ -499,3 +499,17 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (bench runner only).
 - **PORTING_LEDGER / ADR updated:** ADR-0011 amend 2.
 - **Stop-condition status:** in-progress — awaiting re-run of 4-cell coder-fast POOL to verify Cell 2 passes tasks 01/04.
+
+
+## 2026-08-11 04:38 EDT — ADR-0011 ratified; Coder-Instruct eliminated from fast-tier pool
+
+- **Stage / plugin / port:** Phase 0.1 · Fast tier coder pool
+- **What changed:** ADR-0011 status → Ratified v25 with AMENDMENT 3 documenting the ratification + elimination decision. `bench/candidates/coder-fast-pool.json` reduced from 4 → 3 cells: removed `qwen3-coder-30b-a3b-instruct-awq-4bit`. Registry entry retained (out of pool, in scope for future slow tier if warranted). Rationale: 4-cell POOL re-run 2026-08-11 04:32–04:34 EDT verified plumbing (amend 1 + 2) is correct — Cell 2 sidecar shows proper `tool_calls=[{name,args}]` with `reasoning=null` on all 5 tasks. Task 02 fails on model semantic tool-selection (chose `execute_bash cat config.py` for a file-edit task instead of `str_replace_editor`/`write_file`). Fast-elimination rubric = any-fail → cell fail. Quality-over-speed rule applied: not a plumbing regression, so cannot be rescued by a config change.
+- **Files touched:**
+  - `bench/candidates/coder-fast-pool.json` (4 → 3 cells)
+  - `adrs/ADR-0011-fast-tier-coder-tool-call-parser-hermes.md` (STATUS → Ratified v25 + AMENDMENT 3 block)
+  - `adrs/README.md` (ADR-0011 row status → Ratified v25 2026-08-11)
+  - `BUILD_LOG.md`, `DEBUG_LOG.md`
+- **Ports / adapters affected:** none (bench candidate list + ADR).
+- **PORTING_LEDGER / ADR updated:** ADR-0011 ratified.
+- **Stop-condition status:** met — fast-tier coder pool locked at 3 cells (thinker vLLM + 2 GGUF llama.cpp). Ready to advance to next Phase 0.1 slice.

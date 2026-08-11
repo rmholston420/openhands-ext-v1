@@ -1,6 +1,10 @@
 # ADR-0011 — Fast-tier coder `--tool-call-parser` = `hermes` (Qwen3-Thinking-2507)
 
-**Status:** Amended (2026-08-11 04:07 EDT, 2026-08-11 04:26 EDT) — hermes is the **default** tool-call parser; per-cell override supported; **reasoning-parser is now per-cell with no role default**.
+**Status:** Ratified v25 (2026-08-11 04:38 EDT) — plumbing verified end-to-end; Coder-Instruct eliminated from fast tier on rubric (see AMENDMENT 3 below).
+
+> **STATUS AMENDMENT 3 (2026-08-11 04:38 EDT) — Ratification + Coder-Instruct elimination.** The per-cell `--tool-call-parser` (amend 1) and per-cell `--reasoning-parser` (amend 2) plumbing are verified working. 4-cell coder-fast POOL re-run 2026-08-11 04:32–04:34 EDT confirmed: Cell 2 (qwen3-coder-30b-a3b-instruct-awq-4bit) sidecar now shows proper `tool_calls=[{name,args}]` with `reasoning=null` on all 5 tasks — the prior `content=null tool_calls=[]` failure mode is gone. Cell 2 still fails the fast-elimination rubric on task 02 alone: model chose `execute_bash` (`cat config.py`) instead of an editor tool (`str_replace_editor`/`write_file`) for a file-edit task. This is a **model semantic tool-selection error**, not a parser or plumbing bug. Per the quality-over-speed rule with the fast-elimination rubric (any-fail = fail), Coder-Instruct is eliminated from `bench/candidates/coder-fast-pool.json`. Registry entry retained for future slow-tier consideration. Fast-tier pool is now 3 cells: thinker (vLLM) + 2 GGUF (llama.cpp).
+
+**Original status (superseded):** Amended (2026-08-11 04:07 EDT, 2026-08-11 04:26 EDT) — hermes is the **default** tool-call parser; per-cell override supported; **reasoning-parser is now per-cell with no role default**.
 **Lock-in phase:** Phase 0.1 · Fast tier
 **Supersedes:** — (amends ADR-0010's `ROLE_FLAGS["coder"]` value only; the mechanism from ADR-0010 stands)
 
