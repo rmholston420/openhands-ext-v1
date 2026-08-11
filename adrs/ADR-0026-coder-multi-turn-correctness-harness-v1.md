@@ -1,9 +1,40 @@
 # ADR-0026 — Coder multi-turn correctness harness v1 (Docker workspace + Perplexity-Max scored 0-100 + supersede prior verdict)
 
-**Status:** Amended · Ratified (scope-lock; implementation follows)
+**Status:** Amended (amend 3, 2026-08-11 EDT: transport + tools + scoping + trace schema v1.1) · Ratified (scope-lock; implementation follows)
 **Lock-in phase:** Phase 0.3 gate-2
 **Supersedes:** planner-role-independent portion of ADR-0017 (coder scoring shape) at the medium-tier surface
 **Extends:** ADR-0007 (§0.0c category 1 SDK path), ADR-0022 (Phase 0.2 task-set + gold protocol pattern), ADR-0023 (coder role assignment — re-verified post-harness)
+
+> **STATUS AMENDMENT 3 (2026-08-11 11:30 EDT) — stage-2 wire-up corrections + trace schema v1.1 + task-10 mode**
+>
+> Stage-2 execution on Colossus exposed four issues that the original ADR body did not specify concretely enough to preclude. All four are corrected below without changing decisions 1–6. The bench artifact `harness_version` field bumps to **v1.1** so the scoring stage can gate on it and refuse older shapes.
+>
+> **1. LLM transport (host ↔ container).** `DockerWorkspace` runs the agent inside a container on Docker's default bridge. Inside the container, `127.0.0.1` is the container loopback, not the host. The runner-launched vLLM / llama.cpp servers must therefore (a) bind `0.0.0.0` (was `127.0.0.1`), and (b) be reached by the agent via the docker0 bridge gateway `172.17.0.1` (host `127.0.0.1` / `localhost` / `0.0.0.0` are rewritten in `_probe_coder_sdk` before `LLM(...)` construction). UFW rule `allow from 172.17.0.0/16 to any` from ADR-0020 is a prerequisite and is confirmed active on Colossus. Fix landed in commit `034dad6` (2026-08-11 11:10 EDT).
+>
+> **2. Default tool preset.** The original ADR body's canonical example showed `Agent(llm=..., tools=[])`. That silently yields only the SDK's auto-registered `finish` + `think` tools and produces an infinite Action / Error loop on any file / bash task. The harness must build tools via `openhands.tools.preset.default.get_default_tools(enable_browser=False, enable_sub_agents=False)` and assert the list is non-empty. Fix landed in commit `4c05562` (2026-08-11 11:16 EDT).
+>
+> **3. Scoping.** `default_tools` is built once per cell in `_probe_coder_sdk` and must be threaded into `_run_sdk_task` as a keyword argument (same pattern as the other injected SDK symbols). Fix landed in commit `8963a10` (2026-08-11 11:22 EDT).
+>
+> **4. Event / tool trace schema (v1 → v1.1).** The original ADR body says "capture event trace" and "extract event trace: count `ActionEvent`s, list tool names invoked in order, count `AgentErrorEvent`s." Stage-2 confirmed that this is not enough for the Perplexity-Max scoring stage: `tool_trace: list[str]` (tool names only) makes it impossible to judge whether a `file_editor` call targeted the right path or used the right operation. From v1.1, `tool_trace` is `list[dict]` where each entry contains at minimum:
+>
+>   - `tool` — tool name
+>   - `args` — arg dict from `ActionEvent.action` (best-effort; truncated per-field to 1024 chars)
+>   - `success` — `True` unless a matching `AgentErrorEvent` was emitted for this action
+>   - `observation` — the corresponding `ObservationEvent`'s observation content, truncated to 2048 chars
+>
+> `events_tail` (last 40 events) is retained as-is. Legacy string entries are not backward-produced; scoring stage matches on `harness_version >= v1.1` before ingesting the new shape.
+>
+> **5. Task-10 verification mode (clarification, not change).** `coder-medium-10-implement-from-docstring` is a docstring-driven implementation task with no unique correct output. Task-set already authors it under `expected_final_state_mode: "rubric_only"` with `expected_final_state: {"/workspace/repo/src/algos.py": null}`. In `rubric_only` mode, the `null` `expected` value is a scoring-stage hint that means "extract this file's content into `final_states[path].actual` for Perplexity-Max to read and score against the rubric." The v1 harness populates `final_states` regardless of mode, so a `null` `expected` will always look like `expected != actual` if a reader checks equality without honoring `mode`. This is not a bug — the scoring stage's contract is: if `mode == "rubric_only"`, ignore `expected`, read `actual`, apply rubric. The rubric itself is `post_hoc_edit_locked` per ADR-0016 / ADR-0022. No file change; this bullet exists to prevent scoring-side misreads.
+>
+> **Files changed under this amendment:**
+>
+> - `bench/runner/probes.py` — items 1-4.
+> - `bench/runner/server.py` — item 1.
+> - `BUILD_LOG.md`, `DEBUG_LOG.md` — running records.
+>
+> **Consequences.** Scoring stage (Perplexity-Max) receives artifacts with `harness_version=v1.1` and MUST refuse to score `harness_version=v1` artifacts (they lack args / observation in `tool_trace`, so the rubric cannot be applied). Existing v1 probe artifacts under `bench/results/smoke/` are retained on disk per standing rule but are marked invalid for the coder gate in `BUILD_LOG.md`.
+>
+> **Lock-in phase.** Same as the parent ADR — Phase 0.3 gate-2.
 
 > **IMPLEMENTATION NOTE (2026-08-11 10:22 EDT) — SDK 1.41.0 import path**
 >

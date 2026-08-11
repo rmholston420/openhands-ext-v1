@@ -1,7 +1,7 @@
 {
-  "$comment": "Phase 0.3 gate-2 · Medium-tier coder MULTI-TURN task set (ADR-0026 v1 harness). Derived 1:1 from bench/tasks/coder-medium.json with four additional per-task fields: expected_final_state, expected_final_state_mode, smoke_test_command, reversal_criteria. Runs against a real DockerWorkspace via openhands-sdk 1.41.0 Conversation loop (see ADR-0026 amendment 2). Task-set is frozen once first run executes: any change requires a superseding ADR and a version bump. The prior single-turn coder-medium.json (ADR-0022) is NOT deleted; it remains locked as a reference. Gold files under bench/gold/coder-medium-multi-turn/ are also frozen (post_hoc_edit_locked).",
+  "$comment": "Phase 0.3 gate-2 \u00b7 Medium-tier coder MULTI-TURN task set (ADR-0026 v1 harness). Derived 1:1 from bench/tasks/coder-medium.json with four additional per-task fields: expected_final_state, expected_final_state_mode, smoke_test_command, reversal_criteria. Runs against a real DockerWorkspace via openhands-sdk 1.41.0 Conversation loop (see ADR-0026 amendment 2). Task-set is frozen once first run executes: any change requires a superseding ADR and a version bump. The prior single-turn coder-medium.json (ADR-0022) is NOT deleted; it remains locked as a reference. Gold files under bench/gold/coder-medium-multi-turn/ are also frozen (post_hoc_edit_locked).",
   "schema_version": "1.0.0",
-  "harness_version": "v1",
+  "harness_version": "v1.1",
   "tier": "medium",
   "role": "coder",
   "authored_utc": "2026-08-11T14:32:00Z",
@@ -57,7 +57,7 @@
         "execute_bash",
         "write_file"
       ],
-      "notes": "Surgical edit test — bash sed works but is dispreferred.",
+      "notes": "Surgical edit test \u2014 bash sed works but is dispreferred.",
       "expected_final_state": {
         "/workspace/repo/config/app.json": "{\n  \"app\": {\n    \"name\": \"medium-01\",\n    \"version\": \"1.0.0\",\n    \"debug\": true\n  },\n  \"database\": {\n    \"url\": \"sqlite:///data.db\",\n    \"pool_size\": 5\n  }\n}\n"
       },
@@ -117,7 +117,7 @@
     },
     {
       "id": "coder-medium-03-fix-off-by-one",
-      "prompt": "The function page_items in /workspace/repo/src/pagination.py has an off-by-one bug — it drops the last page. Fix it. Do not rewrite the function; make the minimal correction.",
+      "prompt": "The function page_items in /workspace/repo/src/pagination.py has an off-by-one bug \u2014 it drops the last page. Fix it. Do not rewrite the function; make the minimal correction.",
       "fixtures": {
         "/workspace/repo/src/pagination.py": "\"\"\"Pagination helper.\"\"\"\n\n\ndef page_items(items: list, page_size: int) -> list[list]:\n    \"\"\"Chunk items into pages of size page_size.\"\"\"\n    pages = []\n    for i in range(0, len(items) - 1, page_size):\n        pages.append(items[i:i + page_size])\n    return pages\n"
       },

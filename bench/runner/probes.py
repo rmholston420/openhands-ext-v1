@@ -630,10 +630,69 @@ def _run_sdk_task(
         return tr
 
     # --- 3. Event capture callback ---------------------------------------
+    # ADR-0026 amendment 3 (2026-08-11): tool_trace schema v1 -> v1.1.
+    # Each entry is now a dict {tool, args, success, observation}, not a bare
+    # tool name. Scoring stage matches on harness_version >= 'v1.1' before
+    # ingesting the new shape.
     events_recorded: list[dict] = []
-    tool_trace: list[str] = []
+    tool_trace: list[dict] = []
     action_count = 0
     agent_errors = 0
+    # ActionEvent and ObservationEvent arrive as separate events. We track
+    # the index of each pending ActionEvent in tool_trace so the matching
+    # ObservationEvent can patch it in place.
+    pending_action_idx: list[int] = []
+
+    def _truncate(value, limit: int) -> str:
+        try:
+            s = value if isinstance(value, str) else repr(value)
+        except Exception:  # noqa: BLE001
+            s = "<unrepresentable>"
+        return s if len(s) <= limit else s[:limit] + "...<truncated>"
+
+    def _extract_action_args(event) -> dict:
+        """Best-effort pull of the args dict off an ActionEvent (SDK 1.41)."""
+        # SDK 1.41.0 ActionEvent shape: event.action is a pydantic model of
+        # the tool's ActionParams (e.g. FileEditorAction, ExecuteBashAction).
+        action_obj = getattr(event, "action", None)
+        if action_obj is None:
+            return {}
+        # pydantic v2: prefer model_dump for a plain-dict view.
+        for attr in ("model_dump", "dict"):
+            fn = getattr(action_obj, attr, None)
+            if callable(fn):
+                try:
+                    d = fn()
+                    if isinstance(d, dict):
+                        return {k: _truncate(v, 1024) for k, v in d.items()}
+                except Exception:  # noqa: BLE001
+                    pass
+        # fallback: __dict__ minus private fields
+        raw = getattr(action_obj, "__dict__", {}) or {}
+        return {k: _truncate(v, 1024) for k, v in raw.items()
+                if not k.startswith("_")}
+
+    def _extract_tool_name(event) -> Optional[str]:
+        return (
+            getattr(event, "tool_name", None)
+            or getattr(getattr(event, "action", None), "tool_name", None)
+            or getattr(getattr(event, "tool", None), "name", None)
+        )
+
+    def _extract_observation(event) -> Optional[str]:
+        obs = getattr(event, "observation", None)
+        if obs is None:
+            return None
+        # observation is typically a pydantic model of ObservationBase; dump it.
+        for attr in ("model_dump", "dict"):
+            fn = getattr(obs, attr, None)
+            if callable(fn):
+                try:
+                    d = fn()
+                    return _truncate(d, 2048)
+                except Exception:  # noqa: BLE001
+                    pass
+        return _truncate(obs, 2048)
 
     def _on_event(event) -> None:
         nonlocal action_count, agent_errors
@@ -641,20 +700,37 @@ def _run_sdk_task(
         rec = {"kind": kind}
         if isinstance(event, ActionEvent):
             action_count += 1
-            # Extract tool name if possible — SDK ActionEvent varies; best-effort.
-            tool_name = getattr(event, "tool_name", None) or \
-                getattr(getattr(event, "action", None), "tool_name", None) or \
-                getattr(getattr(event, "tool", None), "name", None)
-            if tool_name:
-                tool_trace.append(str(tool_name))
-                rec["tool"] = str(tool_name)
+            tool_name = _extract_tool_name(event) or "<unknown>"
+            args = _extract_action_args(event)
+            entry = {
+                "tool": str(tool_name),
+                "args": args,
+                "success": True,
+                "observation": None,
+            }
+            tool_trace.append(entry)
+            pending_action_idx.append(len(tool_trace) - 1)
+            rec["tool"] = entry["tool"]
+            rec["args_keys"] = list(args.keys())
+        elif isinstance(event, ObservationEvent):
+            obs_str = _extract_observation(event)
+            if pending_action_idx:
+                idx = pending_action_idx.pop(0)
+                tool_trace[idx]["observation"] = obs_str
+            if obs_str is not None:
+                rec["obs"] = obs_str[:120]
         elif isinstance(event, AgentErrorEvent):
             agent_errors += 1
-            rec["error"] = str(getattr(event, "error", getattr(event, "message", "")))[:200]
-        elif isinstance(event, ObservationEvent):
-            obs = getattr(event, "observation", None) or getattr(event, "tool_name", None)
-            if obs is not None:
-                rec["obs"] = str(obs)[:120]
+            err_str = str(
+                getattr(event, "error", getattr(event, "message", ""))
+            )[:200]
+            rec["error"] = err_str
+            # If the error corresponds to the most recent pending action,
+            # mark that action as unsuccessful.
+            if pending_action_idx:
+                idx = pending_action_idx.pop(-1)
+                tool_trace[idx]["success"] = False
+                tool_trace[idx]["error"] = err_str
         elif isinstance(event, MessageEvent):
             role = getattr(getattr(event, "message", None), "role", None) or \
                    getattr(event, "source", None)
@@ -755,7 +831,7 @@ def _run_sdk_task(
     tr.tool_malformed = agent_errors
 
     artifact = {
-        "harness_version": "v1",
+        "harness_version": "v1.1",  # ADR-0026 amendment 3: tool_trace schema expanded to list[dict]
         "task_id": tid,
         "turn_count": action_count,
         "hit_iteration_cap": hit_iter_cap,

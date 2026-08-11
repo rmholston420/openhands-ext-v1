@@ -609,3 +609,12 @@ Entry format:
 
 1. **When threading dependencies into a per-task driver, thread them the same way you thread SDK classes.** The prior fix followed the pattern for `Agent` (import in parent, pass into child) but omitted this one.
 2. **`run_error` set on every task = look for a NameError / AttributeError in the driver, not the SDK.** Uniform ~µs wall time across all 10 tasks means the failure is in setup, not in the LLM call.
+
+## 2026-08-11 11:26 EDT — probe artifact reports tool_trace as list[str], only tool names captured
+
+- **Symptom:** `.tasks[N].detail | fromjson | .tool_trace[0]` yielded a bare string like `"file_editor"` instead of a dict; jq queries expecting `.tool` on each entry failed with `Cannot index string with string "tool"`. Also observed: task-06 (exact mode) with 19 tool calls yielded final_states_match `[false, true]` and no way to see which `file_editor` call in the sequence set the wrong content.
+- **Affected stage / plugin / port:** Phase 0.3 gate-2 · stage-2 · bench/runner/probes.py `_on_event`
+- **Root cause:** Original event callback recorded only `event.action.tool_name` and appended a string to `tool_trace`. ActionEvent's args dict, ObservationEvent's observation content, and per-action success flag were dropped. The ADR-0026 v1 harness contract was silent on trace field granularity, so this was under-specified rather than incorrect.
+- **Fix applied:** Rewrote `_on_event` to build `list[dict]` entries with `{tool, args, success, observation}`, correlating Action -> Observation via FIFO pending index. Bumped `harness_version` to `v1.1` so scoring stage refuses older shape. ADR-0026 amendment 3 covers this + earlier same-session fixes.
+- **Files changed:** bench/runner/probes.py, bench/tasks/coder-medium-multi-turn.json, adrs/ADR-0026-coder-multi-turn-correctness-harness-v1.md
+- **Related BUILD_LOG entry:** 2026-08-11 11:30 EDT

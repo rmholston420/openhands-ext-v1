@@ -1300,3 +1300,31 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **PORTING_LEDGER / ADR updated:** none.
 - **Stop-condition status:** Not yet re-run.
 
+
+## 2026-08-11 11:26 EDT — Stage-2 gate PASSED (10/10) · signal ready for scoring stage
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · stage-2 · bench/runner/probes.py
+- **What changed:** Nothing; recording outcome of the retry at 11:24 EDT after commit `8963a10`.
+- **Artifact:** `bench/results/smoke/smoke-medium-coder-qwen3-coder-30b-a3b-instruct-awq-4bit-vllm-gpu-20260811T152400Z.probe.json`
+- **Cell verdict (harness-emitted):** pass · 10/10 tasks · 0 agent_errors · 0 run_errors · turn range 3-19 · wall range 2.9s-20.9s · probe wall 94s · run duration 129.7s
+- **NVML:** vram_peak=31835 MiB · temp_peak=59 C · coverage=100%
+- **Metadata intact:** harness_version=v1 · openhands_sdk_version=1.41.0 · harness_commit_sha=8963a10 · docker_image=ghcr.io/openhands/agent-server:latest-python · ws_boot=4.47s
+- **Ports / adapters affected:** none — this is a verification-of-fix entry.
+- **PORTING_LEDGER / ADR updated:** none.
+- **Stop-condition status:** stage-2 harness stop condition met (all 10 tasks produced multi-turn traces with populated final_states). Coarse verdict is by design "did the agent produce structure worth scoring", NOT "matched expected file state" — fine-grained 0-100 grading is deferred to Perplexity-Max scoring stage per ADR-0026 decision 3. Two invalidated prior artifacts (`20260811T151156Z`, `20260811T152029Z`) retained on disk per standing rule; documented invalid for the coder gate.
+
+## 2026-08-11 11:30 EDT — ADR-0026 amendment 3 · tool_trace schema v1 -> v1.1
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · stage-2 · bench/runner/probes.py
+- **What changed:**
+  - Authored ADR-0026 amendment 3 as a status-amendment block at the top of the ADR. Bundles today's four wire-up fixes (transport, tools preset, scoping, trace schema) and one clarification (task-10 rubric_only mode is already correct; scoring stage must honor `mode` before comparing `expected`).
+  - `bench/runner/probes.py`: rewrote `_on_event` to build `tool_trace: list[dict]` (was `list[str]`). Each entry now carries `{tool, args, success, observation}` with defensive `getattr` extraction; args truncated to 1024 chars per field, observation truncated to 2048 chars. ActionEvent -> ObservationEvent correlation via `pending_action_idx` FIFO. AgentErrorEvent decorates the most-recent pending action with `success=False` and `error`.
+  - `bench/runner/probes.py`: bumped emitted `harness_version` field in the probe artifact from `v1` to `v1.1`. Scoring stage gates on `harness_version >= v1.1` before ingesting.
+  - `bench/tasks/coder-medium-multi-turn.json`: bumped task-set `harness_version` from `v1` to `v1.1` so RunMetadata records the correct version.
+- **Files touched:**
+  - adrs/ADR-0026-coder-multi-turn-correctness-harness-v1.md
+  - bench/runner/probes.py
+  - bench/tasks/coder-medium-multi-turn.json
+- **Ports / adapters affected:** Bench probe artifact contract with the Perplexity-Max scoring stage.
+- **PORTING_LEDGER / ADR updated:** ADR-0026 amendment 3 (this entry).
+- **Stop-condition status:** Awaits one more stage-2 rerun on Colossus to regenerate the artifact with the enriched tool_trace, after which scoring stage becomes unblocked.
