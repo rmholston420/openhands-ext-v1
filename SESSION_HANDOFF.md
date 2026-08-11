@@ -1,44 +1,36 @@
-# OpenHands-Ext v1 · Session Handoff — 2026-08-11 06:57 EDT
+# OpenHands-Ext v1 · Session Handoff — 2026-08-11 07:12 EDT
 
 ## Current build-sequencing position
-- **Stage / phase:** Phase 0.2 (Medium-tier authoring paused; production endpoints all verified)
-- **Plugin / kernel component:** serve infra · all three production roles live and healthy
-- **Port(s) in progress:** none — all four deferred spec-compliance questions resolved
+- **Stage / phase:** Phase −1 verified COMPLETE (drift-tolerant baseline). All 3 production endpoints PASS. All 9 un-pause gates GREEN.
+- **Plugin / kernel component:** none in flight
+- **Port(s) in progress:** none
 
 ## Completed this session
 - ADR-0017 amendments #1–#3 (coder 8000→8001→8100; embedder GPU→CPU per spec)
-- Coder up on 8100 (PASS chat 192 ms, out_tokens=7). Embedder up on 8090 (CPU, dim=2560).
-- Coder FlashInfer sampler workaround (`VLLM_USE_FLASHINFER_SAMPLER=0`) for Blackwell SM 12.0 + CUDA 12.8
-- Four deferred spec-compliance questions resolved:
-  1. ADR-0017 status label → `Ratified v25 · Amended ×3 (pre-Phase-0.3)`
-  2. Config surface → env-vars-only through Phase 0.2 (POST-PHASE-0.3 ONLY rule preserved)
-  3. Pre-commit hook → no action (existing `no-localworkspace.sh` already satisfies Phase-1; remaining Phase-1 checks are integration tests deferred until Phase-1 opens)
-  4. Un-pause checklist → `docs/BENCHMARK_UNPAUSE_GATES.md` authored (this file references it)
-- DEBUG_LOG entries: 3 (compressed-tensors, embedder GPU→CPU, FlashInfer sampler) with 7 reusable lessons total
-- KNOWN_ISSUES entry: deferred 4B-CPU vs. 0.6B-GPU embedder decision
+- Coder LIVE on 8100 (vLLM 0.27.0, `VLLM_USE_FLASHINFER_SAMPLER=0` for Blackwell+CUDA-12.8)
+- Embedder LIVE on 8090 (llama.cpp CPU, ctx 4096, dim 2560)
+- Planner boot-verified on 8082 (llama.cpp, `chat_template_kwargs.enable_thinking=false` per ADR-0008)
+- `check-production-endpoints.sh` fixed: now forwards ADR-0008 kwarg (commit 4a2a66f)
+- 4 deferred spec-compliance questions resolved (Q1–Q4 in commit 120ebb8)
+- Un-pause complete: all 9 gates GREEN, `docs/BENCHMARK_UNPAUSE_GATES.md` header updated
+- **Phase −1 verification complete** (this session's headline):
+  - Live-fetched top-of-releases for openhands ecosystem + llama.cpp + vLLM
+  - Colossus install state captured; drift logged (llama.cpp 3 tags, vLLM 1 patch)
+  - Category-7 metadata artifact written: `bench/run-metadata/version-pins-20260811T111235Z.json`
+  - Verification checklist written: `docs/PHASE-MINUS-1-VERIFICATION.md`
+  - ADR-0018 filed (drift-tolerant policy)
+  - SDK-to-runtime smoke PASSes both runtimes via existing production endpoints
 
-## Un-pause gates
-See `docs/BENCHMARK_UNPAUSE_GATES.md` for the full 9-gate checklist. Current status: all 9 GREEN except **Gate 4 (planner VRAM budget)** which is UNVERIFIED — planner has not yet been started this session. Un-pause requires one clean planner start.
-
-## Remaining before Medium-tier un-pause
-- One successful `serve-planner.sh` → PASS on `check-production-endpoints.sh` → clean stop, to flip Gate 4 to GREEN.
+## Remaining before current Definition of Done
+- Phase −1 DoD: MET. Nothing remains.
 
 ## Open questions / awaiting user answer
-- None from this session's queue.
-- Deferred: 4B-CPU vs. 0.6B-GPU embedder benchmark (KNOWN_ISSUES, triggered by retrieval latency measurements).
-- Deferred: CUDA 12.8 → 12.9 upgrade path (unlocks FlashInfer sampler + native SM 12.x kernels).
+- None from this session.
+- Deferred (recorded in KNOWN_ISSUES.md):
+  - llama.cpp b10356 → b10359 drift (leave until a fix motivates upgrade)
+  - vLLM 0.27.0 → 0.27.1 drift (leave until 0.27.1 changelog reviewed for SM 12.0 sampler)
+  - CUDA 12.8 → 12.9 upgrade path (unlocks FlashInfer sampler + native Blackwell kernels)
+  - 4B-CPU vs. 0.6B-GPU embedder benchmark (triggered by retrieval-latency observations)
 
 ## Exact next action
-Once user is ready to close Gate 4 (planner verification):
-```bash
-cd ~/dev/openhands-ext-v1
-bash scripts/stop-large-model.sh coder    # co-residency Option 2
-sleep 3
-bash scripts/serve-planner.sh >/tmp/serve-planner.log 2>&1 &
-sleep 60
-bash scripts/check-production-endpoints.sh
-# Expect planner PASS; coder FAIL (stopped, expected).
-# Then to restore working state:
-bash scripts/stop-large-model.sh planner
-bash scripts/serve-coder.sh >/tmp/serve-coder.log 2>&1 &
-```
+Phase 0.1 opens next per spec sequencing. Before it starts, restate Phase 0.1 scope from `docs/specs/integration-execution-plan-v16.md` and flag any ambiguity for user confirmation. Do not begin Phase 0.1 code without the standard scope-restate.

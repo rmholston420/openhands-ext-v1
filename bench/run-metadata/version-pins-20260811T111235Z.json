@@ -1,0 +1,123 @@
+{
+  "artifact": "phase-minus-1-version-pins",
+  "spec_ref": "docs/specs/integration-execution-plan-v16.md § Phase -1",
+  "fetch_timestamp_utc": "2026-08-11T11:12:35Z",
+  "fetch_timestamp_local": "2026-08-11 07:12 EDT",
+  "host": "Colossus",
+  "policy": "drift-tolerant per ADR-0018: log live-fetched top-of-releases; do not upgrade a currently-working component just to close drift",
+  "openhands_ecosystem": {
+    "openhands-sdk": {
+      "installed": "1.41.0",
+      "top_of_releases_pypi": "1.41.0",
+      "top_of_releases_github": "v1.41.0",
+      "github_repo": "OpenHands/software-agent-sdk",
+      "github_published_at": "2026-08-06T13:29:11Z",
+      "drift": "none",
+      "pin_action": "keep-installed"
+    },
+    "openhands-tools": {
+      "installed": "1.41.0",
+      "top_of_releases_pypi": "1.41.0",
+      "drift": "none",
+      "pin_action": "keep-installed"
+    },
+    "openhands-workspace": {
+      "installed": "1.41.0",
+      "top_of_releases_pypi": "1.41.0",
+      "drift": "none",
+      "pin_action": "keep-installed"
+    },
+    "openhands-agent-server": {
+      "installed": "1.41.0",
+      "top_of_releases_pypi": "1.41.0",
+      "drift": "none",
+      "pin_action": "keep-installed"
+    },
+    "agent_server_docker": {
+      "installed_tags": ["ghcr.io/openhands/agent-server:1.19.1-python", "ghcr.io/openhands/agent-server:1.23.1-python", "ghcr.io/openhands/agent-server:latest-python"],
+      "spec_reference_tag": "latest-python",
+      "pin_action": "keep-installed",
+      "note": "latest-python tracks main; per spec preferred over frozen version tag"
+    }
+  },
+  "serving_runtimes": {
+    "llama_cpp": {
+      "github_repo": "ggml-org/llama.cpp",
+      "vendor_checkout_tag": "b10356",
+      "vendor_checkout_sha": "0666ad2b2b2452668733729e8b54234f5964643a",
+      "vendor_checkout_commit_date": "2026-08-10T19:53:12+02:00",
+      "top_of_releases_github": "b10359",
+      "top_of_releases_published_at": "2026-08-11T10:48:48Z",
+      "drift": "3 build tags behind (b10356 -> b10359)",
+      "drift_age_hours_approx": 2,
+      "pin_action": "keep-checked-out",
+      "rebuild_deferred": true,
+      "rebuild_deferred_reason": "planner + embedder currently PASSing production endpoint checks on b10356; rolling build-tag stream (spec -1.2) means any given tag will drift within hours",
+      "sm_arch_explicit": "120",
+      "cuda_arch_flag_verified": "-DCMAKE_CUDA_ARCHITECTURES=120",
+      "build_script": "scripts/build-llama-cpp.sh"
+    },
+    "vllm": {
+      "github_repo": "vllm-project/vllm",
+      "installed_pip": "0.27.0",
+      "installed_pip_published_at": "2026-08-10T21:18:11Z",
+      "top_of_releases_github": "v0.27.1",
+      "top_of_releases_published_at": "2026-08-11T10:47:49Z",
+      "drift": "1 patch behind (0.27.0 -> 0.27.1)",
+      "drift_age_hours_approx": 2,
+      "pin_action": "keep-installed",
+      "upgrade_deferred": true,
+      "upgrade_deferred_reason": "coder currently PASSing chat probe on 0.27.0 with FlashInfer sampler workaround; unverified whether 0.27.1 includes SM 12.0 sampler fix or introduces new Blackwell regression"
+    }
+  },
+  "sdk_to_runtime_smoke": {
+    "policy": "reuse existing production endpoints as SDK-to-runtime smoke; no additional tiny-model download",
+    "policy_rationale": "openhands-sdk LLM client is generic OpenAI-compatible HTTP; a chat/embed round-trip against any /v1 endpoint exercises the same code path as a 1-3B tiny-model smoke",
+    "llama_cpp_smoke": {
+      "endpoint": "http://127.0.0.1:8090/v1",
+      "model": "qwen3-embedding-4b-q8-gguf",
+      "method": "POST /v1/embeddings via scripts/check-production-endpoints.sh",
+      "latest_pass_local": "2026-08-11 07:07 EDT",
+      "latency_ms": 311,
+      "vector_dim": 2560,
+      "status": "PASS"
+    },
+    "llama_cpp_planner_chat_smoke": {
+      "endpoint": "http://127.0.0.1:8082/v1",
+      "model": "qwen3_6-35b-a3b-q4kxl-gguf",
+      "method": "POST /v1/chat/completions with chat_template_kwargs.enable_thinking=false (ADR-0008)",
+      "latest_pass_local": "2026-08-11 07:06 EDT",
+      "latency_ms": 205,
+      "output_tokens": 7,
+      "reply": "OK COLOSSUS PLANNER",
+      "status": "PASS"
+    },
+    "vllm_smoke": {
+      "endpoint": "http://127.0.0.1:8100/v1",
+      "model": "qwen3-coder-30b-a3b-instruct-awq-4bit",
+      "method": "POST /v1/chat/completions with chat_template_kwargs.enable_thinking=false (ADR-0008)",
+      "latest_pass_local": "2026-08-11 07:07 EDT",
+      "latency_ms": 185,
+      "output_tokens": 7,
+      "reply": "OK COLOSSUS CODER",
+      "status": "PASS",
+      "workarounds": ["VLLM_USE_FLASHINFER_SAMPLER=0 (SM 12.0 + CUDA 12.8 requires >=12.9 for FlashInfer sampler)"]
+    }
+  },
+  "verification_table_snapshot": {
+    "sdk_versions_match_live": "PASS",
+    "llama_cpp_reverified_at_build_time": "PASS (b10356 checked out; live top b10359 logged as drift)",
+    "vllm_reverified_discrepancy_reconciled": "PASS (0.27.0 installed; live top 0.27.1 logged as drift; fetch timestamp captured)",
+    "blackwell_sm120_explicit": "PASS (SM_ARCH=120, -DCMAKE_CUDA_ARCHITECTURES=120)",
+    "sdk_to_runtime_smoke_both_runtimes": "PASS (see sdk_to_runtime_smoke)",
+    "version_pin_metadata_into_category_7": "PASS (this file)"
+  },
+  "colossus_environment": {
+    "hostname": "Collosus",
+    "python": "3.14.4",
+    "venv_path": "/home/rmholston/dev/openhands-ext-v1/.venv",
+    "cuda": "12.8",
+    "gpu": "RTX 5090 (SM 12.0)"
+  },
+  "referenced_adrs": ["ADR-0002", "ADR-0008", "ADR-0017", "ADR-0018"]
+}

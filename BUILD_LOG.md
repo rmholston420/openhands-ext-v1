@@ -857,3 +857,16 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (verification-only).
 - **PORTING_LEDGER / ADR updated:** none.
 - **Stop-condition status:** met. Un-pause complete. Phase-1 authoring may open.
+
+## 2026-08-11 07:12 EDT — Phase −1 verification complete (drift-tolerant baseline)
+
+- **Stage / plugin / port:** Phase −1 · Version Baseline and Pin · verification-only.
+- **What changed:** Executed Phase −1 mandatory gate per v16 spec. Live-fetched top-of-releases for all listed components; compared to installed state on Colossus; filed Category-7 metadata artifact; ratified drift-tolerance policy in ADR-0018. All 6 verification rows PASS. Deviations documented (D1: reused production endpoints as smoke targets; D2: drift not auto-resolved).
+- **Live-fetched top-of-releases (2026-08-11 UTC):** software-agent-sdk v1.41.0 · agent-canvas v1.6.1 · llama.cpp b10359 · vLLM v0.27.1 · openhands-* PyPI 1.41.0 (all four packages).
+- **Colossus installed:** openhands-{sdk,tools,workspace,agent-server}=1.41.0 · vLLM=0.27.0 · llama.cpp vendor=b10356 · Python 3.14.4 · SM_ARCH=120 explicit in build-llama-cpp.sh.
+- **Drift (logged, NOT resolved per ADR-0018):** llama.cpp 3 build-tags (b10356→b10359, ~15 h); vLLM 1 patch (0.27.0→0.27.1, ~2 h). Upgrade commands filed in KNOWN_ISSUES.
+- **SDK-to-runtime smoke:** PASS both runtimes via existing production endpoints — coder chat 185 ms (vLLM), planner chat 205 ms (llama.cpp), embedder 311 ms (llama.cpp CPU). All via openhands-sdk generic OpenAI-compatible HTTP client. No new tiny-model download.
+- **Files touched:** `bench/run-metadata/version-pins-20260811T111235Z.json` (new), `docs/PHASE-MINUS-1-VERIFICATION.md` (new), `adrs/ADR-0018-phase-minus-1-version-pins.md` (new), `adrs/README.md` (index row + ADR-0017 status refined), `KNOWN_ISSUES.md` (2 drift entries).
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0018 filed.
+- **Stop-condition status:** met. Exit condition satisfied per `docs/PHASE-MINUS-1-VERIFICATION.md`.

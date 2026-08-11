@@ -22,3 +22,40 @@ _No open issues._
   5. Any switch requires ADR-0017 amendment #4 documenting the empirical basis.
 - **Related DEBUG_LOG search terms:** `embedder`, `ADR-0017 amendment #3`, `VRAM co-residency`, `-ngl`, `qwen3-embedding`
 - **Trigger to unblock:** first sign of retrieval latency causing OpenHands agent slowdown, OR when Medium-tier planning starts and embed throughput becomes measurable.
+
+### 2026-08-11 — llama.cpp vendor drift (b10356 installed, b10359 available)
+
+- **Blocks:** nothing (planner + embedder PASS on b10356)
+- **Symptom:** `git -C vendor/llama.cpp describe` shows `b10356` (committed 2026-08-10 19:53 UTC); `gh release view ggml-org/llama.cpp` shows `b10359` (published 2026-08-11 10:48 UTC).
+- **Attempted fixes:** none — drift-tolerant policy per ADR-0018.
+- **Next investigation:** review b10357..b10359 commit log if a Blackwell/SM_120 or GGUF-loader fix is announced; otherwise leave alone. Rolling-tag stream will always drift within hours.
+- **Upgrade command (when needed):**
+  ```bash
+  cd ~/dev/openhands-ext-v1
+  bash scripts/stop-large-model.sh coder
+  bash scripts/stop-large-model.sh planner
+  bash scripts/build-llama-cpp.sh    # rebuilds to current top-of-releases
+  bash scripts/serve-embedder.sh &
+  bash scripts/serve-coder.sh &
+  bash scripts/check-production-endpoints.sh
+  ```
+- **Related DEBUG_LOG search terms:** llama.cpp, vendor, SM_120, GGUF loader
+
+### 2026-08-11 — vLLM patch drift (0.27.0 installed, 0.27.1 available)
+
+- **Blocks:** nothing (coder PASSes chat probe on 0.27.0 with `VLLM_USE_FLASHINFER_SAMPLER=0`)
+- **Symptom:** `pip show vllm` shows `0.27.0` (published 2026-08-10 21:18 UTC); `gh release list vllm-project/vllm` top non-prerelease is `v0.27.1` (published 2026-08-11 10:47 UTC).
+- **Attempted fixes:** none — drift-tolerant policy per ADR-0018.
+- **Next investigation:** check 0.27.1 changelog specifically for FlashInfer sampler SM 12.0 support or CUDA 12.8 kernel fallback improvements. If either lands, motivates upgrade + potential removal of `VLLM_USE_FLASHINFER_SAMPLER=0`. Otherwise leave alone.
+- **Upgrade command (when needed):**
+  ```bash
+  cd ~/dev/openhands-ext-v1
+  source .venv/bin/activate
+  bash scripts/stop-large-model.sh coder
+  pip install --upgrade "vllm==0.27.1"
+  bash scripts/serve-coder.sh &
+  bash scripts/check-production-endpoints.sh
+  # If FlashInfer sampler is now Blackwell-compatible in 0.27.1:
+  #   remove `VLLM_USE_FLASHINFER_SAMPLER=0` from scripts/serve-coder.sh and retest
+  ```
+- **Related DEBUG_LOG search terms:** vLLM, FlashInfer, SM 12.0, CUDA 12.8
