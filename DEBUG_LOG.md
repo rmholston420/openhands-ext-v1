@@ -570,3 +570,14 @@ Entry format:
 1. **`Failed to get device capability: SM 12.x requires CUDA >= 12.9` is the true root** — the sm75 error below it is misleading FlashInfer fallback text. Grep the log for the SM-12 message first on any Blackwell + CUDA 12.8 vLLM crash.
 2. **`VLLM_USE_FLASHINFER_SAMPLER=0` must live in `~/.bashrc`** (or a systemd unit) — subprocess-only exports die with the shell. Any post-reboot / post-tmux-restart standalone `vllm serve` will crash without it until CUDA 12.9.
 3. **Bench harness safety by accident:** the harness set the env var per-cell subprocess, so cells passed while the interactive shell was still broken. Bench-passing ≠ endpoint-launchable in a fresh shell.
+
+## 2026-08-11 11:10 EDT — Stage-2 runner writes no BenchRun; litellm connection error inside container
+
+- **Symptom:** stage-2 smoke run of `scripts/benchmark-tier-runner.py --smoke ... --candidate-file bench/candidates/coder-medium-stage2-single.json` produced no `.json` under `bench/results/smoke/`. Runner-launched vLLM on `:8501` came up cleanly (server-logs confirm `Application startup complete` and `GET /health 200`). DockerWorkspace agent-server container came up. Container logged `litellm.InternalServerError: OpenAIException - Connection error.. Attempt #1` on every `POST /v1/chat/completions` attempt. Runner exited at `elapsed=354s` with `PROBE: END`; no `WRITE:` line, no `.probe.json` sidecar.
+- **Affected stage / plugin / port:** Phase 0.3 gate-2 · stage-2 · `_probe_coder_sdk` LLM transport.
+- **Root cause:** `_probe_coder_sdk` in `bench/runner/probes.py` built `LLM(base_url="http://127.0.0.1:8501/v1")` and passed that to the `Agent` running inside DockerWorkspace. Inside the container, `127.0.0.1` is the container's own loopback — the host's vLLM is unreachable. Same interaction as DEBUG_LOG 2026-08-11 08:11 EDT (openhands-app → 172.17.0.1), but on the bench-side of the fence. UFW allow rule from that earlier entry (ADR-0020) is still active, but the bench-side vLLM launcher was still binding `127.0.0.1`, so even with `172.17.0.1` in hand, the socket wouldn't accept.
+- **Fix applied:**
+  - `bench/runner/probes.py`: rewrite loopback hostname in endpoint URL to `172.17.0.1` before building `LLM(...)`. Guard limits rewrite to `127.0.0.1` / `localhost` / `0.0.0.0`.
+  - `bench/runner/server.py`: change vLLM and llama.cpp `--host` from `127.0.0.1` to `0.0.0.0` so `172.17.0.1:<port>` accepts. Health-check URLs kept on `127.0.0.1` (host loopback still served by wildcard bind).
+- **Files changed:** bench/runner/probes.py, bench/runner/server.py
+- **Related BUILD_LOG entry:** 2026-08-11 11:10 EDT

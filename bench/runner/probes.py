@@ -484,9 +484,25 @@ def _probe_coder_sdk(
     )
 
     # Build LLM once per cell — same endpoint + sampling for every task.
+    #
+    # ADR-0026 amendment 3 (2026-08-11 EDT):
+    # DockerWorkspace runs the agent inside a container on Docker's default
+    # bridge network. Inside the container, 127.0.0.1 is the container's own
+    # loopback — NOT the host. The runner-launched vLLM is bound to the host's
+    # 127.0.0.1:<port>. To reach it from the container we rewrite loopback
+    # hosts to 172.17.0.1 (docker0 bridge gateway on stock Linux Docker).
+    # No effect on non-loopback endpoints (e.g. a manually configured LAN host).
+    import urllib.parse as _urlparse
+    parsed = _urlparse.urlparse(endpoint if "://" in endpoint else f"http://{endpoint}")
+    _host = parsed.hostname or ""
+    if _host in ("127.0.0.1", "localhost", "0.0.0.0"):
+        _port = f":{parsed.port}" if parsed.port else ""
+        container_endpoint = f"{parsed.scheme}://172.17.0.1{_port}"
+    else:
+        container_endpoint = endpoint
     llm = LLM(
         model=f"openai/{served_name}",
-        base_url=f"{endpoint.rstrip('/')}/v1",
+        base_url=f"{container_endpoint.rstrip('/')}/v1",
         api_key=SecretStr("sk-local"),
         temperature=0.7, top_p=0.8, top_k=20,
         max_output_tokens=budget_tokens,

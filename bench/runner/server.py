@@ -381,9 +381,13 @@ class VLLMServer(BaseServer):
                 f"expected one of {sorted(self.ROLE_FLAGS)}"
             )
         vllm_bin = REPO_ROOT / ".venv" / "bin" / "vllm"
+        # Bind 0.0.0.0 so DockerWorkspace containers on the default bridge
+        # can reach the runner-launched vLLM via 172.17.0.1:<port> (ADR-0026
+        # amendment 3, 2026-08-11 EDT). Health-check URL below still uses
+        # 127.0.0.1 because the runner itself runs on the host loopback.
         cmd = [
             str(vllm_bin), "serve", str(model_dir),
-            "--host", "127.0.0.1",
+            "--host", "0.0.0.0",
             "--port", str(port),
             "--max-model-len", str(max_model_len),
             "--gpu-memory-utilization", f"{gpu_memory_utilization}",
@@ -468,10 +472,13 @@ class LlamaCppServer(BaseServer):
         server_bin = REPO_ROOT / "vendor" / "llama.cpp" / "build" / "bin" / "llama-server"
         if role not in self.ROLE_FLAGS:
             raise ValueError(f"unknown role: {role}")
+        # Same rationale as VLLMServer: bind 0.0.0.0 so container-side probes
+        # can reach the runner-launched llama.cpp via 172.17.0.1 (ADR-0026
+        # amendment 3, 2026-08-11 EDT).
         cmd = [
             str(server_bin),
             "-m", str(gguf_path),
-            "--host", "127.0.0.1",
+            "--host", "0.0.0.0",
             "--port", str(port),
             "--alias", served_name,
             "-ngl", str(ngl),

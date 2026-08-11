@@ -1264,3 +1264,16 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Files touched:** bench/candidates/coder-medium-stage2-single.json
 - **Ports / adapters affected:** —
 - **Stop-condition status:** First stage-2 attempt failed `TypeError: string indices must be integers, not 'str'` at `bench/runner/main.py:808` (`slug = row["model"]`). `run_tier` at :692 does `candidates_raw = json.loads(...)` and iterates directly; the loader expects a bare list. Existing pool files (`coder-medium-pool.json`) confirmed as bare lists. Wrapper removed.
+
+## 2026-08-11 11:10 EDT — ADR-0026 amendment 3: fix container→host LLM transport
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · stage-2 · bench/runner/probes.py + bench/runner/server.py
+- **What changed:**
+  - `bench/runner/probes.py` `_probe_coder_sdk`: rewrite loopback host in the endpoint URL to `172.17.0.1` before handing it to `LLM(...)`. DockerWorkspace runs the agent inside a container; inside the container `127.0.0.1` is the container loopback, not the host. `172.17.0.1` is the docker0 bridge gateway on stock Linux Docker (Colossus is stock Kubuntu). Rewrite triggers only for `127.0.0.1` / `localhost` / `0.0.0.0`; other hosts pass through unchanged.
+  - `bench/runner/server.py` `VLLMServer` and `LlamaCppServer`: change `--host 127.0.0.1` to `--host 0.0.0.0`. Without this, the servers bind loopback only and the container's rewritten URL `172.17.0.1:<port>` gets connection-refused. Health-check URL below the cmd list stays `http://127.0.0.1:<port>/health` because the runner's own healthcheck runs on the host loopback, which the wildcard bind still serves.
+- **Files touched:**
+  - bench/runner/probes.py
+  - bench/runner/server.py
+- **Ports / adapters affected:** LLM transport between the SDK-side agent and the runner-launched coder / planner LLM servers.
+- **PORTING_LEDGER / ADR updated:** ADR-0026 amendment 3 (this entry stands in for the amendment; formal amendment block to be appended in the ADR before the next verdict).
+- **Stop-condition status:** Complementary fix — DEBUG_LOG 2026-08-11 08:11 EDT already recorded the UFW-side of this same interaction (openhands-app → 172.17.0.1). ADR-0020 added `ufw allow from 172.17.0.0/16 to any` (confirmed active — `Anywhere ALLOW 172.17.0.0/16`). Bench-side flow was still broken because vLLM/llama.cpp bound 127.0.0.1 and the probe passed the container the same loopback URL. With today's two edits, the full path is: container → 172.17.0.1:8501 (allowed by UFW) → 0.0.0.0-bound vLLM ✓.
