@@ -1689,3 +1689,16 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** CoderPlannerRouter (message-content heuristic now primary; metadata path retained as forward-compat)
 - **PORTING_LEDGER / ADR updated:** ADR-0033 amend #5
 - **Stop-condition status:** in-progress — row-2 verdict pending re-run
+
+## 2026-08-11 18:03 EDT — Phase 3 row-2 PASSED (planner routing verified)
+
+- **Stage / plugin / port:** Phase 3 · CoderPlannerRouter · Path B (message-marker) routing
+- **What changed:** Row-2 smoke ran end-to-end. Verdict:
+  - `select_llm(marker)` → `"planner"` ✅
+  - `select_llm(control)` → `"coder"` ✅
+  - `active_llm.base_url` after `completion()` → `http://127.0.0.1:8082/v1` (planner) ✅
+  - Response: 804 chars of coherent planning prose from qwen3_6-27b-q6k, wall 18.18s
+- **Files touched:** `~/.forge-oh/bench_smoke_phase_3_row_2/20260811_180306_run/verdict.json`
+- **Ports / adapters affected:** none (verification only)
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** met (row-2 passed)
