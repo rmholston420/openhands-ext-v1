@@ -16,21 +16,35 @@ attribute so Phase 3 can flip it without touching call sites.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, ClassVar
 
 from openhands.sdk.llm.message import Message
 from openhands.sdk.llm.router.base import RouterLLM
+from openhands.sdk.llm.streaming import TokenCallbackType
 from openhands.sdk.logger import get_logger
+from openhands.sdk.tool.tool import ToolDefinition
 
 if TYPE_CHECKING:
     from openhands.sdk.llm.llm import LLMCallContext
+    from openhands.sdk.llm.llm_response import LLMResponse
 
 
 logger = get_logger(__name__)
 
 
 class CoderPlannerRouter(RouterLLM):
-    """Route coder vs planner via LLMCallContext.metadata['role']."""
+    """Route coder vs planner via LLMCallContext.metadata['role'].
+
+    Path A workaround (ADR-0033 amend #4, 2026-08-11 17:52 EDT):
+
+    SDK 1.41's `RouterLLM.completion()` receives `call_context` but does NOT
+    forward it to `select_llm()` (`base.py:82` calls `self.select_llm(messages)`
+    with no context). This subclass overrides `completion()` to route with
+    both `messages` AND `call_context`, then delegates to the base LLM's
+    `completion()` for the actual API call. When the SDK forwards
+    `call_context` natively, this override becomes a no-op and can be removed.
+    """
 
     router_name: str = "coder_planner_router"
 
@@ -42,6 +56,34 @@ class CoderPlannerRouter(RouterLLM):
     # is not populated by DelegateTool dispatch. See ADR-0033 contingency.
     fallback_message_heuristic: bool = False
 
+    def completion(
+        self,
+        messages: list[Message],
+        tools: Sequence[ToolDefinition] | None = None,
+        add_security_risk_prediction: bool = False,
+        on_token: TokenCallbackType | None = None,
+        call_context: "LLMCallContext | None" = None,
+        **kwargs,
+    ) -> "LLMResponse":
+        """Override base to pass `call_context` into `select_llm` (Path A).
+
+        Replicates `RouterLLM.completion()` body but calls the subclass's
+        `select_llm(messages, call_context)` instead of the base's
+        `select_llm(messages)`. The trailing delegation to `active_llm` is
+        identical to the base.
+        """
+        selected_model = self.select_llm(messages, call_context)
+        self.active_llm = self.llms_for_routing[selected_model]
+        logger.info(f"RouterLLM routing to {selected_model}...")
+        return self.active_llm.completion(
+            messages=messages,
+            tools=tools,
+            add_security_risk_prediction=add_security_risk_prediction,
+            on_token=on_token,
+            call_context=call_context,
+            **kwargs,
+        )
+
     def select_llm(
         self,
         messages: list[Message],
@@ -49,10 +91,8 @@ class CoderPlannerRouter(RouterLLM):
     ) -> str:
         """Select route from LLMCallContext.metadata['role'] (option 6c).
 
-        Note: the RouterLLM base class's completion() signature does not
-        pass call_context to select_llm by default in SDK 1.41; this
-        subclass expects a Phase 3 patch or an override of completion()
-        that forwards call_context. See ADR-0033 contingency notes.
+        Reached via this subclass's overridden `completion()`, which
+        forwards `call_context` (Path A per ADR-0033 amend #4).
         """
         # Primary path: LLMCallContext metadata (option 6c)
         if call_context is not None:
