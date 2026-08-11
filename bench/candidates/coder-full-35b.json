@@ -1,0 +1,14 @@
+[
+  {
+    "model": "qwen3_6-35b-a3b-q4kxl-gguf",
+    "hf_repo": "unsloth/Qwen3.6-35B-A3B-GGUF",
+    "format": "gguf",
+    "runtime": "llama.cpp",
+    "device": "gpu",
+    "role": "coder",
+    "quant": "q4_k_xl_ud",
+    "gguf_file": "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+    "approx_size_gib": 21,
+    "notes": "Phase 0.3 gate-3 Full-tier 35b challenger. Cell settings mirror bench/candidates/coder-medium-stage2-35b.json."
+  }
+]

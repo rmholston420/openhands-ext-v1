@@ -1,0 +1,63 @@
+{
+  "$comment": "Phase 0.3 gate-3 Full-tier scoring rubric. Extends bench/rubrics/medium-scored.json with one new deduction class for report-style FinishAction omission. Post-hoc editing prohibited per ADR-0028; any change requires a superseding ADR.",
+  "schema_version": "1.0.0",
+  "tier": "full",
+  "authored_utc": "2026-08-11T16:03:00Z",
+  "spec_anchor": "adrs/ADR-0028-phase-0-3-gate-3-coder-full-tier-re-eval.md",
+  "adr_anchor": "adrs/ADR-0028-phase-0-3-gate-3-coder-full-tier-re-eval.md",
+  "extends": "bench/rubrics/medium-scored.json",
+  "applies_to": ["coder"],
+  "elimination_phase": {
+    "$comment": "Same as Medium.",
+    "reuses_rules_from": "bench/rubrics/fast-elimination.json",
+    "rules": ["R1-launch-failure", "R2-malformed-output", "R3-latency-outlier", "R4-runtime-version-regression"]
+  },
+  "scoring": {
+    "enabled": true,
+    "shape_by_role": {
+      "coder": {
+        "shape": "perplexity_gold",
+        "score_range_per_task": [0, 100],
+        "gold_source": "bench/gold/coder-full-multi-turn/<task-id>.md",
+        "scoring_authority": "Perplexity Max (Claude Sonnet 4.6 via Perplexity Computer)",
+        "scoring_protocol": "local-llm-bench skill canonical scoring protocol",
+        "self_scoring_prohibited": true
+      }
+    },
+    "bands": {
+      "$comment": "Same as medium-scored.json.",
+      "90-100": "Exemplary",
+      "75-89": "Correct-minor-flaws",
+      "60-74": "Partial",
+      "40-59": "Substantially-incorrect",
+      "20-39": "Mostly-failed",
+      "0-19": "Failed"
+    },
+    "deductions": {
+      "$comment": "Medium deductions preserved. NEW: -10 for omitting a FinishAction on any report-style task (encodes ADR-0027 §Sub-decision 6 signal directly).",
+      "hit_max_iter": -5,
+      "dispreferred_tool_used": -3,
+      "whitespace_drift_on_exact_diff": -2,
+      "extra_read": -2,
+      "unnecessary_tool_call_each": -1,
+      "unnecessary_tool_call_cap": -5,
+      "no_finish_action_on_report_style_task": -10
+    },
+    "bonuses": {
+      "minimum_turn_count": 2,
+      "perfect_do_not_modify_adherence": 2,
+      "perfect_minimal_correction": 2
+    },
+    "tiebreak": {
+      "primary": "quality (higher score wins)",
+      "secondary": "wall-time median across task set (lower wins) — applies only when top two cells are within 3 quality points of each other",
+      "within_points": 3,
+      "reference": "local-llm-bench skill principle 1 (quality-first) and tiebreak convention"
+    }
+  },
+  "post_hoc_edit_policy": {
+    "allowed": false,
+    "spec_anchor": "ADR-0028 §Sub-decision 2",
+    "note": "Any change to this file after the first Full-tier scored run requires a superseding ADR. Any change to bench/tasks/coder-full-multi-turn.json or files under bench/gold/coder-full-multi-turn/ requires a superseding ADR or a re-authored versioned task-set file."
+  }
+}

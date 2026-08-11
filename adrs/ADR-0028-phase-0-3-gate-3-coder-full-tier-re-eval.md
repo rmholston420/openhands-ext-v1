@@ -1,7 +1,7 @@
 # ADR-0028 — Phase 0.3 gate-3 coder Full-tier re-eval (AWQ vs 35b, pre-registered)
 
-**Status:** Proposed
-**Lock-in phase:** Phase 0.3 gate-3
+**Status:** Ratified
+**Lock-in phase:** Phase 0.3 gate-3 (fixture lock-in 2026-08-11 12:05 EDT)
 **Supersedes:** —
 **Extends:** ADR-0022, ADR-0023, ADR-0026, ADR-0027
 

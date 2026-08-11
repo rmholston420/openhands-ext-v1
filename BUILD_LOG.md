@@ -1374,3 +1374,30 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Follow-up promoted:** ADR-0027 §Sub-decision 6 (35b finish-omission) now instrumented inside gate-3 rubric rather than as a separate ad-hoc investigation.
 - **Reservation:** ADR-0029 reserved for Phase 0.3 gate-3 verdict.
 - **Stop-condition status:** Gate-3 opened; awaiting fixture-lock-in commit (populate fixtures, gold, rubric, candidate files) before probes can run. DoD steps 1-7 listed in ADR-0028 §Sub-decision 5.
+
+## 2026-08-11 12:05 EDT — Phase 0.3 gate-3 fixture lock-in (ADR-0028 Proposed → Ratified)
+
+- **Stage / plugin / port:** Phase 0.3 gate-3 · coder Full-tier · bench task set + gold + rubric + candidates.
+- **What changed:**
+  - Populated `bench/tasks/coder-full-multi-turn.json` with 10 fully-specified fixtures (F01–F10 per ADR-0028 §Sub-decision 1). `post_hoc_edit_locked: true`. Reversal criteria pre-registered and encoded in the file. `docker_image_digest_expected` pinned to `sha256:117d4bcc95e19f306b9158fce1dce8c35808379663289407b60ef5357aa7aa79`.
+  - Authored 10 gold rubric files under `bench/gold/coder-full-multi-turn/` — one per task, mirroring the Medium-tier gold shape (task prompt verbatim / scoring model / range / correctness criteria / bands 0-100 / deductions / bonuses). Report-style tasks (F04, F05, F09) explicitly encode the "absent FinishAction auto-fires reversal rule 2 clause 3" signal.
+  - Authored `bench/rubrics/full-scored.json` extending `medium-scored.json`. New deduction class: `no_finish_action_on_report_style_task: -10`. Everything else reused. `post_hoc_edit_policy.allowed: false`.
+  - Authored `bench/candidates/coder-full-awq.json` and `bench/candidates/coder-full-35b.json` mirroring Medium stage-2 single-cell shape.
+  - Flipped ADR-0028 status Proposed → Ratified in file body and index row.
+- **Files touched:**
+  - `bench/tasks/coder-full-multi-turn.json` (populated)
+  - `bench/rubrics/full-scored.json` (new)
+  - `bench/candidates/coder-full-awq.json` (new)
+  - `bench/candidates/coder-full-35b.json` (new)
+  - `bench/gold/coder-full-multi-turn/coder-full-01…10-*.md` (10 new)
+  - `adrs/ADR-0028-phase-0-3-gate-3-coder-full-tier-re-eval.md` (status flip)
+  - `adrs/README.md` (row 0028 Ratified)
+  - `BUILD_LOG.md` (this entry)
+  - `SESSION_HANDOFF.md` (overwrite)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0028 Proposed → Ratified.
+- **Optimal-choice defaults applied (no further approval needed):**
+  - F04: 3 failing tests across 2 files (`tests/test_mathx.py` × 2 + `tests/test_strx.py` × 1).
+  - F05: shell-script fixture setup at `.setup_script.sh` invoked before agent start (parity with existing Medium harness setup shape).
+  - Docker pin: `docker_image_digest_expected` pinned to SHA at Full-tier only; Medium/Fast tags left as tag-based per prior scope.
+- **Stop-condition status:** Gate-3 DoD steps 1–4 met (task set + gold + rubric + reversal criteria pre-registered and locked). Ready for probe runs. Steps 5–7 (execute probes → score → verdict ADR-0029) remain.

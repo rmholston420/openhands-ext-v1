@@ -1,0 +1,14 @@
+[
+  {
+    "model": "qwen3-coder-30b-a3b-instruct-awq-4bit",
+    "hf_repo": "cpatonn/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit",
+    "format": "safetensors",
+    "runtime": "vllm",
+    "device": "gpu",
+    "role": "coder",
+    "quant": "awq-4bit",
+    "approx_size_gib": 17,
+    "tool_call_parser": "qwen3_coder",
+    "notes": "Phase 0.3 gate-3 Full-tier AWQ candidate (production coder from ADR-0027). Runtime + cell settings mirror bench/candidates/coder-medium-stage2-single.json."
+  }
+]
