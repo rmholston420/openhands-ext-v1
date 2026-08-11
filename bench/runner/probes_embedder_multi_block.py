@@ -221,6 +221,10 @@ def _chunk_id(repo: str, source_file_path: str, line_range: list[int]) -> str:
 # Corpus loader
 # ---------------------------------------------------------------------------
 
+# Resolve repo root once (bench/runner/<this>.py -> ../..)
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
 def _load_block_corpus(
     manifest: dict, block: str, corpus_root: str,
 ) -> list[dict]:
@@ -236,7 +240,7 @@ def _load_block_corpus(
         for repo in section["repos"]:
             repo_name = repo["name"]
             repo_dir = Path(corpus_root) / repo_name
-            file_list_path = Path("/tmp/oh-ext") / repo["file_list"]
+            file_list_path = _REPO_ROOT / repo["file_list"]
             if not file_list_path.exists():
                 raise FileNotFoundError(f"manifest file_list missing: {file_list_path}")
             files = file_list_path.read_text().splitlines()
@@ -265,7 +269,7 @@ def _load_block_corpus(
                 alt = Path(corpus_root) / "openhands-ext-v1" if repo_name == "openhands-ext-v1" else Path(corpus_root) / "Kosmos"
                 if alt.exists():
                     repo_dir = alt
-            file_list_path = Path("/tmp/oh-ext") / src["file_list"]
+            file_list_path = _REPO_ROOT / src["file_list"]
             if not file_list_path.exists():
                 raise FileNotFoundError(f"manifest file_list missing: {file_list_path}")
             files = file_list_path.read_text().splitlines()

@@ -37,7 +37,8 @@ import sys
 import time
 from pathlib import Path
 
-REPO_ROOT = Path("/tmp/oh-ext")
+# Resolve REPO_ROOT from this file's location: bench/runner/<this>.py -> ../..
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # Import the probe (respect module boundary)
 sys.path.insert(0, str(REPO_ROOT))

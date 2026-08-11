@@ -618,3 +618,14 @@ Entry format:
 - **Fix applied:** Rewrote `_on_event` to build `list[dict]` entries with `{tool, args, success, observation}`, correlating Action -> Observation via FIFO pending index. Bumped `harness_version` to `v1.1` so scoring stage refuses older shape. ADR-0026 amendment 3 covers this + earlier same-session fixes.
 - **Files changed:** bench/runner/probes.py, bench/tasks/coder-medium-multi-turn.json, adrs/ADR-0026-coder-multi-turn-correctness-harness-v1.md
 - **Related BUILD_LOG entry:** 2026-08-11 11:30 EDT
+
+## 2026-08-11 13:42 EDT — hardcoded /tmp/oh-ext path in bench runner
+
+- **Symptom:** `FileNotFoundError: '/tmp/oh-ext/bench/corpus/embedder-full-multi-block/MANIFEST.json'` when running the pool driver from `~/dev/openhands-ext-v1`.
+- **Affected stage / plugin / port:** Phase 0.4 · bench runner
+- **Root cause:** agent authored the runner from its own `/tmp/oh-ext` checkout and hardcoded the string in `MANIFEST_PATH`, `QUERIES_PATH`, `RUBRIC_PATH`, and both `_load_block_corpus` file_list joins.
+- **Fix applied:** replaced all with `Path(__file__).resolve().parents[2]` so the runner resolves the repo root from its own location.
+- **Files changed:** `bench/runner/run_embedder_full_multi_block.py`, `bench/runner/probes_embedder_multi_block.py`
+- **Related BUILD_LOG entry:** 2026-08-11 13:42 EDT
+
+---

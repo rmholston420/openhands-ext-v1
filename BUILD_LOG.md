@@ -1527,3 +1527,14 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Stop-condition status:** Gate-4 DoD step 6a COMPLETE. Step 6b (pool-only runner execution across 12 cells) is the next executable step; requires user to have llama-server serving embedder models on Colossus in a co-residency-clean state (coder vLLM + planner GPU stopped).
 
 ---
+
+## 2026-08-11 13:42 EDT — Phase 0.4 gate-4 step 6b hotfix: runner hardcoded /tmp/oh-ext -> resolve from __file__
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · step 6b runner bug
+- **Symptom:** `FileNotFoundError: /tmp/oh-ext/bench/corpus/embedder-full-multi-block/MANIFEST.json` when running from Colossus at `~/dev/openhands-ext-v1`. Root cause: 3 hardcoded `/tmp/oh-ext` paths (my agent workspace, not user's).
+- **Fix:** replaced with `Path(__file__).resolve().parents[2]` (repo root resolved relative to the runner module). Applied in both `probes_embedder_multi_block.py` (2 sites) and `run_embedder_full_multi_block.py` (1 site).
+- **Files touched:** `bench/runner/probes_embedder_multi_block.py`, `bench/runner/run_embedder_full_multi_block.py`
+- **Ports / adapters affected:** none.
+- **Stop-condition status:** step 6a re-COMPLETE. Ready to retry step 6b.
+
+---
