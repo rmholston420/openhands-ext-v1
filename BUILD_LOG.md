@@ -1113,3 +1113,24 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** ADR-0024 new; ADR index updated. Global rubric `bench/rubrics/medium-scored.json` unchanged (per-task band criteria live in gold files, not global rubric).
 - **Stop-condition status:** met for Phase 0.3 probe authoring. Awaits user pull + bench run on Colossus. Follow-up ADR (either confirming ADR-0023 or superseding planner row) files after Perplexity-Max scores per pre-registered reversal criteria.
+
+## 2026-08-11 10:12 EDT — ADR-0025 filed: planner migration probe verdict CONFIRMS ADR-0023
+
+- **Stage / plugin / port:** OpenHands-Ext v1 · Phase 0.3 gate-1 · planner role locked.
+- **What changed:** Probe ran at 10:07-10:08 EDT (`smoke-medium-planner-*-20260811T1407*Z*.json`). Both cells produced schema-valid structured JSON, all 4 tasks verdict=pass. Perplexity-Max scored against 4 gold rubrics per pre-registered bands. Reversal criteria from `bench/tasks/planner-medium-migration-probe.json#/reversal_criteria` applied strictly.
+- **Per-task scores (0-100):**
+  - probe-01 expand-migrate-contract: 27b=92, 35b=85
+  - probe-02 rename via expand-contract: 27b=90, 35b=91
+  - probe-03 FK with cleanup: 27b=92, 35b=78 (35b omitted verify step — same failure class as planner-medium-02)
+  - probe-04 concurrent index rebuild: 27b=93, 35b=92
+  - **Macro-avg: 27b=91.75, 35b=86.50 (27b leads by 5.25 pts)**
+- **Reversal rule fired:** `27b leads by ≥3 pts` → **CONFIRM ADR-0023**. No other rule contradicts. 27b-q6k retains planner role.
+- **Wall time (documentation only):** 27b 35.16s total (4 tasks), 35b 8.05s total. 35b is 4.4× faster wall but outside 3-pt tiebreak on quality.
+- **Files touched:**
+  - `adrs/ADR-0025-planner-migration-probe-verdict-confirm-adr-0023.md` (new)
+  - `adrs/README.md` (new index row)
+  - `bench/scoring/planner-migration-probe-20260811_1408/verdict.md` (new)
+  - `SESSION_HANDOFF.md` (overwrite)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0025 new. No spec surface edit needed (ADR-0023 already reflects planner = 27b-q6k in §17).
+- **Stop-condition status:** met. Phase 0.3 planner cell decision locked. Next Phase 0.3 work: coder multi-turn correctness harness upgrade OR proceed to Phase 1 router wiring.
