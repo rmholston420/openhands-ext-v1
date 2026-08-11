@@ -1,4 +1,4 @@
-# OpenHands-Ext v1 — Session Handoff — 2026-08-11 00:20 EDT
+# OpenHands-Ext v1 — Session Handoff — 2026-08-11 00:25 EDT
 
 ## Current build-sequencing position
 
@@ -34,19 +34,27 @@
 
 ## Exact next action
 
-On Colossus. The build script now patches CUDA's `math_functions.h` in place
-(idempotent, backed up, glibc-version-guarded) before running cmake. This will
-prompt for sudo once.
+On Colossus. The previous run left the CUDA header patched but with mode
+`0600 root:root`, which cmake can't read. The updated patch script detects
+this on its idempotent path and repairs perms to `0644` (still needs sudo
+because the file is root-owned).
 
 ```bash
 cd ~/dev/openhands-ext-v1
 git pull origin main
 bash scripts/install-hooks.sh
-bash scripts/build-llama-cpp.sh    # will invoke sudo for the header patch
+bash scripts/build-llama-cpp.sh    # sudo prompt: patch script fixes perms
 ```
 
-If the patch step fails, run standalone:  
-`sudo -E bash scripts/patch-cuda-headers.sh`  
-Then re-run `bash scripts/build-llama-cpp.sh`.
+Expected first-run output (patch step):
 
-If the build succeeds, paste the tail of its log (or say "build ok") and I'll walk you through freeing VRAM + running the two smoke tests. If it fails at cmake or ninja, paste the error and I'll diagnose.
+```
+--- patching CUDA headers (idempotent, requires sudo) ---
+[sudo] password: ...
+[fix] corrected mode on already-patched header to 0644
+[ok] /usr/local/cuda-13.0/.../math_functions.h already patched (marker present; mode 644 root:root)
+```
+
+Then cmake configure should proceed past the CUDA-identification probe and ninja build should complete in 5-15 min.
+
+If the build succeeds, paste the tail of its log (or say "build ok") and I'll walk you through freeing VRAM + running the two smoke tests. If it fails again, paste the error.

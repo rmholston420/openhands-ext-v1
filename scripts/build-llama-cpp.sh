@@ -101,10 +101,13 @@ SM_ARCH="120"
   # See DEBUG_LOG.md 2026-08-11 and scripts/patch-cuda-headers.sh.
   echo ""
   echo "--- patching CUDA headers (idempotent, requires sudo) ---"
+  # Pass CUDA_ROOT explicitly via sudo's env preservation. `-E` is silently
+  # dropped by strict sudoers configs (as it was on Colossus 2026-08-11), so
+  # we use the `VAR=value command` form which sudo honors reliably.
   if [ -w "$CUDA_ROOT/targets/x86_64-linux/include/crt/math_functions.h" ]; then
     CUDA_ROOT="$CUDA_ROOT" bash "$REPO_ROOT/scripts/patch-cuda-headers.sh"
   else
-    CUDA_ROOT="$CUDA_ROOT" sudo -E bash "$REPO_ROOT/scripts/patch-cuda-headers.sh"
+    sudo CUDA_ROOT="$CUDA_ROOT" bash "$REPO_ROOT/scripts/patch-cuda-headers.sh"
   fi
 
   echo ""

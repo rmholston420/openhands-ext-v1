@@ -50,7 +50,18 @@ if [ ! -f "$HEADER" ]; then
 fi
 
 if grep -qF "$MARKER" "$HEADER"; then
-  echo "[ok] $HEADER already patched (marker present)"
+  # Idempotent path. Also enforce 0644 in case an earlier version of this
+  # script left the file 0600 root:root (as it did on Colossus 2026-08-11).
+  CUR_MODE="$(stat -c '%a' "$HEADER" 2>/dev/null || echo)"
+  if [ "$CUR_MODE" != "644" ]; then
+    if [ -w "$HEADER" ] || [ "$(id -u)" = "0" ]; then
+      chmod 0644 "$HEADER"
+      echo "[fix] corrected mode on already-patched header to 0644"
+    else
+      echo "[warn] $HEADER is patched but has mode $CUR_MODE; re-run with sudo to correct." >&2
+    fi
+  fi
+  echo "[ok] $HEADER already patched (marker present; mode $(stat -c '%a %U:%G' "$HEADER" 2>/dev/null || echo unknown))"
   exit 0
 fi
 
@@ -69,8 +80,19 @@ if [ ! -f "$BACKUP" ]; then
   echo "[ok] backed up original to $BACKUP"
 fi
 
-# Build patched file in a tempfile, then swap atomically.
-TMP="$(mktemp)"
+# Preserve original mode and owner so post-swap file is still world-readable.
+# CUDA headers are conventionally 0644 root:root. `stat` output format differs
+# between distros; fall back to a hardcoded default if it parses oddly.
+ORIG_MODE="$(stat -c '%a' "$HEADER" 2>/dev/null || echo 644)"
+ORIG_OWNER="$(stat -c '%u:%g' "$HEADER" 2>/dev/null || echo 0:0)"
+[ -z "$ORIG_MODE" ] && ORIG_MODE=644
+[ -z "$ORIG_OWNER" ] && ORIG_OWNER=0:0
+
+# Build patched file in a tempfile in the SAME directory as the target so `mv`
+# is atomic (same filesystem) and doesn't fall back to copy+delete. Also lets
+# us preserve permissions cleanly.
+TMPDIR_HDR="$(dirname "$HEADER")"
+TMP="$(mktemp "$TMPDIR_HDR/.math_functions.h.patched.XXXXXX")"
 trap "rm -f '$TMP'" EXIT
 
 # Two patterns to fix. Each declaration is a single line of the form:
@@ -175,28 +197,53 @@ if [ "${DRY_RUN:-0}" = "1" ]; then
   exit 0
 fi
 
-# Atomic swap
+# Restore original mode + owner on the temp file BEFORE the atomic swap,
+# so cmake / nvcc / any non-root user can still read the header.
+chmod "$ORIG_MODE" "$TMP"
+chown "$ORIG_OWNER" "$TMP" 2>/dev/null || true
+
+# Atomic swap (same directory, same filesystem, preserves inode discipline)
 mv "$TMP" "$HEADER"
 trap - EXIT
 
-echo "[ok] patched $HEADER (backup: $BACKUP)"
+# Defensive: enforce 0644 on the swapped-in file in case the mv path
+# somehow reset perms (some FS/mount combos do).
+chmod 0644 "$HEADER"
 
-# Verify with a compile probe if nvcc is available at this CUDA_ROOT
+echo "[ok] patched $HEADER (backup: $BACKUP; mode $(stat -c '%a %U:%G' "$HEADER" 2>/dev/null || echo unknown))"
+
+# Verify with a COMPILE-ONLY probe if nvcc is available at this CUDA_ROOT.
+# We use -c (no link) because linking a bare __global__ program via nvcc
+# without an explicit -lstdc++ can produce false-negative link errors on
+# some distros; those errors are unrelated to the header patch we're
+# validating. The header conflict manifests during cudafe++ parse, which
+# `-c` fully exercises.
 if [ -x "$CUDA_ROOT/bin/nvcc" ]; then
   PROBE_DIR="$(mktemp -d)"
   cat > "$PROBE_DIR/probe.cu" <<'CU'
 #include <cuda_runtime.h>
 #include <cmath>
 __global__ void k() {}
-int main() { return 0; }
 CU
-  if "$CUDA_ROOT/bin/nvcc" -ccbin=/usr/bin/gcc-13 -arch=sm_120 \
-      "$PROBE_DIR/probe.cu" -o "$PROBE_DIR/probe" >/dev/null 2>&1; then
-    echo "[ok] post-patch nvcc probe compiled clean"
+  # Run as the invoking user (not root) so we also confirm the patched header
+  # is world-readable. If we're already root, drop to SUDO_USER when possible.
+  PROBE_CMD=("$CUDA_ROOT/bin/nvcc" -ccbin=/usr/bin/gcc-13 -arch=sm_120 -c
+             "$PROBE_DIR/probe.cu" -o "$PROBE_DIR/probe.o")
+  if [ "$(id -u)" = "0" ] && [ -n "${SUDO_USER:-}" ]; then
+    chown -R "$SUDO_USER" "$PROBE_DIR"
+    if sudo -u "$SUDO_USER" "${PROBE_CMD[@]}" >/dev/null 2>&1; then
+      echo "[ok] post-patch nvcc probe parsed clean (as $SUDO_USER)"
+    else
+      echo "[warn] post-patch nvcc probe failed — verbose output follows:" >&2
+      sudo -u "$SUDO_USER" "${PROBE_CMD[@]}" 2>&1 | tail -40 >&2 || true
+    fi
   else
-    echo "[warn] post-patch nvcc probe still fails — running verbose to show why:" >&2
-    "$CUDA_ROOT/bin/nvcc" -ccbin=/usr/bin/gcc-13 -arch=sm_120 \
-      "$PROBE_DIR/probe.cu" -o "$PROBE_DIR/probe" 2>&1 | tail -40 >&2 || true
+    if "${PROBE_CMD[@]}" >/dev/null 2>&1; then
+      echo "[ok] post-patch nvcc probe parsed clean"
+    else
+      echo "[warn] post-patch nvcc probe failed — verbose output follows:" >&2
+      "${PROBE_CMD[@]}" 2>&1 | tail -40 >&2 || true
+    fi
   fi
   rm -rf "$PROBE_DIR"
 fi

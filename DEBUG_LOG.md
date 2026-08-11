@@ -92,3 +92,24 @@ Entry format:
   - `scripts/build-llama-cpp.sh` (added step 3.5 call, removed deprecated `-DLLAMA_CURL=ON`)
 - **Related BUILD_LOG entry:** 2026-08-11 00:20 EDT
 - **Supersedes hypothesis in:** 2026-08-11 00:12 EDT (CUDA-12.8/glibc entry — the "fix" of moving to CUDA 13 was insufficient on its own)
+
+## 2026-08-11 00:15 EDT — Patched CUDA header permission 0600 root:root breaks cmake
+
+- **Symptom:** After `sudo bash scripts/patch-cuda-headers.sh` succeeded, cmake configure fails with `fatal error: /usr/local/cuda-13.0/bin/../targets/x86_64-linux/include/crt/math_functions.h: Permission denied` because nvcc is invoked by cmake as the non-root user and the patched header was left mode `0600 root:root`.
+- **Affected stage / plugin / port:** Phase -1 · llama.cpp CUDA build
+- **Root cause:** `mktemp` default mode is `0600`; the patch script wrote its output via `mktemp` + `mv` and the resulting file inherited that mode. Original header was `0644 root:root`.
+- **Fix applied:** `scripts/patch-cuda-headers.sh` now (a) creates its tempfile in the same directory as the target, (b) reads and preserves the original file's mode and owner via `stat`, (c) applies `chmod 0644` defensively after the swap, (d) on the idempotent early-exit path also detects and repairs a wrong-mode already-patched header. Also switched the nvcc verification probe to compile-only (`-c`) so link-time false negatives don't drown the actual parse-time signal. Also updated `build-llama-cpp.sh` to invoke the patch as `sudo CUDA_ROOT=... bash ...` (the `-E` form was silently ignored by strict sudoers).
+- **Files changed:**
+  - `scripts/patch-cuda-headers.sh` (perm preservation + idempotent perm repair + probe fix)
+  - `scripts/build-llama-cpp.sh` (sudo invocation form)
+- **Related BUILD_LOG entry:** 2026-08-11 00:20 EDT
+- **Supersedes:** —
+
+## 2026-08-11 00:15 EDT — post-patch nvcc probe reports spurious link errors
+
+- **Symptom:** After patching the CUDA header, `patch-cuda-headers.sh`'s built-in verification step reported `undefined reference to __cxa_guard_acquire / __cxa_guard_release / __cxa_guard_abort / __gxx_personality_v0`. False negative — this is a linker complaint, not a header/parse complaint.
+- **Affected stage / plugin / port:** Phase -1 · llama.cpp CUDA build (verification only)
+- **Root cause:** The probe invoked `nvcc -ccbin=/usr/bin/gcc-13 -arch=sm_120 probe.cu -o probe` which links to a full binary. nvcc's default link invocation on Ubuntu 26.04 does not include libstdc++ automatically, and even with `-ccbin` the driver-generated static-init code for `__global__` symbols requires libstdc++. The probe was validating the wrong thing.
+- **Fix applied:** Changed the probe to compile-only (`-c`). The header/parse conflict that we actually needed to check manifests during cudafe++ processing, which `-c` fully exercises. Also made the probe drop to `SUDO_USER` when run under sudo, so it also verifies the header is world-readable.
+- **Files changed:** `scripts/patch-cuda-headers.sh`
+- **Related BUILD_LOG entry:** 2026-08-11 00:20 EDT

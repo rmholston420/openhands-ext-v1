@@ -129,3 +129,19 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0004 amended below.
 - **Stop-condition status:** blocked pending Colossus re-run. Phase -1 §-1 remains NOT green.
+
+## 2026-08-11 00:25 EDT — CUDA header patch: perm preservation + probe fix
+
+- **Stage / plugin / port:** Phase -1 · llama.cpp CUDA build
+- **What changed:**
+  - `scripts/patch-cuda-headers.sh`: preserves original file mode+owner via stat, tempfile lives in same directory as target for atomic mv, defensive `chmod 0644` after swap, idempotent path now also detects and repairs wrong-mode already-patched headers, compile-only (`-c`) verification probe with SUDO_USER drop-down.
+  - `scripts/build-llama-cpp.sh`: `sudo CUDA_ROOT=... bash ...` invocation form (strict sudoers ignores `-E`).
+  - `DEBUG_LOG.md`: two entries for the 0600 perm bug and the false-negative link-error probe.
+- **Files touched:**
+  - `scripts/patch-cuda-headers.sh`
+  - `scripts/build-llama-cpp.sh`
+  - `DEBUG_LOG.md`
+  - `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** blocked pending Colossus re-run.
