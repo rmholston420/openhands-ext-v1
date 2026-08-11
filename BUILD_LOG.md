@@ -817,3 +817,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** embedder (device only; port 8090 unchanged); coder (indirectly — regains VRAM budget)
 - **PORTING_LEDGER / ADR updated:** ADR-0017 amendment #3
 - **Stop-condition status:** in-progress (coder restart pending user command on Colossus)
+
+## 2026-08-11 06:49 EDT — coder: disable FlashInfer sampler on Blackwell+CUDA 12.8
+
+- **Stage / plugin / port:** Phase 0.2 · serve infra · coder (vLLM sampler)
+- **What changed:** Added `export VLLM_USE_FLASHINFER_SAMPLER=0` to `scripts/serve-coder.sh` and documented the env in the header. FlashInfer's top-k/top-p sampler crashes on SM 12.0 with CUDA 12.8 (requires CUDA ≥ 12.9 per its own capability check). This env forces the Torch/Triton sampler fallback. Attention path (FlashAttention v2) unchanged and unaffected.
+- **Files touched:** `scripts/serve-coder.sh`, `DEBUG_LOG.md`
+- **Ports / adapters affected:** coder (8100) only. Planner (llama.cpp, 8082) not affected. Embedder (CPU) not affected.
+- **PORTING_LEDGER / ADR updated:** none (env-vars-only workaround; no ADR needed unless CUDA upgrade path becomes a formal decision).
+- **Stop-condition status:** in-progress (coder restart pending; embedder healthy; VRAM budget healthy)

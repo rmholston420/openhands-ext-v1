@@ -501,3 +501,25 @@ Entry format:
   1. When an ADR describes a resource envelope (VRAM, CPU RAM, latency), ALWAYS cross-check that envelope against the source spec **before** the ADR is ratified — do not accept "~X GiB" claims without a `nvidia-smi` measurement or spec quotation.
   2. `-ngl 999` on a Q8_0 4B GGUF at ctx 32768 batch 512 costs ~10 GiB VRAM, NOT the naïve weight-only estimate of ~5 GiB. The KV cache scales with `n_gpu_layers × ctx × batch`, and for embedding models the entire graph is fused, so overhead doubles.
   3. When a decision surfaces in BOTH the spec and the ADR, and they conflict, the spec is authoritative. Author the ADR amendment against the spec, not against the ADR's own prior wording.
+
+## 2026-08-11 06:49 EDT — coder EngineCore crash in FlashInfer sampler (SM 12.0 + CUDA < 12.9)
+
+- **Symptom:** After amendment #3 freed VRAM (30.27 GiB free), coder still Exit 1. Model loaded successfully (16.96 GiB weights, 9.5s), warmup passed, then EngineCore failed during profile-run:
+  ```
+  (EngineCore) Failed to get device capability: SM 12.x requires CUDA >= 12.9.
+  ...
+  File ".../vllm/v1/sample/ops/topk_topp_sampler.py", line 182, in forward_cuda
+      return flashinfer_sample(logits.contiguous(), k, p, generators), None
+  File ".../flashinfer/sampling.py", line 1547, in top_k_top_p_sampling_from_logits
+      masked_logits = top_k_mask_logits(logits, top_k)
+  ```
+- **Affected stage / plugin / port:** Phase 0.2 · serve infra · coder (vLLM sampler kernel)
+- **Root cause:** FlashInfer 0.4.x sampler kernels for SM 12.x (Blackwell RTX 5090) require CUDA ≥ 12.9. Colossus has CUDA 12.8 installed. FlashInfer emits the capability warning at engine init but then still attempts the SM 12.0 kernel during `_dummy_sampler_run`, which crashes. vLLM 0.27.0 defaults to FlashInfer for top-k/top-p sampling on CUDA GPUs when the extension is importable, without a runtime capability check.
+- **Fix applied:** Force Torch/Triton sampler path via `export VLLM_USE_FLASHINFER_SAMPLER=0` inside `scripts/serve-coder.sh` (env-vars-only per Phase-0.2 discipline; no `config/config.toml` edit). Attention path (FlashAttention v2) is not affected — it uses a different code path that works on SM 12.0 + CUDA 12.8.
+- **Files changed:** `scripts/serve-coder.sh` (env export added; header comment updated).
+- **Related BUILD_LOG entry:** 2026-08-11 06:49 EDT
+- **Reusable lesson (Blackwell SM 12.0 + CUDA 12.8):**
+  1. FlashInfer sampling kernels are the sharpest edge — the runtime prints a `Failed to get device capability: SM 12.x requires CUDA >= 12.9` INFO line but still attempts the kernel. Any "Failed to get device capability" line on a Blackwell log is a HARD FAIL signal, not a warning.
+  2. Set `VLLM_USE_FLASHINFER_SAMPLER=0` on every Blackwell + CUDA-12.8 vLLM serve until the toolchain is upgraded to CUDA ≥ 12.9. Attention kernels (FlashAttention) work fine on the same GPU/CUDA combo; only the sampler is broken.
+  3. Diagnostic order matters: when a large-model serve script fails, `awk '/EngineCore.*failed|Traceback/{flag=1} flag{print}' log` reveals the worker-process failure that the API server's outer traceback hides.
+  4. Superseded diagnosis path: when `--gpu-memory-utilization` was blamed first (this session's amendment #3), the actual failure was two layers deeper (sampler kernel, not memory preflight). The `Failed to get device capability` line was in the log the whole time but was 6 lines above the OOM ValueError; both were present. Always grep for CUDA/kernel/capability warnings BEFORE assuming a memory shortfall is the cause, even when a memory error is present in the same log.

@@ -16,10 +16,17 @@
 #   - Free VRAM >= 20 GiB (weights ~17 GiB + KV budget).
 #
 # Envs:
-#   VLLM_GPU_MEM_UTIL     default 0.90
-#   VLLM_MAX_MODEL_LEN    default 32768
-#   VLLM_STARTUP_TIMEOUT  default 300
-#   VLLM_MIN_FREE_GIB     default 20
+#   VLLM_GPU_MEM_UTIL              default 0.90
+#   VLLM_MAX_MODEL_LEN             default 32768
+#   VLLM_STARTUP_TIMEOUT           default 300
+#   VLLM_MIN_FREE_GIB              default 20
+#   VLLM_USE_FLASHINFER_SAMPLER    forced to 0 (Blackwell SM 12.0 + CUDA 12.8
+#                                   incompatibility; see DEBUG_LOG 2026-08-11
+#                                   06:49 EDT). FlashInfer requires CUDA >= 12.9
+#                                   for SM 12.x; without it, the top-k/top-p
+#                                   sampler kernel dies in profile-run. This
+#                                   forces the Torch/Triton sampler path.
+#                                   FlashAttention for attention is unaffected.
 #
 # Runs in foreground. Use `nohup scripts/serve-coder.sh &` or a tmux/screen
 # session for detached serve.
@@ -39,6 +46,14 @@ GPU_MEM_UTIL="${VLLM_GPU_MEM_UTIL:-0.90}"
 MAX_MODEL_LEN="${VLLM_MAX_MODEL_LEN:-32768}"
 STARTUP_TIMEOUT="${VLLM_STARTUP_TIMEOUT:-300}"
 MIN_FREE_GIB="${VLLM_MIN_FREE_GIB:-20}"
+
+# Force Torch/Triton top-k/top-p sampler on Blackwell SM 12.0 until CUDA >= 12.9
+# is installed. FlashInfer 0.4.x sampler kernels are compiled against CUDA 12.9
+# for SM 12.x; on CUDA 12.8 they raise during profile-run
+# (`flashinfer.sampling.top_k_top_p_sampling_from_logits`). See DEBUG_LOG
+# 2026-08-11 06:49 EDT for the traceback. Attention path (FlashAttention v2)
+# is unaffected and remains the default.
+export VLLM_USE_FLASHINFER_SAMPLER=0
 
 if [ ! -x "$VLLM" ]; then
   echo "FAIL: vllm CLI not found at $VLLM — run scripts/install-vllm.sh" >&2
