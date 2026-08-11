@@ -1590,3 +1590,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** none (ADR-0030 status unchanged, still Proposed)
 - **Stop-condition status:** step 6c ready for Perplexity-Max labeling execution. Each session is self-contained (rubric + queries + pool rows). Labeler emits qrels_<session_id>.jsonl per session; merge + lock at step end.
+
+## 2026-08-11 16:07 EDT — Phase 0.4 gate-4 step 6c q-c01 calibration slice EMITTED
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · step 6c (labeling) · q-c01 calibration slice
+- **What changed:** Labeled q-c01 (query="how does the vLLM AWQ coder endpoint parse tool calls", 103 pool chunks) as calibration slice per user reality-check on s01 scope. Full-rigor reads of openhands-ext-v1 canonical files (bench/runner/server.py, candidates.py, probes.py, main.py, schema/run.py, tests/smoke/*.py) identified 4 grade-3 primaries: server.py 302-512 (ROLE_FLAGS + --tool-call-parser hermes docstring), candidates.py 31-93 (ExpandedCandidate parser fields), probes.py 918-1029 (_probe_coder_fallback client parse), main.py 400-477 (_make_server per-cell parser passthrough). Spot-reads of Kosmos + Rigpa-LMS chunks confirmed no cross-repo primaries (different runtimes/protocols). Remaining chunks graded 0 by user directive to expedite calibration. Grade distribution across 103 chunks: 15 g3 (primary), 3 g2, 4 g1, 81 g0. Rubric G2 line 8 satisfied (≥1 g3 primary → unanswerable_at_pinned_snapshot=false). Corpus pinned SHAs used: openhands-ext-v1 5489fb19, Kosmos 1f33519a, Rigpa-LMS 55b55539.
+- **Files touched:** `bench/gold/embedder-full-multi-block/labels/qrels_q-c01.jsonl` (new, 104 lines = 103 qrels + 1 session_summary); `bench/gold/embedder-full-multi-block/labels/label_qc01.py` (new, deterministic emitter with line-range-overlap-≥0.5 matching)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** none (ADR-0030 status unchanged, still Proposed)
+- **Stop-condition status:** q-c01 emitted. User to spot-check before deciding path forward for remaining 19 queries. Drift check NOT run (single-query slice, drift protocol requires within-session sample; queued for full-session labeling if user greenlights).
