@@ -27,6 +27,7 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0017 | [Production role selection (pre-Medium-tier): coder=qwen3-coder-30B-instruct-awq, planner=qwen3.6-35B-A3B-Q4_K_XL, embedder=qwen3-embedding-4B-Q8_0; co-residency Option 2](ADR-0017-production-role-selection-pre-medium.md) | Ratified v25 · Amended ×3 (pre-Phase-0.3) | Phase 0.2 → Phase 1 handoff |
 | 0018 | [Phase −1 version pins (drift-tolerant baseline)](ADR-0018-phase-minus-1-version-pins.md) | Ratified | Phase −1 |
 | 0019 | [Phase 2 MCP port range, mode wrapper, skills convention](ADR-0019-phase-2-mcp-port-range-and-mode-wrapper.md) | Ratified | Phase 2 |
+| 0020 | [UFW bridge egress for sandbox healthcheck](ADR-0020-ufw-bridge-egress-for-sandbox-healthcheck.md) | Ratified | Phase 1 |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 

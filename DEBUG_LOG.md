@@ -537,3 +537,21 @@ Entry format:
 1. **Any chat probe against a Qwen3/3.6 endpoint MUST forward `chat_template_kwargs: {enable_thinking: false}`** unless the probe explicitly wants thinking output. Missing the kwarg + tight `max_tokens` = empty content, guaranteed.
 2. **Empty `content` with `http=200` and `/v1/models` PASS** is a thinking-budget-starvation signature. Check `usage.completion_tokens` first — if it hit `max_tokens` with empty content, the CoT ate the budget.
 3. **DEBUG_LOG search-first works.** The 02:45 EDT entry was found in one grep and gave the diagnosis in under one minute.
+
+## 2026-08-11 08:11 EDT — Sandbox entered error state (openhands-app child sandbox spawn failed)
+
+- **Symptom:** `POST /api/v1/app-conversations/stream-start` returned 200 with a start-task in `WORKING` state. Sandbox container (`oh-agent-server-<uuid>`, image `ghcr.io/openhands/agent-server:1.36.0-python`) came up cleanly and reported `Application startup complete` on its own uvicorn `:8000` in ~1 s. But 15 s later, openhands-app marked the start-task ERROR with `detail: "500: Sandbox entered error state: oh-agent-server-<uuid>"`. Conversation was never created (`app_conversation_id: null`), no LLM traffic (vLLM `prompt_tokens_total` unchanged), no events (`event_count = 0`). Full traceback pointed to `sandbox_service.py:126` inside `wait_for_sandbox_running`.
+- **Affected stage / plugin / port:** Phase 1 · full-suite smoke · openhands-app v1.11.0 sandbox healthcheck path.
+- **Root cause:** UFW default INPUT policy on Colossus was `DROP`. Docker default-bridge subnet `172.17.0.0/16` was NOT on the allow-list (only specific ports 11434, 8000 were allow-listed). Inside `docker_sandbox_service.py:_container_to_checked_sandbox_info`, openhands-app polls the sandbox `AGENT_SERVER` exposed URL through `httpx_client.get(...)` after `replace_localhost_hostname_for_docker` rewrites it to `http://host.docker.internal:<published_port>/alive`. `host.docker.internal` inside the openhands-app container resolves to `172.17.0.1` (docker0 bridge gateway). Those packets from `172.17.0.2` (openhands-app) → `172.17.0.1:<published_port>` hit host INPUT and were dropped, so every healthcheck returned 5 s timeout. `STARTUP_GRACE_SECONDS = 15` — after 3 failed polls, status → ERROR. Diagnostic proof:
+  - `openhands-app → 172.17.0.4:8000` (sandbox internal IP, container→container on same bridge): 200 in 2 ms ✓
+  - `openhands-app → host.docker.internal:8100/v1/models` (host coder via docker0): 5 s timeout ✗
+  - `openhands-app → host.docker.internal:3000/health` (its own published port via docker0): 5 s timeout ✗
+  - `sandbox → host.docker.internal:8100/v1/models` (sandbox → host coder): 5 s timeout ✗
+  - `sudo iptables -L INPUT -n` → `Chain INPUT (policy DROP)`
+- **Fix applied:** `sudo ufw allow from 172.17.0.0/16 to any`. Persists across reboots (UFW). Filed as ADR-0020.
+- **Post-fix verification:**
+  - `openhands-app → host.docker.internal:8100/v1/models` → 200 in 1.1 ms
+  - `openhands-app → host.docker.internal:3000/health` → 200 in 1.7 ms
+  - v3 smoke test 5/5 PASS (T4 delta = 18113 prompt tokens, T5 event_count = 20)
+- **Files changed:** none (host UFW config). Documented in `tests/smoke/README.md` and `adrs/ADR-0020-*.md`.
+- **Related BUILD_LOG entry:** 2026-08-11 08:12 EDT

@@ -891,3 +891,34 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (Phase 2 introduces conventions, not services).
 - **PORTING_LEDGER / ADR updated:** ADR-0019 filed (D1/D2/D3).
 - **Stop-condition status:** met for 2.1/2.2/2.3. Definition of Done: (a) mode wrapper syntax-clean and fails-loud on missing CLI — verified with `bash -n`. (b) MCP port range + launcher template documented and rejects out-of-range — verified with smoke run. (c) skills convention documented with committed README + retirement rule.
+
+## 2026-08-11 08:12 EDT — Full-suite smoke LIVE on Colossus (openhands-app + coder + embedder, 5/5 PASS)
+
+- **Stage / plugin / port:** Phase 1 · Full-suite live proof · openhands-app v1.11.0 + agent-server 1.36.0-python + coder vLLM 0.27.0 + embedder llama.cpp
+- **What changed:** Full OpenHands stack live end-to-end on Colossus. Isolated openhands-app mount at `~/.openhands-smoke-2026-08-11/` (does NOT touch live `~/.openhands`). Agent successfully spawned per-conversation sandbox, hit coder, produced 20 events. Root-cause diagnosed and fixed: UFW default-DROP INPUT policy was blocking docker-bridge (172.17.0.0/16) → host published-port traffic, causing sandbox healthcheck to time out and start-task to enter ERROR state after the 15 s startup grace.
+- **Fix applied:** `sudo ufw allow from 172.17.0.0/16 to any` (ADR-0020).
+- **Post-fix verification (v3 smoke):**
+  - T1 frontend_loads → 200, title=OpenHands
+  - T2 backend_json → 3/3 JSON (`/settings`, `/app-conversations/search`, `/health`)
+  - T3 configure_and_launch → settings POST 200 (`{"message":"Settings stored"}`), stream-start POST 200 (task WORKING)
+  - T4 coder_delta → +18113 prompt_tokens_total (20 → 18133)
+  - T5 events_produced → conversation event_count = 20
+  - VRAM stable at ~31.4 GiB used (coder saturating, no OOM)
+- **API discoveries (documented for downstream reuse):**
+  - `POST /api/v1/settings` requires `{"agent_settings_diff": {...}}` wrapper (partial-update pattern).
+  - `POST /api/v1/app-conversations/stream-start` accepts `AppConversationStartRequest-Input` with `initial_message: SendMessageRequest` = `{role, content:[TextContent], run:true}`.
+  - Sandbox healthcheck is on `AGENT_SERVER` exposed URL rewritten via `replace_localhost_hostname_for_docker` → `host.docker.internal:<published_port>/alive`.
+  - `STARTUP_GRACE_SECONDS = 15` in `docker_sandbox_service.py` — after 15 s of failed healthchecks, sandbox status → ERROR.
+- **Files touched:**
+  - `tests/smoke/test_openhands_suite_v3.py` (new, 5 tests, artifacts at `/tmp/oh-smoke-artifacts-v3/`)
+  - `tests/smoke/README.md` (new, prerequisites + run instructions)
+  - `adrs/ADR-0020-ufw-bridge-egress-for-sandbox-healthcheck.md` (new)
+  - `adrs/README.md` (ADR-0020 row)
+  - `DEBUG_LOG.md` (2026-08-11 08:11 EDT entry appended)
+- **Ports / adapters affected:** none directly. UFW rule is Colossus host config.
+- **PORTING_LEDGER / ADR updated:** ADR-0020 filed.
+- **Stop-condition status:** met. Full-suite smoke proven end-to-end. Canvas GUI (agent-canvas package) inherits from openhands-app 1.11.0 build — served by the same :3000 SPA. Full-suite baseline is now the reference for future openhands-ext-v1 regressions.
+- **Known follow-ups (not blockers):**
+  - Container images 1.36.0 (openhands-app internal) vs installed SDK 1.41.0 skew — documented pre-existing (KNOWN_ISSUES).
+  - `--network host` on smoke ephemera earlier was diagnostic-only; final path uses standard bridge + UFW rule (Phase 1-clean).
+  - Sandbox stays alive after each conversation; caller responsible for cleanup with `docker rm -f oh-agent-server-*`.
