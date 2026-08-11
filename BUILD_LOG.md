@@ -1156,3 +1156,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0026 amendment (in-place per kosmos-adr-authoring §6).
 - **Stop-condition status:** step 1 met. Ready for step 2 (DockerWorkspace `.start()` smoke test).
+
+## 2026-08-11 10:26 EDT — ADR-0026 amendment 2: SDK 1.41.0 real surface + harness contract
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · coder correctness harness v1 · SDK integration contract
+- **What changed:** Second implementation note on ADR-0026 capturing the concrete SDK 1.41.0 surface from full introspection: DockerWorkspace auto-boots on construction (no start()), `execute_command`/`file_upload`/`file_download` as bash+file surfaces, `Conversation` factory returning `RemoteConversation` for DockerWorkspace, `callbacks=[on_event]` as the event-stream surface, `max_iteration_per_run=20` as native stop-condition enforcement, container reuse across all 10 tasks per cell, LLM adapter contract for local vLLM (`LLM(model="openai/<name>", base_url="http://127.0.0.1:8100/v1", ...)`). Fixture-seed + verification contract enumerated in 9 concrete steps that drive the task-set JSON shape.
+- **Files touched:** adrs/ADR-0026-coder-multi-turn-correctness-harness-v1.md
+- **Ports / adapters affected:** bench harness · `_probe_coder_sdk` implementation contract (to be authored in next commit)
+- **PORTING_LEDGER / ADR updated:** ADR-0026 (amendment 2 appended, decisions 1-6 unchanged)
+- **Stop-condition status:** ADR-0026 stop conditions 1-2 satisfied (SDK installed, DockerWorkspace boots). Conditions 3-4 (turn count > 20; fixture seed failure) now have concrete enforcement points defined.

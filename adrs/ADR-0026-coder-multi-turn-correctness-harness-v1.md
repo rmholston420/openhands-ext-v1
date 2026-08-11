@@ -15,6 +15,64 @@
 >
 > Version pin captured in `bench/runner/openhands-sdk-freeze-20260811T142200Z.txt`.
 
+> **IMPLEMENTATION NOTE (2026-08-11 10:26 EDT) — SDK 1.41.0 real surface (locks harness shape)**
+>
+> Full introspection of the installed 1.41.0 packages resolves the exact surface the harness will drive. This note supersedes the original ADR body's more general wording about "Conversation loop and ActionEvent/ObservationEvent streams" with concrete method names and types. Decisions 1-6 remain unchanged; this note pins the implementation contract.
+>
+> **Container lifecycle (DockerWorkspace):**
+>
+> - `DockerWorkspace(...)` starts the `ghcr.io/openhands/agent-server:latest-python` container on construction (no `.start()` call; smoke run measured ~10.5 s cold on Colossus).
+> - `ws.cleanup()` tears down the container (the container also carries `--rm` so process exit auto-removes it, but `cleanup()` is the explicit teardown).
+> - `DockerWorkspace` extends `RemoteWorkspace` → `Conversation(agent=..., workspace=ws)` returns a `RemoteConversation` (factory dispatches on workspace type).
+>
+> **Workspace file/exec surface (inherited from `BaseWorkspace` / `RemoteWorkspace`):**
+>
+> - `ws.execute_command(command: str, cwd=None, timeout=30.0) -> CommandResult` — bash execution inside the container.
+> - `ws.file_upload(source_path, destination_path) -> FileOperationResult` — fixture seeding (host → container).
+> - `ws.file_download(source_path, destination_path) -> FileOperationResult` — final-state extraction (container → host).
+> - `ws.git_diff(path)` / `ws.git_changes(path)` — state-comparison utilities.
+>
+> **Conversation contract:**
+>
+> - Canonical usage (from SDK 1.41.0 docstring at `openhands/sdk/conversation/conversation.py`):
+>
+>   ```python
+>   agent = Agent(llm=LLM(model="...", base_url="...", api_key=SecretStr("...")), tools=[])
+>   conv = Conversation(agent=agent, workspace=docker_ws, callbacks=[on_event],
+>                       max_iteration_per_run=20)
+>   conv.send_message(task["prompt"])
+>   conv.run()
+>   ```
+>
+> - `callbacks: list[Callable[[Event], None]]` is the event-stream capture surface. Event types imported from `openhands.sdk.event`: `ActionEvent`, `ObservationEvent` (subclass of `ObservationBaseEvent`), `MessageEvent`, `AgentErrorEvent`, `PauseEvent`. Per-task counting of `ActionEvent`s in the callback enforces the ADR-0026 stop condition "per-task turn count > 20".
+> - `max_iteration_per_run` (default 500) provides an SDK-native cap; harness sets this to **20 per task** to match the ADR-0026 stop condition, so runaway loops stop inside the SDK rather than in the callback.
+> - Container is **reused across all 10 tasks in a cell**; between tasks the harness wipes fixtures via `ws.execute_command("rm -rf /workspace/repo && mkdir -p /workspace/repo")` before seeding the next task's fixtures. One `DockerWorkspace()` per cell keeps startup cost amortized to ~10.5 s once, not 105 s across 10 tasks.
+>
+> **Fixture-seeding + verification contract per task (drives `bench/tasks/coder-medium-multi-turn.json` shape):**
+>
+> 1. Wipe: `ws.execute_command("rm -rf /workspace/repo && mkdir -p /workspace/repo")`.
+> 2. Seed: for each `path -> content` in the task's `fixtures`, write `content` to a host tempfile, then `ws.file_upload(tempfile, path)`, then delete the tempfile.
+> 3. Register callback: closure that appends `Event` objects to a per-task list.
+> 4. Create `Conversation(agent=..., workspace=ws, callbacks=[cb], max_iteration_per_run=20)`.
+> 5. `conv.send_message(task["prompt"])`; `conv.run()`.
+> 6. Verify final state: for each `path -> expected_content` in `expected_final_state`, `ws.execute_command(f"cat {path}")` and compare to expected (whitespace-normalized diff is the default; exact-diff opt-in per task). Store both actual and expected.
+> 7. Smoke test (optional per task): `ws.execute_command(task["smoke_test_command"], cwd="/workspace/repo", timeout=30)`; capture exit code + stdout/stderr.
+> 8. Extract event trace: count `ActionEvent`s, list tool names invoked in order, count `AgentErrorEvent`s.
+> 9. Persist per-task record in the cell JSON.
+>
+> **LLM adapter contract for local vLLM/llama.cpp servers:**
+>
+> The bench router already runs coder cells at `http://127.0.0.1:8100` (vLLM served-model-name derived from the cell id) with an OpenAI-compatible `/v1/chat/completions` endpoint. The SDK's `LLM` class supports arbitrary OpenAI-compatible endpoints via `LLM(model="openai/<served_name>", base_url="http://127.0.0.1:8100/v1", api_key=SecretStr("sk-local"))`. Sampling parameters (temperature/top_p/etc.) pass through `**kwargs` to litellm. Harness constructs one `LLM` per cell before entering the task loop.
+>
+> **Stop-condition mapping (concrete):**
+>
+> - `pip install openhands-sdk openhands-tools` failure → already satisfied (installed at 1.41.0).
+> - DockerWorkspace image cannot start → already satisfied (smoke run succeeded).
+> - Per-task turn count > 20 → enforced natively by `max_iteration_per_run=20`; callback also records the actual count so we can distinguish "hit the cap" from "finished cleanly".
+> - Fixture cannot be seeded → `ws.file_upload(...)` raises; harness catches, records `fixture_seed_failed`, moves to next task without invoking Conversation.
+>
+> Task-set + gold file authoring (Consequences: files created by implementation slice) proceed on this contract.
+
 ## Context
 
 Phase 0.2 medium-tier coder scoring used `_probe_coder_fallback` (single-turn `/v1/chat/completions` with tool_choice=auto). The fallback:
