@@ -237,7 +237,7 @@
         "cold_start_ms": {"type": "number", "minimum": 0},
         "per_task_wall_seconds_p50": {"type": "number", "minimum": 0},
         "per_task_wall_seconds_p95": {"type": ["number", "null"], "minimum": 0},
-        "repeats": {"type": "integer", "minimum": 1, "description": "3+ for Full tier."},
+        "repeats": {"type": "integer", "minimum": 0, "description": "3+ for Full tier. 0 permitted only when launch failed and no probe executed."},
         "variance_note": {"type": ["string", "null"]}
       }
     },

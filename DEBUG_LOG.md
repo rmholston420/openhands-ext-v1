@@ -143,3 +143,21 @@ Entry format:
 - **Verification:** `bench/results/phase-neg-1-smoke-vllm-20260811T044948Z.json` — smoke passed with `VLLM_USE_FLASHINFER_SAMPLER` unset; health OK 22 s; RTX 5090 device_cap `(12, 0)` correctly detected on torch 2.13.0+cu130.
 - **Related BUILD_LOG entry:** 2026-08-11 00:52 EDT
 - **Supersedes:** 2026-08-11 00:27 EDT (workaround) — that fix is retired, not incorrect. Use it as a temporary escape hatch only if a future flashinfer-python upgrade breaks the JIT-cache pairing.
+
+## 2026-08-11 02:17 EDT — Schema rejects launch-failed records (repeats=0)
+
+- **Symptom:** `[SCHEMA] FAIL validation for qwen3-30b-a3b-thinking-2507-awq: 0 is less than the minimum of 1 / On instance['latency']['repeats']: 0`. Observed during first real (non-dry) smoke run.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast-tier runner · `bench/schema/run.schema.json`.
+- **Root cause:** `latency.repeats` schema had `minimum: 1`, but launch-failed cells have zero probe executions and legitimately emit `repeats=0`. The whole point of R1 (launch-failure elimination) is to record these cells; the schema was refusing them.
+- **Fix applied:** Relaxed `latency.repeats.minimum` from 1 to 0 with a description that documents when 0 is legitimate ("launch failed and no probe executed"). Full-tier requires 3+ but that's enforced by the rubric, not the schema.
+- **Files changed:** `bench/schema/run.schema.json`.
+- **Related BUILD_LOG entry:** — (schema-only fix, no BUILD_LOG entry needed).
+
+## 2026-08-11 02:17 EDT — Preflight VRAM refuses when a stray vLLM holds the GPU
+
+- **Symptom:** `LAUNCH: FAIL [insufficient_vram] gpu_free=12.28 GiB < min=20.0 GiB`. No cell-level bug; a leftover vLLM process from an earlier smoke test was holding ~20 GiB.
+- **Affected stage / plugin / port:** Colossus env; not runner code.
+- **Root cause:** Prior smoke script left `vllm serve .../qwen2.5-1.5b-instruct/hf` on port 8083 (PID 1969154). Preflight worked exactly as intended — refused to over-commit the GPU.
+- **Fix applied:** Kill stray vLLM + stop Ollama before real runs. Documented as a pre-run checklist item; not a code fix.
+- **Files changed:** none.
+- **Related BUILD_LOG entry:** —.
