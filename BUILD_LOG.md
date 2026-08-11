@@ -1773,3 +1773,32 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
   evidence was present on all three runs; only the assertion missed.
   Final regex verified locally against six transcript shapes before
   the third run.
+
+## 2026-08-11 18:33 EDT — Phase 3 sign-off item 3.b PASSED vacuously (§2.2 has no concrete servers until Phases 5-7)
+
+- **Stage / plugin / port:** Phase 3 · MCP surface (§2.2)
+- **What changed:** Added `bench/smoke-phase-3-item-3b/probe.sh` which
+  reads the spec, confirms §2.2 defines only an install pattern (not
+  specific servers), and reports Phase-5-onwards prereq availability.
+- **Files touched:**
+  - `bench/smoke-phase-3-item-3b/task.md`
+  - `bench/smoke-phase-3-item-3b/probe.sh`
+- **Ports / adapters affected:** — (§2.2's install pattern is inspected;
+  no port added yet.)
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** met (vacuously). Verdict:
+  - `spec_2_2_defines_specific_servers = false`; servers land in
+    Phase 5 (GPU telemetry), Phase 6 (Inference health + Episodic
+    memory), Phase 7 (RepoGraph Neo4j).
+  - `build_agent_wires_mcp = false` (expected at Phase 3).
+  - `npx`, `uvx`, `supergateway` installed
+    (`/home/rmholston/.nvm/versions/node/v24.16.0/bin/supergateway`;
+    node v24.16.0).
+  - SDK MCP surface: `MCPClient`, `MCPToolDefinition`,
+    `MCPToolObservation`, `create_mcp_tools`, `mcp`, `MCPServer`.
+  - Shipped subagent preset with `mcp_servers` frontmatter:
+    `web-researcher.md` (informational; not activated by Phase 3).
+- **Interpretation note:** Phase 3 line 378 "MCP tools from §2.2 are
+  callable" is treated as vacuously satisfied because §2.2 lists no
+  concrete servers before Phase 5. This is documented gap #2 for
+  Phase 3 close (#1 was 3.h-2 hardware co-residency).
