@@ -199,3 +199,21 @@ Entry format:
 - **Files changed:** `bench/runner/probes.py`, `adrs/ADR-0009-fast-tier-guided-decoding.md`, `adrs/README.md`.
 - **Related BUILD_LOG entry:** 2026-08-11 02:50 EDT
 - **Supersedes:** 2026-08-11 02:45 EDT (R2 diagnosis: prior fix ADR-0008 was necessary but not sufficient; this entry closes the diagnosis).
+
+## 2026-08-11 02:56 EDT — planner-fast-02 R2 fail: min_steps=4 vs natural 3-step DAG
+
+- **Symptom:** After ADR-0008 + ADR-0009 landed and probe emitted valid schema-conforming JSON, `planner-fast-02-forge-oh-migration` verdict=fail with detail `too few steps 3<4`. Tasks 01 and 03 pass.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast-tier planner probe · `bench/tasks/planner-fast.json`.
+- **Root cause:** Not a model or probe defect. Task-authoring calibration error: `min_steps=4` was authorial overreach. The natural decomposition of "add SQLAlchemy model + alembic migration + test" is 3 steps (model → migration → test). The model produced exactly that DAG with valid deps and IDs. Task 03 (`min_steps=4`, produced 5) confirms the gate still discriminates correctly for tasks that warrant it.
+- **Fix applied:** `bench/tasks/planner-fast.json::planner-fast-02.min_steps: 4 → 3`. No probe / runner / schema change needed.
+- **Files changed:** `bench/tasks/planner-fast.json`.
+- **Related BUILD_LOG entry:** 2026-08-11 02:54 EDT.
+
+## 2026-08-11 02:56 EDT — planner-fast smoke: overall verdict=pass (closure)
+
+- **Symptom:** N/A — closure entry.
+- **Affected stage / plugin / port:** Phase 0.1 · Fast-tier planner probe.
+- **Root cause:** N/A.
+- **Fix applied:** N/A — recording that after commits 94bafbb (raw_content) + bd09e1a (ADR-0008) + 1fa2495 (ADR-0009) + ab5ff74 (task calibration), the smoke run `smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm-gpu-20260811T065511Z.json` reports `overall verdict: pass`, all 3 tasks pass, probe elapsed 2s, VRAM peak 30648 MiB, temp peak 49 °C, NVML coverage 100%, teardown rc=0.
+- **Files changed:** none.
+- **Related BUILD_LOG entry:** 2026-08-11 02:54 EDT.

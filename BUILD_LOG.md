@@ -352,3 +352,14 @@ America/Detroit (`EDT` / `EST`).
 - **Ports / adapters affected:** none (task-set data).
 - **PORTING_LEDGER / ADR updated:** none (no ADR required — task authoring calibration, not a design decision).
 - **Stop-condition status:** ready for green smoke on Colossus. All three planner-fast tasks should verdict=pass on next run.
+
+## 2026-08-11 02:56 EDT — Phase 0.1 planner-fast smoke gate CLEARED (verdict=pass)
+
+- **Stage / plugin / port:** Phase 0.1 · Fast-tier planner probe · smoke-gate closure.
+- **What changed:** Nothing new built. Recording verified green run on Colossus.
+- **Files touched:** `SESSION_HANDOFF.md` (overwritten), `DEBUG_LOG.md` (appended closure entries).
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none. ADR-0005 + ADR-0008 + ADR-0009 all now backed by a passing empirical run.
+- **Stop-condition status:** MET for planner-fast smoke. Fast-tier planner probe contract is production-ready. Next stop condition = coder-fast smoke gate.
+
+Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm-gpu-20260811T065511Z.json` — overall verdict pass, 3/3 task pass, probe elapsed 2s, VRAM peak 30648 MiB, temp peak 49 °C, NVML coverage 100%, teardown rc=0.

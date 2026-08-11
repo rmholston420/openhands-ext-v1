@@ -1,55 +1,38 @@
-# OpenHands-Ext v1 — Session Handoff — 2026-08-11 02:10 EDT
+# OpenHands-Ext v1 Session Handoff — 2026-08-11 02:56 EDT
 
 ## Current build-sequencing position
-
-- **Phase:** 0.1 — Fast-tier (30 min) triage & infeasibility elimination
-- **Component:** `bench/runner/` package + `scripts/benchmark-tier-runner.py`
-- **Ports touched:** none (harness code)
+- **Stage / phase:** Phase 0.1 · Fast-tier planner probe · smoke gate CLEARED.
+- **Plugin / kernel component:** `bench/runner/probes.py::probe_planner` + `bench/tasks/planner-fast.json`.
+- **Port(s) in progress:** none. Fast-tier planner probe contract is now locked (ADR-0008 + ADR-0009).
 
 ## Completed this session
+- Diagnostic gap fixed: `TaskResult.raw_content` sidecar (commit 94bafbb).
+- ADR-0008: Fast tier disables thinking mode for planner via `chat_template_kwargs` (commit bd09e1a).
+- ADR-0009: Fast-tier planner uses OpenAI-compat guided decoding via `response_format=json_schema, strict=true` (commit 1fa2495).
+- Task calibration: `planner-fast-02.min_steps` 4→3 to match natural DAG (commit ab5ff74).
+- **Verified end-to-end on Colossus (smoke run 20260811T065511Z): `overall verdict: pass`, all 3 planner-fast tasks pass, 2s total probe time, VRAM 30648 MiB, temp 49 °C, NVML coverage 100%.**
 
-- ADR-0007 filed + Fast-tier task JSONs + elimination rubric (commit `66b859c`).
-- Registry sizes calibrated against `models/manifest.json`.
-- `scripts/pull-models.sh` progress-ticker.
-- Progress-visibility discipline (ADR-0007 §7) added to runner scaffold docstring.
-- **Runner design revised (this turn):** switched from separate `bench/launchers/*.sh` scripts to inline Popen supervision in Python. Removed the four launcher drafts.
-- **`bench/runner/` package written and dry-run-verified:**
-  - `progress.py` — line-buffered `[i/N]` printer with heartbeat context-manager
-  - `server.py` — `VLLMServer` + `LlamaCppServer` Popen supervisors with stdout tee, `atexit`/SIGINT/SIGTERM cleanup, structured `ServerLaunchError`
-  - `nvml.py` — background pynvml sampler with coverage tracking
-  - `probes.py` — planner (JSON + DAG), embedder (cosine probes), coder (fallback tool-call; SDK path stubbed)
-  - `candidates.py` — registry × manifest expansion + oversize filter + embedder GPU/CPU matrix
-  - `main.py` — end-to-end orchestration, guards, rubric R1-R4 application, schema-validated writes
-- `bench/tasks/README.md` — task-set JSON contract doc.
-- `scripts/benchmark-tier-runner.py` rewritten as thin CLI shim.
-- Sandbox-local dry-run passes for planner (5), coder (4), embedder (8). Guard §0.0a fires exit=2 on planner without `--rubric`.
-
-## Remaining before current Definition of Done (Phase 0.1)
-
-1. **Pull this commit on Colossus** (`cd ~/dev/openhands-ext-v1 && git pull`).
-2. **Install `openhands-sdk` + `openhands-tools`** into the runner venv so `_probe_coder_sdk` can replace its `NotImplementedError` with a real Conversation loop + DockerWorkspace. Until then coder cells run in fallback mode and are tagged `degraded: openhands-sdk unavailable`.
-3. **Materialize `.versions/llama.cpp` and `.versions/vllm`** (or accept them via CLI flags) so `run_metadata.llama_cpp_build_tag` / `vllm_release_tag` are populated.
-4. **First real (non-`--dry-run`) planner invocation on Colossus** — smallest of the pool first (`qwen3-30b-a3b-thinking-2507-awq`, ~18 GiB) to confirm the launch/probe loop end-to-end before running the full role.
-5. Iterate through coder (fallback), planner, embedder Fast-tier cells; produce elimination report.
+## Remaining before Phase 0.1 Definition of Done
+- Coder-fast probe smoke gate. Task set `bench/tasks/coder-fast.json` (if it exists) + `probe_coder` need the same shakedown against a real coder candidate (e.g. `qwen3-coder-30b-a3b-instruct` or similar).
+- Multi-candidate pool run (drop `--smoke` and `--candidate-file /tmp/single-plan.json`, use the real pool config).
+- Rank candidates and record verdict in an ADR per ADR-0007 methodology.
 
 ## Open questions / awaiting user answer
-
-- None. Design confirmed (Q1 Full SDK / Q2 raw for planner+embedder / Q3 revised to inline Popen supervision after re-examination).
-- `_probe_coder_sdk` will be filled in as a follow-on commit once `openhands-sdk` is confirmed installed on Colossus. Recommend that as the very next slice.
+- None. Fast-tier planner probe is production-ready for pool bake.
 
 ## Exact next action
+1. Confirm which coder-fast candidate set to bake first, then run:
 
-On Colossus:
+    ```bash
+    cd ~/dev/openhands-ext-v1 && source .venv/bin/activate
+    export CUDA_VISIBLE_DEVICES=0
+    pkill -x ollama 2>/dev/null; pkill -f "vllm serve" 2>/dev/null; sleep 2
 
-```
-cd ~/dev/openhands-ext-v1
-git pull
-# Confirm the runner package imports cleanly
-python -c "from bench.runner.main import run_tier; print('ok')"
-# Dry-run to confirm end-to-end schema validation on your box:
-python scripts/benchmark-tier-runner.py --tier fast --role planner \
-  --task-set bench/tasks/planner-fast.json \
-  --rubric bench/rubrics/fast-elimination.json --dry-run
-```
+    .venv/bin/python scripts/benchmark-tier-runner.py \
+      --tier fast --role coder --smoke \
+      --task-set bench/tasks/coder-fast.json \
+      --rubric bench/rubrics/fast-elimination.json \
+      --candidate-file /tmp/single-coder.json
+    ```
 
-Then decide whether to (a) install `openhands-sdk` first and finish the SDK path, or (b) run the fallback coder probe now and defer the SDK integration to Phase 0.2.
+2. If the coder probe fails R2 in the same prose-instead-of-tool-call mode, apply the same guided-decoding pattern to tool-calling via `tool_choice="required"` + a strict tool-schema.
