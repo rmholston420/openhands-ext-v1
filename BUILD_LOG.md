@@ -1356,3 +1356,21 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **PORTING_LEDGER / ADR updated:** ADR-0027 (new). No cascading amendments to ADR-0017 / ADR-0023 coder rows. ADR-0026 unchanged (no amendment 4 needed).
 - **Follow-up filed (non-blocking):** 35b T05/T08 finish-omission on report-style tasks — reproducible signal, characterize before any llama.cpp-planner re-eval; do not block gate-3.
 - **Stop-condition status:** Phase 0.3 gate-2 stop condition met. Gate-2 CLOSED. Awaiting user direction to open Phase 0.3 gate-3 (ADR-0028 reserved).
+
+## 2026-08-11 11:57 EDT — Phase 0.3 gate-3 OPENED · ADR-0028 filed (Proposed) · coder Full-tier task set scaffolded
+
+- **Stage / plugin / port:** Phase 0.3 gate-3 · coder role Full-tier re-eval
+- **What changed:** Opened Phase 0.3 gate-3 as a coder Full-tier multi-turn re-eval of AWQ (production) vs 35b (challenger). Filed ADR-0028 (Proposed) with pre-registered task-composition classes, rubric shape, candidate cells, and reversal criteria (including an explicit finish-action clause that mechanizes the ADR-0027 §Sub-decision 6 follow-up). Scaffolded `bench/tasks/coder-full-multi-turn.json` with schema + reversal criteria LOCKED and fixtures/prompts/gold_hashes UNFROZEN (populated at fixture lock-in commit that flips ADR-0028 to Ratified and sets post_hoc_edit_locked=true).
+- **Task composition (pre-registered in ADR-0028 §Sub-decision 1):** F01 multi-file refactor + invariant · F02 cross-module bug hunt · F03 feature-add read-first · F04 pytest multi-failure report (report-style) · F05 git status+log report (report-style) · F06 exact-diff fix + regression test · F07 config-driven behavior change · F08 error-handling addition · F09 unused-import cluster analysis (report-style) · F10 docstring-driven impl with 2 accepted impls. 3 report-style tasks deliberately over-weight vs Medium's 2 to force the T05/T08 finish-omission signal to surface.
+- **Reversal criteria highlights:** flip requires ALL ≥80 AND macro lead ≥5 AND FinishAction on every report-style task; confirm AWQ if macro lead ≥3 OR 35b <70 on any 2 OR 35b omits FinishAction on ANY report-style task. Boundary values default to preserving incumbent (confirms AWQ).
+- **Files touched:**
+  - adrs/ADR-0028-phase-0-3-gate-3-coder-full-tier-re-eval.md (new · Proposed)
+  - adrs/README.md (index row 0028 added)
+  - bench/tasks/coder-full-multi-turn.json (scaffold; UNFROZEN)
+  - BUILD_LOG.md (this entry)
+  - SESSION_HANDOFF.md (overwrite)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0028 (new · Proposed). No cascading amendments.
+- **Follow-up promoted:** ADR-0027 §Sub-decision 6 (35b finish-omission) now instrumented inside gate-3 rubric rather than as a separate ad-hoc investigation.
+- **Reservation:** ADR-0029 reserved for Phase 0.3 gate-3 verdict.
+- **Stop-condition status:** Gate-3 opened; awaiting fixture-lock-in commit (populate fixtures, gold, rubric, candidate files) before probes can run. DoD steps 1-7 listed in ADR-0028 §Sub-decision 5.

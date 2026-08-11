@@ -1,0 +1,193 @@
+{
+  "$comment": "Phase 0.3 gate-3 · Full-tier coder MULTI-TURN task set SCAFFOLD (ADR-0028). SCHEMA + REVERSAL CRITERIA ARE LOCKED. TASK FIXTURES + PROMPTS + GOLD_HASHES ARE UNFROZEN — populated in a follow-up commit that flips ADR-0028 status from Proposed → Ratified and sets post_hoc_edit_locked=true. Composition classes for F01-F10 are pre-registered in ADR-0028 §Sub-decision 1 and MUST NOT drift when fixtures land. Harness contract is ADR-0026 v1.1 unchanged.",
+  "schema_version": "1.0.0",
+  "harness_version": "v1.1",
+  "tier": "full",
+  "role": "coder",
+  "authored_utc": "2026-08-11T15:57:00Z",
+  "adr_anchor": "adrs/ADR-0028-phase-0-3-gate-3-coder-full-tier-re-eval.md",
+  "supersedes_at_full_tier": "none (first Full-tier coder task set)",
+  "rubric_anchor": "bench/rubrics/full-scored.json",
+  "gold_dir": "bench/gold/coder-full-multi-turn",
+  "budget_tokens": 8192,
+  "max_iteration_per_run": 20,
+  "docker_image_expected": "ghcr.io/openhands/agent-server:latest-python",
+  "openhands_sdk_version_expected": "1.41.0",
+  "post_hoc_edit_locked": false,
+  "status": "SCAFFOLD — fixtures TBD; ADR-0028 Proposed until fixture lock-in commit",
+  "gold_hashes": {
+    "coder-full-01-multifile-refactor-with-invariant": "TBD",
+    "coder-full-02-bug-hunt-cross-module": "TBD",
+    "coder-full-03-feature-add-read-first-unfamiliar": "TBD",
+    "coder-full-04-pytest-multi-failure-report": "TBD",
+    "coder-full-05-git-status-log-report": "TBD",
+    "coder-full-06-exact-diff-fix-plus-regression-test": "TBD",
+    "coder-full-07-config-driven-behavior-change": "TBD",
+    "coder-full-08-error-handling-addition": "TBD",
+    "coder-full-09-unused-import-cluster-analysis": "TBD",
+    "coder-full-10-docstring-driven-impl-two-accepted": "TBD"
+  },
+  "report_style_task_ids": [
+    "coder-full-04-pytest-multi-failure-report",
+    "coder-full-05-git-status-log-report",
+    "coder-full-09-unused-import-cluster-analysis"
+  ],
+  "reversal_criteria": {
+    "$comment": "Pre-registered per ADR-0028. Post-hoc reinterpretation PROHIBITED. Applied at run aggregation, not per-task. Boundary values on inequality thresholds default to the interpretation that preserves the incumbent (confirms AWQ).",
+    "flip_to_35b_a3b_q4kxl_if": [
+      "all 10 per-task scores of qwen3_6-35b-a3b-q4kxl-gguf are >= 80",
+      "AND qwen3_6-35b-a3b-q4kxl-gguf macro exceeds qwen3-coder-30b-a3b-instruct-awq-4bit macro by >= 5 points",
+      "AND qwen3_6-35b-a3b-q4kxl-gguf delivered a FinishAction on every report_style_task_ids task"
+    ],
+    "confirm_awq_if": [
+      "qwen3-coder-30b-a3b-instruct-awq-4bit macro exceeds qwen3_6-35b-a3b-q4kxl-gguf macro by >= 3 points",
+      "OR qwen3_6-35b-a3b-q4kxl-gguf scores < 70 on any 2 of the 10 tasks",
+      "OR qwen3_6-35b-a3b-q4kxl-gguf omits a FinishAction on ANY report_style_task_ids task"
+    ],
+    "intermediate_confirm_and_log_per_task_mix_if": [
+      "neither flip nor confirm criteria fire cleanly"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "coder-full-01-multifile-refactor-with-invariant",
+      "class": "multi-file refactor with cross-module invariant",
+      "prompt": "TBD (fixture lock-in commit)",
+      "fixtures": "TBD",
+      "expected_tool_sequence": "TBD",
+      "preferred_tools": ["str_replace_editor"],
+      "dispreferred_tools": ["write_file"],
+      "notes": "Rename + type-signature change threading through 3+ files; imports and call sites must all update; smoke command verifies runtime.",
+      "expected_final_state": "TBD",
+      "expected_final_state_mode": "exact",
+      "smoke_test_command": "TBD (python entrypoint that must exit 0 with expected stdout)",
+      "report_style": false
+    },
+    {
+      "id": "coder-full-02-bug-hunt-cross-module",
+      "class": "real bug hunt with failing test as oracle",
+      "prompt": "TBD",
+      "fixtures": "TBD",
+      "expected_tool_sequence": "TBD",
+      "preferred_tools": ["str_replace_editor", "execute_bash"],
+      "dispreferred_tools": ["write_file"],
+      "notes": "Failing test is the oracle; agent must locate root cause across >=2 files, not patch the assertion. Modifying the test to make it pass is a scoring-band drop.",
+      "expected_final_state": "TBD",
+      "expected_final_state_mode": "rubric_only_with_immutable_check",
+      "smoke_test_command": "TBD (pytest run that must now pass)",
+      "report_style": false
+    },
+    {
+      "id": "coder-full-03-feature-add-read-first-unfamiliar",
+      "class": "feature addition requiring read-first of unfamiliar module",
+      "prompt": "TBD",
+      "fixtures": "TBD",
+      "expected_tool_sequence": "TBD",
+      "preferred_tools": ["str_replace_editor"],
+      "dispreferred_tools": ["write_file"],
+      "notes": "Add a method to a class the agent has not seen; must preserve public API + existing tests.",
+      "expected_final_state": "TBD",
+      "expected_final_state_mode": "rubric_only_with_immutable_check",
+      "smoke_test_command": "TBD",
+      "report_style": false
+    },
+    {
+      "id": "coder-full-04-pytest-multi-failure-report",
+      "class": "report-style · DO NOT MODIFY",
+      "prompt": "TBD",
+      "fixtures": "TBD",
+      "expected_tool_sequence": ["execute_bash", "finish"],
+      "preferred_tools": ["execute_bash"],
+      "dispreferred_tools": ["str_replace_editor", "write_file"],
+      "notes": "3 failing tests across 2 files. FinishAction MUST include per-test breakdown (test name + reason). Any file modification triggers band cap at 40-59. Omitted FinishAction auto-triggers reversal rule 2 clause 3.",
+      "expected_final_state": "TBD (immutable-check on both source files)",
+      "expected_final_state_mode": "rubric_only_with_immutable_check",
+      "smoke_test_command": null,
+      "report_style": true
+    },
+    {
+      "id": "coder-full-05-git-status-log-report",
+      "class": "report-style · DO NOT MODIFY",
+      "prompt": "TBD",
+      "fixtures": "TBD",
+      "expected_tool_sequence": ["execute_bash", "finish"],
+      "preferred_tools": ["execute_bash"],
+      "dispreferred_tools": ["str_replace_editor", "write_file"],
+      "notes": "FinishAction MUST include modified files list + last 3 commit subjects. Committing anything = band cap 40-59. Omitted FinishAction auto-triggers reversal rule 2 clause 3.",
+      "expected_final_state": "TBD (immutable-check on working tree)",
+      "expected_final_state_mode": "rubric_only_with_immutable_check",
+      "smoke_test_command": null,
+      "report_style": true
+    },
+    {
+      "id": "coder-full-06-exact-diff-fix-plus-regression-test",
+      "class": "exact-diff bug fix + regression test author",
+      "prompt": "TBD",
+      "fixtures": "TBD",
+      "expected_tool_sequence": "TBD",
+      "preferred_tools": ["str_replace_editor"],
+      "dispreferred_tools": ["write_file"],
+      "notes": "Fix must be minimal exact-diff. Regression test must be written after the fix and must have failed against the pre-fix source. Both artifacts scored; either failing drops the score.",
+      "expected_final_state": "TBD",
+      "expected_final_state_mode": "exact",
+      "smoke_test_command": "TBD (pytest showing regression test passes on fixed code)",
+      "report_style": false
+    },
+    {
+      "id": "coder-full-07-config-driven-behavior-change",
+      "class": "config + code change producing new smoke output",
+      "prompt": "TBD",
+      "fixtures": "TBD",
+      "expected_tool_sequence": "TBD",
+      "preferred_tools": ["str_replace_editor"],
+      "dispreferred_tools": ["write_file"],
+      "notes": "Test-set-scale change, not one-line. Smoke command output before vs after must differ deterministically.",
+      "expected_final_state": "TBD",
+      "expected_final_state_mode": "exact",
+      "smoke_test_command": "TBD",
+      "report_style": false
+    },
+    {
+      "id": "coder-full-08-error-handling-addition",
+      "class": "error-handling around existing function",
+      "prompt": "TBD",
+      "fixtures": "TBD",
+      "expected_tool_sequence": "TBD",
+      "preferred_tools": ["str_replace_editor"],
+      "dispreferred_tools": ["write_file"],
+      "notes": "Add try/except path preserving happy-path bytes exactly. Smoke tests BOTH the happy path (unchanged output) and the error path (raises expected exception type or returns expected sentinel).",
+      "expected_final_state": "TBD",
+      "expected_final_state_mode": "rubric_only_with_immutable_check",
+      "smoke_test_command": "TBD (two invocations)",
+      "report_style": false
+    },
+    {
+      "id": "coder-full-09-unused-import-cluster-analysis",
+      "class": "read-only dependency-graph analysis + report-style hybrid",
+      "prompt": "TBD",
+      "fixtures": "TBD",
+      "expected_tool_sequence": ["execute_bash", "finish"],
+      "preferred_tools": ["execute_bash", "str_replace_editor"],
+      "dispreferred_tools": ["write_file"],
+      "notes": "FinishAction MUST list unused imports across N files. Files must not be modified (removing the imports without being asked = band cap 40-59). Omitted FinishAction auto-triggers reversal rule 2 clause 3.",
+      "expected_final_state": "TBD (immutable-check on all source files)",
+      "expected_final_state_mode": "rubric_only_with_immutable_check",
+      "smoke_test_command": null,
+      "report_style": true
+    },
+    {
+      "id": "coder-full-10-docstring-driven-impl-two-accepted",
+      "class": "rubric_only implementation from docstring, multiple correct impls accepted",
+      "prompt": "TBD",
+      "fixtures": "TBD",
+      "expected_tool_sequence": "TBD",
+      "preferred_tools": ["str_replace_editor"],
+      "dispreferred_tools": ["write_file"],
+      "notes": "Harder edge cases than Medium T10. At least two distinct correct implementations must be pre-declared acceptable in the gold rubric.",
+      "expected_final_state": "TBD",
+      "expected_final_state_mode": "rubric_only",
+      "smoke_test_command": "TBD (python -c executing all edge cases)",
+      "report_style": false
+    }
+  ]
+}

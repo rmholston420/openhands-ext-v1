@@ -35,6 +35,7 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0025 | [Planner migration-ordering probe verdict: CONFIRM ADR-0023 (27b-q6k retained; 91.75 vs 86.50 macro-avg; 27b leads by 5.25 pts, outside 3-pt tiebreak)](ADR-0025-planner-migration-probe-verdict-confirm-adr-0023.md) | Ratified | Phase 0.3 gate-1 |
 | 0026 | [Coder multi-turn correctness harness v1 (DockerWorkspace SDK path + Perplexity-Max scored 0-100 + supersede Phase 0.2 medium coder verdict)](ADR-0026-coder-multi-turn-correctness-harness-v1.md) | Amended (amend 3: transport + tools + scoping + trace schema v1.1) | Phase 0.3 gate-2 |
 | 0027 | [Phase 0.3 gate-2 coder verdict: CONFIRM AWQ (qwen3-coder-30b-a3b-instruct-awq-4bit); 85.4 vs 88.7 macro-avg, 35b fails T05/T08 finish-action; reversal-criteria rule 3 fired robust to strict/loose <70 reading)](ADR-0027-phase-0-3-gate-2-coder-verdict-confirm-awq.md) | Ratified | Phase 0.3 gate-2 |
+| 0028 | [Phase 0.3 gate-3 coder Full-tier re-eval (AWQ vs 35b, pre-registered; 10-task Full multi-turn set with 3 report-style tasks; finish-action clause in reversal criteria)](ADR-0028-phase-0-3-gate-3-coder-full-tier-re-eval.md) | Proposed | Phase 0.3 gate-3 |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 
