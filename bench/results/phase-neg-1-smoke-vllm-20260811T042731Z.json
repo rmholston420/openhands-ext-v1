@@ -1,0 +1,14 @@
+{
+  "phase": "-1.5",
+  "component": "vllm smoke",
+  "status": "pass",
+  "timestamp_utc": "2026-08-11T04:27:31+00:00",
+  "model": "Qwen2.5-1.5B-Instruct (safetensors)",
+  "port": 8083,
+  "config": {
+    "gpu_memory_utilization": 0.55,
+    "max_model_len": 4096
+  },
+  "assistant_content": "Hello! I am currently running on an NVIDIA RTX 5090 GPU.",
+  "gpu_snapshot_after": "0 %, 18860 MiB\n"
+}

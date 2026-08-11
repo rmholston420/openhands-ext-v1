@@ -1,0 +1,10 @@
+{
+  "phase": "-1.5",
+  "component": "llama.cpp smoke",
+  "status": "pass",
+  "timestamp_utc": "2026-08-11T04:20:26+00:00",
+  "model": "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+  "port": 8082,
+  "assistant_content": "Hello! I am running on the RTX 5090.",
+  "gpu_snapshot_after": "1 %, 30739 MiB\n"
+}

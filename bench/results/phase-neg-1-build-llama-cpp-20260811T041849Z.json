@@ -1,0 +1,16 @@
+{
+  "phase": "-1",
+  "component": "llama.cpp build",
+  "status": "pass",
+  "timestamp_utc": "2026-08-11T04:18:49+00:00",
+  "tag": "b10356",
+  "sha": "0666ad2b2b2452668733729e8b54234f5964643a",
+  "toolchain": {
+    "cuda": "Build cuda_13.0.r13.0/compiler.36424714_0",
+    "cuda_root": "/usr/local/cuda-13.0",
+    "host_compiler": "gcc-13 (Ubuntu 13.4.0-10ubuntu1) 13.4.0",
+    "sm_arch": "120",
+    "glibc": "2.43"
+  },
+  "server_binary": "/home/rmholston/dev/openhands-ext-v1/vendor/llama.cpp/build/bin/llama-server"
+}
