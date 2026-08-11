@@ -1072,3 +1072,23 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** — (Phase 0.3 gate-1 router-selection ADR still open; will reference these verdicts)
 - **Stop-condition status:** Phase 0.2 Medium scoring complete for coder + planner. Embedder verdict already locked from 2026-08-11 10:05:41Z run. Open items: (a) coder multi-turn correctness harness upgrade; (b) 35B-a3b-q4kxl migration-ordering weakness needs re-eval on migration-heavy tasks in Phase 0.3; (c) 27B-q6k coder cell dominated on both axes — consider dropping from Phase 0.3 pool.
+
+## 2026-08-11 09:49 EDT — ADR-0023 filed: Phase 0.3 router-selection (post-Medium)
+
+- **Stage / plugin / port:** OpenHands-Ext v1 · Phase 0.3 gate-1 · production role selection (coder + planner + embedder).
+- **What changed:** Filed ADR-0023 as the post-Medium router-selection decision. Applied rubric quality-first tiebreak rule (`bench/rubrics/medium-scored.json`) to the two Phase 0.2 verdicts pushed at commit 8681ebb.
+  - **Coder:** UNCHANGED. Rank-1 (35B-a3b-q4kxl 80.9) and rank-2 (coder-30B-instruct-awq 78.9) within 3-point tiebreak band → wall-time secondary sort decides → coder-30B-instruct-awq wins (3.3s vs 6.2s). Matches ADR-0017 pick; no infrastructure churn.
+  - **Planner:** CHANGED from `qwen3_6-35b-a3b-q4kxl-gguf` → `qwen3_6-27b-q6k-gguf`. Quality delta 4.3 points (91.0 vs 86.7) is outside the 3-point tiebreak band → quality-first wins outright; wall-time (80.8s vs 16.6s) does not override under locked rubric. 35b-a3b-q4kxl also fails planner-medium-02 (deploys application code before executing DB migration) — production-hazardous, rubric explicit 70-89 cap. 35b-a3b-q4kxl retained as latency-sensitive fallback.
+  - **Embedder:** UNCHANGED (ADR-0017 amendment #3 still authoritative).
+  - **Coder pool cleanup:** removed `qwen3_6-27b-q6k-gguf/llama-cpp/gpu` from `bench/candidates/coder-medium-pool.json` (dominated on both axes in coder scoring: 76.4 quality vs rank-1 80.9; 16.6s wall vs rank-1 6.2s). Cell retained in planner pool (rank-1 there).
+  - **Phase 0.3 planner re-eval:** ADR-0023 §5 pre-registers a migration-ordering probe (3-5 tasks) to test whether the 35b-a3b-q4kxl task-02 failure is systematic.
+- **Files touched:**
+  - `adrs/ADR-0023-phase-0-3-router-selection-post-medium.md` (new)
+  - `adrs/README.md` (index row + ADR-0017 status line updated)
+  - `adrs/ADR-0017-production-role-selection-pre-medium.md` (STATUS AMENDMENT #4 prepended; status line amendment log updated)
+  - `bench/candidates/production-selection.json` (planner row updated; adr_anchor changed to ADR-0023; adr_history added; vram_budget_gib planner_resident 21→22, planner_plus_embedder 26→27, headroom_with_planner_hot 6→5)
+  - `bench/candidates/coder-medium-pool.json` (27b-q6k coder cell removed; pool size 4→3)
+  - `scripts/serve-planner.sh` (GGUF path + served_name updated to 27B-Q6_K; header rewritten to reference ADR-0023; VRAM prereq 24→25 GiB)
+- **Ports / adapters affected:** none (planner endpoint 8082 unchanged; only model file swapped)
+- **PORTING_LEDGER / ADR updated:** ADR-0023 new; ADR-0017 amendment #4; ADR index updated
+- **Stop-condition status:** met for Phase 0.3 gate-1 selection. Awaits user pull + validation that new planner GGUF is present at `models/qwen3_6-27b-q6k-gguf/Qwen3.6-27B-Q6_K.gguf` before next planner start.

@@ -1,67 +1,39 @@
-# Kosmos-style Session Handoff — 2026-08-11 08:49 EDT
+# OpenHands-Ext v1 Session Handoff — 2026-08-11 09:49 EDT
 
 ## Current build-sequencing position
-
-- **Stage / phase:** Phase 1 · Full-suite live smoke — **COMPLETE**
-- **Next queued:** **Phase 0.2** (Medium-tier scored model selection) — coder + planner cells outstanding; embedder Medium verdict already locked
-- **Then:** Phase 0.3 (Full tier — ~10 hr final ranking + combination test)
-
-> **PHASE NAMING CORRECTION (2026-08-11 08:49 EDT):** Prior handoff called the next-queued step "Phase 0.3." Per `docs/specs/integration-execution-plan-v16.md`, that step is **Phase 0.2 (Medium tier)**, not Phase 0.3. Phase 0.3 is the Full tier (~10 hr, SWE-bench-Verified for coder, MDE with 3+ repeats, combination test). Medium-tier embedder work already ran under this misnaming; the artifact IS Phase 0.2 (see `bench/results/verdicts/medium-verdict-embedder-20260811T100541Z.json`). ADR-0016 rubric title ("Medium-tier scoring rubric") confirms the correct phase.
+- **Stage / phase:** Phase 0.3 gate-1 (router-selection lock-in)
+- **Plugin / kernel component:** production role selection (coder + planner + embedder)
+- **Port(s) in progress:** none (planner endpoint 8082 unchanged; model file swap only)
 
 ## Completed this session
-
-- ADR-0018 filed · Phase −1 version pins (commit `d45cb2f`)
-- Phase 2.1 / 2.2 / 2.3 implemented — MCP port range, mode wrapper, skills convention (ADR-0019, commit `7dad739`)
-- Phase 1 full-suite API smoke passed 5/5 (ADR-0020 — UFW bridge egress fix, commit `a987ddf`)
-- Phase 1 live UI Playwright smoke — headless 7/8 hard PASS + UI6 SOFT (ADR-0021)
-- Phase 1 live UI headed v2 — real streaming visible on Colossus display, natural stop at t+28.5 s, +74565 prompt / +931 generation tokens, terminal & editor Canvas tabs captured
-- Sandbox reaper installed — `scripts/sandbox_reaper.py` + systemd-user timer running every 5 min, first reap verified; zero-container path now prints status (commit `03a1279`)
-- Phase 0.2 pool files authored: `coder-medium-pool.json` (4 cells per ADR-0014), `planner-medium-pool.json` (2 llama.cpp survivors per ADR-0015), `embedder-medium-pool.json` (6 cells, retroactive record; verdict locked)
-- Phase 0.2 embedder verdict already locked: 4B bf16 vLLM/gpu (nDCG@10 macro 0.5505)
-- Phase naming corrected across SESSION_HANDOFF (this file)
-- BUILD_LOG: entries appended for Phase 1 + reaper + Phase 0.2 pool authorship
-- ADR-0021 filed with headless + headed v2 baselines
-- ADR index updated
+- Phase 0.2 Medium-tier verdicts filed for coder (3 cells, single-turn capture, ceiling 85) and planner (2 cells, full-plan capture). Pushed as commit `8681ebb`.
+- ADR-0023 filed as post-Medium Phase 0.3 router-selection ADR. Amends ADR-0017 planner row per rubric quality-first tiebreak rule.
+  - **Coder:** UNCHANGED (`qwen3-coder-30b-a3b-instruct-awq-4bit/vllm/gpu:8100`). Wins 3-point tiebreak on wall time.
+  - **Planner:** CHANGED — `qwen3_6-35b-a3b-q4kxl-gguf` → `qwen3_6-27b-q6k-gguf` (llama.cpp/gpu:8082). Quality delta 4.3 pts outside tiebreak band.
+  - **Embedder:** UNCHANGED (CPU-resident per ADR-0017 amendment #3).
+- Coder pool cleanup: `qwen3_6-27b-q6k-gguf` removed from `bench/candidates/coder-medium-pool.json` (dominated). Retained in planner pool.
+- Files updated (commit pending): ADR-0023 new, ADR-0017 status amendment #4, `adrs/README.md`, `bench/candidates/production-selection.json`, `bench/candidates/coder-medium-pool.json`, `scripts/serve-planner.sh`, `BUILD_LOG.md`.
+- Phase 0.3 planner re-eval: migration-ordering probe (3–5 tasks) pre-registered in ADR-0023 §5.
 
 ## Remaining before current Definition of Done
+- Commit + push ADR-0023 fan-out.
+- User pull on Colossus.
+- User verifies planner GGUF present at `models/qwen3_6-27b-q6k-gguf/Qwen3.6-27B-Q6_K.gguf`. If missing, run:
+  `huggingface-cli download unsloth/Qwen3.6-27B-GGUF Qwen3.6-27B-Q6_K.gguf --local-dir ~/dev/openhands-ext-v1/models/qwen3_6-27b-q6k-gguf`
+- Author Phase 0.3 planner migration-ordering probe task-set (3–5 tasks). Then re-eval 35b-a3b-q4kxl on it — if it passes all, reconsider planner ordering.
+- Open items from Phase 0.2 (deferred to Phase 0.3+):
+  - Coder multi-turn correctness harness upgrade (currently captures only first tool call per task; ceiling 85 applied to Medium coder scores as a consequence).
 
-- **Phase 1 DoD is met.** No blockers.
-
-## Phase 0.2 (Medium tier) — remaining work
-
-**Embedder-Medium: DONE.** Verdict at `bench/results/verdicts/medium-verdict-embedder-20260811T100541Z.json`.
-
-**Coder-Medium: NOT started.** Blockers:
-- `bench/tasks/coder-medium.json` — task set not authored
-- `bench/gold/coder-medium/` — Perplexity-Max gold tool-call transcripts + expected diffs not authored
-- Task-set + gold-reference authorship IS a decision surface (task shape, tool surface, gold format) — requires ADR before task-set freeze
-
-**Planner-Medium: NOT started.** Blockers:
-- `bench/tasks/planner-medium.json` — task set not authored (thinker-probe files exist but are ADR-0015-scoped probes, not the Medium task set)
-- `bench/gold/planner-medium/` — Perplexity-Max gold plans not authored
-- Same ADR-authorship requirement as coder
-
-## Sandbox / runtime state on Colossus (as of session end)
-
-- `openhands-app` container LIVE on :3000, mount `~/.openhands-smoke-2026-08-11/`
-- `coder` vLLM 0.27.0 LIVE on :8100, `VLLM_USE_FLASHINFER_SAMPLER=0`
-- `embedder` llama.cpp CPU LIVE on :8090 (dim 2560)
-- UFW rule `ALLOW IN from 172.17.0.0/16 to any` — persistent
-- Settings persisted at `/api/v1/settings` pointing to coder + CodeActAgent
-- VRAM ~31.4 GiB used (coder saturating, headroom on planner slot)
-- Sandbox reaper: systemd-user timer firing every 5 min, verified unattended
-
-## Open questions awaiting user answer
-
-- **Phase 0.2 continuation ADR authorship:** coder-medium + planner-medium task set + gold-reference protocol. Options and scope to be presented as Block 43c.
+## Open questions / awaiting user answer
+- None. All post-Medium decisions taken under rubric locked in ADR-0016 + ADR-0022.
 
 ## Exact next action
+Pull on Colossus and verify planner model file exists before next planner start:
 
-**Block 43c** — present Phase 0.2 task-set + gold-reference ADR-authoring options for coder-medium and planner-medium. Decision surfaces:
-
-1. Task count + shape per role (coder: how many tool-call tasks, real OpenHands surface vs. synthetic; planner: how many multi-step plans, structural-JSON schema)
-2. Gold-reference generation protocol (single-shot Perplexity Max vs. multi-sample consensus; freeze + hash policy)
-3. Scoring pass structure (single Perplexity-Max scoring pass vs. multi-sample; tie policy from `medium-scored.json` tiebreak)
-4. VRAM co-residency during scored runs (embedder always-CPU-resident per ADR-0017 amendment #3; coder vs. planner cell-swap policy)
-
-Await user approval on ADR scope before authoring task sets or gold references. Sandbox cleanup remains automated.
+```bash
+cd ~/dev/openhands-ext-v1
+git pull
+ls -lh models/qwen3_6-27b-q6k-gguf/Qwen3.6-27B-Q6_K.gguf 2>/dev/null || \
+  huggingface-cli download unsloth/Qwen3.6-27B-GGUF Qwen3.6-27B-Q6_K.gguf \
+    --local-dir models/qwen3_6-27b-q6k-gguf
+```

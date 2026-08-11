@@ -1,8 +1,9 @@
 {
-  "$comment": "Canonical production role assignments per ADR-0017. Downstream OpenHands router / MCP config reads this file as ground truth for role -> model mapping. Amended (not superseded) once Medium-tier verdicts land.",
+  "$comment": "Canonical production role assignments. Planner row updated by ADR-0023 (2026-08-11 09:49 EDT, post-Medium): planner flipped from qwen3_6-35b-a3b-q4kxl-gguf to qwen3_6-27b-q6k-gguf per quality-first tiebreak rule in bench/rubrics/medium-scored.json (4.3-point quality gap, outside 3-point band). Coder + embedder unchanged from ADR-0017.",
   "schema_version": "1.0.0",
-  "adr_anchor": "adrs/ADR-0017-production-role-selection-pre-medium.md",
-  "generated_utc": "2026-08-11T10:00:00Z",
+  "adr_anchor": "adrs/ADR-0023-phase-0-3-router-selection-post-medium.md",
+  "adr_history": ["adrs/ADR-0017-production-role-selection-pre-medium.md", "adrs/ADR-0023-phase-0-3-router-selection-post-medium.md"],
+  "generated_utc": "2026-08-11T13:49:00Z",
   "co_residency_policy": "option-2-single-role-at-a-time",
   "co_residency_notes": [
     "Embedder is always resident (~5 GiB VRAM on llama.cpp GPU).",
@@ -29,21 +30,24 @@
       ]
     },
     "planner": {
-      "model": "qwen3_6-35b-a3b-q4kxl-gguf",
-      "hf_repo": "unsloth/Qwen3.6-35B-A3B-GGUF",
+      "model": "qwen3_6-27b-q6k-gguf",
+      "hf_repo": "unsloth/Qwen3.6-27B-GGUF",
       "runtime": "llama.cpp",
       "device": "gpu",
-      "quant": "q4_k_xl_ud",
-      "gguf_file": "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+      "quant": "q6_k",
+      "gguf_file": "Qwen3.6-27B-Q6_K.gguf",
       "endpoint": "http://127.0.0.1:8082/v1",
-      "served_model_name": "qwen3_6-35b-a3b-q4kxl-gguf",
+      "served_model_name": "qwen3_6-27b-q6k-gguf",
       "port": 8082,
       "thinking_enabled": false,
       "serve_script": "scripts/serve-planner.sh",
       "adr_history": [
         "ADR-0008",
-        "ADR-0015"
-      ]
+        "ADR-0015",
+        "ADR-0017",
+        "ADR-0023"
+      ],
+      "selection_note": "Flipped from qwen3_6-35b-a3b-q4kxl-gguf to 27b-q6k per ADR-0023: quality macro-avg 91.0 vs 86.7 (4.3-point gap outside 3-point tiebreak band). 35b-a3b-q4kxl remains latency-sensitive fallback (16.6s vs 80.8s total wall). Model file swap only — runtime, device, port, endpoint unchanged."
     },
     "embedder": {
       "model": "qwen3-embedding-4b-q8-gguf",
@@ -68,12 +72,13 @@
   },
   "vram_budget_gib": {
     "coder_resident": 17,
-    "planner_resident": 21,
+    "planner_resident": 22,
     "embedder_resident": 5,
     "coder_plus_embedder": 22,
-    "planner_plus_embedder": 26,
+    "planner_plus_embedder": 27,
     "colossus_total": 32,
-    "headroom_with_planner_hot": 6,
-    "headroom_with_coder_hot": 10
+    "headroom_with_planner_hot": 5,
+    "headroom_with_coder_hot": 10,
+    "planner_resident_note": "22 GiB reflects 27B-Q6_K weights (~22 GiB). Prior value 21 GiB was for 35B-a3b-q4kxl. Embedder is CPU-resident (ADR-0017 amendment #3) so its 5 GiB is RAM not VRAM; VRAM headroom with planner hot = 32 - 22 = 10 GiB (embedder on CPU); table entry keeps embedder-VRAM column for legacy schema compatibility but should be read as 0."
   }
 }
