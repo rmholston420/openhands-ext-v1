@@ -1497,3 +1497,15 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Stop-condition status:** Gate-4 DoD step 4 COMPLETE. Steps 5 (rubric) and 6 (qrels labeling + hash lock) remain before Ratification.
 
 ---
+
+## 2026-08-11 13:23 EDT — Phase 0.4 gate-4 DoD step 5 COMPLETE: rubric committed (R2 + G2)
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · embedder Full-tier · scoring rubric
+- **What changed:** Committed `bench/rubrics/full-embedder-scored.json` — R2 expanded machine-readable schema (per-metric weights, per-block gates, per-candidate flip rules as evaluable predicates) + G2 (grade 0-3 label schema PLUS labeler instructions written verbatim for Perplexity-Max sessions). Codifies ADR-0030 §V3-W3 into runner-evaluable clauses: 3-clause any_of for confirm_incumbent_4b_q8_if, 5-clause all_of each for flip_to_8b_q6k_if and flip_to_0_6b_q8_if. Evaluation order enumerated (7 steps: metrics → block_metric → block_macro → overall_macro → confirm predicate → flip predicates → INTERMEDIATE split). Primary key P1 mapping semantics ("covers or is covered by" line_range) specified for runner. Composite weights validated to sum to 1.0. Downsize candidate has stricter single-metric loss clause (no composite-offset). Co-residency contract embedded at rubric root. `post_hoc_edit_locked=true` — only permitted amendment is the qrels-hash field after step 6.
+- **Files touched:**
+  - `bench/rubrics/full-embedder-scored.json` (created; post_hoc_edit_locked)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** Gate-4 DoD step 5 COMPLETE. Step 6 (qrels labeling via Perplexity-Max GL2 sessions + hash lock) remains before Ratification.
+
+---
