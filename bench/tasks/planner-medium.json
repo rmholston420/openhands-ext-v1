@@ -1,0 +1,108 @@
+{
+  "$comment": "Phase 0.2 Medium-tier planner task set. 10 structural-JSON plan-generation tasks scored 0-100 against Perplexity-Max gold plans in bench/gold/planner-medium/. Structural-JSON conformance is a hard-pass gate before quality scoring. Authored per ADR-0022. SHA-256 hashes for each gold file are stored in gold_hashes and MUST match at run time. Task-set is frozen: any change requires a superseding ADR and a version bump.",
+  "schema_version": "1.0.0",
+  "tier": "medium",
+  "role": "planner",
+  "authored_utc": "2026-08-11T12:58:00Z",
+  "adr_anchor": "adrs/ADR-0022-phase-0-2-coder-planner-medium-task-and-gold-protocol.md",
+  "rubric_anchor": "bench/rubrics/medium-scored.json",
+  "gold_dir": "bench/gold/planner-medium",
+  "budget_tokens": 4096,
+  "chat_template_kwargs": {"enable_thinking": false},
+  "output_schema": {
+    "type": "object",
+    "required": ["steps"],
+    "properties": {
+      "steps": {
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 10,
+        "items": {
+          "type": "object",
+          "required": ["id", "desc", "deps"],
+          "properties": {
+            "id": {"type": "string", "pattern": "^s[0-9]+$"},
+            "desc": {"type": "string", "minLength": 8},
+            "deps": {"type": "array", "items": {"type": "string", "pattern": "^s[0-9]+$"}}
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "additionalProperties": false
+  },
+  "gold_hashes": {
+    "planner-medium-01-add-auth-endpoint": "a1ab664e5e1735c65b8705953666a819d42502129de65507fd32413f325b1139",
+    "planner-medium-02-migrate-database": "08a7e618c48c607f614000b0c3d7929d06f89211e66474fe2e22dbce224a1689",
+    "planner-medium-03-refactor-callback-to-async": "cfb1c72e39f855bc6b763d06d692adcea2082c01bc3d086180db881f3391e6fc",
+    "planner-medium-04-add-caching-layer": "1e0ffcc1bd8e7fb9d8aea3a3aa1fc324fa1fbc8acaede3fc7b85d96926fc4d07",
+    "planner-medium-05-split-monolith": "7a5f83a759548da19eff91b8ca8ebe82df7eb6ecf584caff6d5307c6080ac49a",
+    "planner-medium-06-add-rate-limiting": "4981e332afd9dd208fe57e974dccd4bc06ba9cb7f2d52938eb0c4d6b8052f924",
+    "planner-medium-07-add-observability": "e33ff90e4bbff514c930408492a879966854c4dddd6e6d2e4582c99739c2b96d",
+    "planner-medium-08-graphql-migration": "0dbcd4fd8fac0571a29e90c1d801460a22b78343bdef918f1f8f0d12d01b567b",
+    "planner-medium-09-incident-response": "0216fb385c7ab39dfc15cca1ece013e9b7577d4551a2bb40f78bc42acc4a4068",
+    "planner-medium-10-mcp-server-scaffold": "6d9adbba49ab452860cc61b11a0c0c06dabccfc495a4ac7200e5e851e9695a34"
+  },
+  "tasks": [
+    {
+      "id": "planner-medium-01-add-auth-endpoint",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for adding a POST /auth/login FastAPI endpoint that accepts {username, password}, validates against a Postgres users table, and returns a JWT on success. Include the models, password verification helper, JWT helper, endpoint, and test coverage. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 5,
+      "notes": "Endpoint + auth + tests. Discriminator: dependency sequencing (helpers before endpoint, endpoint before tests)."
+    },
+    {
+      "id": "planner-medium-02-migrate-database",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for a zero-downtime schema migration to add a deleted_at nullable timestamp column to an existing orders table, with the application reading soft-delete state from it. Include migration authoring, deployment gate, model update, query filter, delete-path rewrite, and tests. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 5,
+      "notes": "Zero-downtime discipline. Discriminator: migration deployed before code changes."
+    },
+    {
+      "id": "planner-medium-03-refactor-callback-to-async",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for refactoring a callback-based file-processing pipeline into an async/await implementation using asyncio, preserving all existing call sites and public API. Include inventory, async surface authoring, internal I/O refactor, wrapper preservation, and test coverage. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 5,
+      "notes": "Invariant-preserving refactor. Discriminator: explicit backward-compat via wrappers."
+    },
+    {
+      "id": "planner-medium-04-add-caching-layer",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for adding a Redis-based caching layer in front of an existing PostgreSQL-backed get_user_by_id(id) function, with TTL-based invalidation AND explicit cache-invalidate calls on user updates. Include Redis setup, cache-key convention, read-through wrapper, explicit invalidation, serialization handling, and tests. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 5,
+      "notes": "Cache-invalidation discipline. Discriminator: explicit invalidation on write, not TTL-only."
+    },
+    {
+      "id": "planner-medium-05-split-monolith",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for extracting an in-repo email_service module (800 lines) into a separate installable Python package company-email-service, keeping the existing repo's imports working via the new package as a dependency. Include new repo scaffold, code move, publish, dependency add, import updates, and tests. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 5,
+      "notes": "Cross-repo dependency ordering. Discriminator: publish before depend."
+    },
+    {
+      "id": "planner-medium-06-add-rate-limiting",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for adding per-user rate limiting (100 requests per 60 seconds) to an existing FastAPI application, using Redis for state and returning HTTP 429 responses with a Retry-After header. Include library setup, key function (auth-aware), rule config, middleware attach, 429 handler, and tests. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 5,
+      "notes": "Rate-limiting patterns. Discriminator: auth-aware key function."
+    },
+    {
+      "id": "planner-medium-07-add-observability",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for adding OpenTelemetry-based observability (traces + metrics) to an existing Python microservice, exporting to an OTLP collector. Include dependencies, config via env var, TracerProvider init, auto-instrumentation, custom spans, MeterProvider + metrics, and tests using InMemorySpanExporter. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 5,
+      "notes": "OTel patterns. Discriminator: auto-instrumentation vs. hand-instrumenting every handler."
+    },
+    {
+      "id": "planner-medium-08-graphql-migration",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for adding a GraphQL API layer alongside an existing REST API, exposing the same core resources (users, orders, products) through GraphQL queries, without deprecating the REST endpoints yet. Include library setup, GraphQL types mirroring REST schemas, service-layer refactor to share code, resolvers, DataLoader for N+1 mitigation, endpoint mount at /graphql, and tests. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 5,
+      "notes": "Coexisting APIs. Discriminators: (a) service-layer sharing, (b) DataLoader, (c) REST preserved."
+    },
+    {
+      "id": "planner-medium-09-incident-response",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for responding to a production incident where the API is returning 500 errors on 30% of /orders requests. Include acknowledgment + severity, diagnosis, correlation with recent changes, immediate mitigation (before RCA), verification of mitigation, root-cause analysis, permanent fix with regression tests, and postmortem. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 5,
+      "notes": "Incident-response ordering. Discriminator: mitigation before RCA."
+    },
+    {
+      "id": "planner-medium-10-mcp-server-scaffold",
+      "prompt": "You are the planner. Produce a JSON plan (and nothing else) for creating a new MCP server exposing three tools — search_notes(query), create_note(title, body), and get_note(id) — backed by a SQLite database, following OpenHands-Ext's MCP conventions (MCP port range and mode wrapper per ADR-0019). Include server scaffold with correct port-range binding, SQLite schema, tool handlers, tool schema declarations for client discovery, registry integration, and tests. Follow this JSON shape:\n{\"steps\": [ {\"id\": \"s1\", \"desc\": \"...\", \"deps\": [] }, ... ]}\nUse ids s1, s2, ... with no gaps. Each desc is one sentence. Each element of deps must reference an earlier step's id. Do not include any prose outside the JSON object.",
+      "min_steps": 5,
+      "notes": "Project-specific conventions (ADR-0019). Discriminator: does the plan reference the MCP port range and mode wrapper explicitly?"
+    }
+  ]
+}

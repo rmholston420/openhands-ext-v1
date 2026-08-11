@@ -1015,3 +1015,23 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** ADR-0022 filed
 - **Stop-condition status:** Coder-medium + planner-medium task-set + gold + co-residency protocol locked. Next: author `bench/tasks/{coder,planner}-medium.json` + `bench/gold/{coder,planner}-medium/<task-id>.md` × 20 per protocol. Then run Medium tier.
+
+## 2026-08-11 08:58 EDT — Phase 0.2 coder + planner Medium task sets + 20 gold references authored + hashed
+
+- **Stage / plugin / port:** Phase 0.2 · Medium tier · coder + planner
+- **What changed:** Authored per ADR-0022:
+  - `bench/tasks/coder-medium.json` — 10 tool-call tasks with fixtures + expected tool sequences + preferred/dispreferred tools
+  - `bench/tasks/planner-medium.json` — 10 structural-JSON plan-generation tasks with output_schema + chat_template_kwargs.enable_thinking=false
+  - `bench/gold/coder-medium/*.md` × 10 — Perplexity-Max gold tool-call transcripts + expected diffs + 0-100 scoring rubrics
+  - `bench/gold/planner-medium/*.md` × 10 — Perplexity-Max gold JSON plans + 0-100 scoring rubrics
+  - `bench/gold/README.md` — freeze-policy note referencing ADR-0022 + ADR-0016
+  - SHA-256 hashes for all 20 gold files embedded in the two task-set JSONs' `gold_hashes` field; all 20 verified matching by script check.
+- **Files touched:**
+  - `bench/tasks/coder-medium.json` (new)
+  - `bench/tasks/planner-medium.json` (new)
+  - `bench/gold/coder-medium/coder-medium-01…10-*.md` (new, 10 files)
+  - `bench/gold/planner-medium/planner-medium-01…10-*.md` (new, 10 files)
+  - `bench/gold/README.md` (new)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** — (implements ADR-0022; no new ADR)
+- **Stop-condition status:** Phase 0.2 coder + planner authorship met. Ready to run Medium tier via `bench/runner/main.py` against `bench/candidates/{coder,planner}-medium-pool.json`. Sequential swap protocol per ADR-0022 §Decision 4: all 4 coder cells → one large-model teardown → both planner cells. Total runtime estimate ~2.5 hr.

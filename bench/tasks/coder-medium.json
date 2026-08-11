@@ -1,0 +1,138 @@
+{
+  "$comment": "Phase 0.2 Medium-tier coder task set. 10 tool-call tasks against a mocked OpenHands tool surface. Each task has an expected tool-call transcript and expected file-content-after-diff, scored 0-100 against a Perplexity-Max gold reference in bench/gold/coder-medium/. Authored per ADR-0022. SHA-256 hashes for each gold file are stored in gold_hashes below and MUST match at run time. Task-set is frozen: any change requires a superseding ADR and a version bump.",
+  "schema_version": "1.0.0",
+  "tier": "medium",
+  "role": "coder",
+  "authored_utc": "2026-08-11T12:58:00Z",
+  "adr_anchor": "adrs/ADR-0022-phase-0-2-coder-planner-medium-task-and-gold-protocol.md",
+  "rubric_anchor": "bench/rubrics/medium-scored.json",
+  "gold_dir": "bench/gold/coder-medium",
+  "budget_tokens": 8192,
+  "gold_hashes": {
+    "coder-medium-01-json-config-flip": "10c7a3e77e61d15eb41fb61e47f5de322250a990aca91b3f831a20522e18a69c",
+    "coder-medium-02-add-function-to-existing-module": "e46c848e724a02dc11737b3b0b72dfa1f16eeab9f42938b44ba2ad4b4c445db0",
+    "coder-medium-03-fix-off-by-one": "c40f68611c145df538729a354940066a2c7505fdbd140847f92b5067319761ef",
+    "coder-medium-04-add-cli-flag": "ee04bc40034dd8a50d3d14ce35c27e6357670890aad97002ce63b753b47f720c",
+    "coder-medium-05-run-tests-report-failure": "a76b898b3034df4cba0bb8dd1eefaf153cb8cd192b1c211ed6234e563d30951b",
+    "coder-medium-06-rename-symbol-across-files": "b3f6bc429df260577077fba65247af3481b422f8eaf4c511d2a09fdee43736a9",
+    "coder-medium-07-write-new-test": "99bb977810425e75cdd83ea6997d59a566cb7a05908c873e38c6d344a007f6c7",
+    "coder-medium-08-check-git-status": "e0eab8b2af74c70185cfd86dcd2bbe13e7d5b08a92c406110e5f63d69b36d902",
+    "coder-medium-09-add-type-hint": "314915bb53b7228a63406d9f27edfd35ebff56130356e64f0ebb0d93688a7bca",
+    "coder-medium-10-implement-from-docstring": "ca2362d5403ac4b35bb9c7846d2ac81e04662be0ec93c89cb8595c4af4d6e071"
+  },
+  "tasks": [
+    {
+      "id": "coder-medium-01-json-config-flip",
+      "prompt": "In /workspace/repo/config/app.json, change the value of the \"debug\" field from false to true. Preserve all other fields, indentation, and formatting exactly.",
+      "fixtures": {
+        "/workspace/repo/config/app.json": "{\n  \"app\": {\n    \"name\": \"medium-01\",\n    \"version\": \"1.0.0\",\n    \"debug\": false\n  },\n  \"database\": {\n    \"url\": \"sqlite:///data.db\",\n    \"pool_size\": 5\n  }\n}\n"
+      },
+      "expected_tool_sequence": ["read_file", "str_replace_editor"],
+      "preferred_tools": ["str_replace_editor"],
+      "dispreferred_tools": ["execute_bash", "write_file"],
+      "notes": "Surgical edit test — bash sed works but is dispreferred."
+    },
+    {
+      "id": "coder-medium-02-add-function-to-existing-module",
+      "prompt": "In /workspace/repo/src/utils/text.py, add a new function slugify(text: str) -> str that returns a URL-safe slug (lowercase, hyphens for whitespace). Place it after the existing normalize() function. Do not modify normalize().",
+      "fixtures": {
+        "/workspace/repo/src/utils/text.py": "\"\"\"Text utilities.\"\"\"\n\n\ndef normalize(s: str) -> str:\n    \"\"\"Strip and lowercase.\"\"\"\n    return s.strip().lower()\n"
+      },
+      "expected_tool_sequence": ["read_file", "str_replace_editor"],
+      "preferred_tools": ["str_replace_editor"],
+      "dispreferred_tools": ["write_file"],
+      "notes": "Insertion-point discipline; existing surface preserved."
+    },
+    {
+      "id": "coder-medium-03-fix-off-by-one",
+      "prompt": "The function page_items in /workspace/repo/src/pagination.py has an off-by-one bug — it drops the last page. Fix it. Do not rewrite the function; make the minimal correction.",
+      "fixtures": {
+        "/workspace/repo/src/pagination.py": "\"\"\"Pagination helper.\"\"\"\n\n\ndef page_items(items: list, page_size: int) -> list[list]:\n    \"\"\"Chunk items into pages of size page_size.\"\"\"\n    pages = []\n    for i in range(0, len(items) - 1, page_size):\n        pages.append(items[i:i + page_size])\n    return pages\n"
+      },
+      "expected_tool_sequence": ["read_file", "str_replace_editor"],
+      "preferred_tools": ["str_replace_editor"],
+      "dispreferred_tools": ["write_file"],
+      "notes": "Localized bug; minimal-edit signal."
+    },
+    {
+      "id": "coder-medium-04-add-cli-flag",
+      "prompt": "Add a --verbose boolean CLI flag to /workspace/repo/scripts/report.py using argparse. It should be a store_true flag with help text. Add it after the existing --output flag.",
+      "fixtures": {
+        "/workspace/repo/scripts/report.py": "#!/usr/bin/env python3\n\"\"\"Report generator.\"\"\"\nimport argparse\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"--input\", required=True, help=\"Input file path\")\n    parser.add_argument(\"--output\", required=True, help=\"Output file path\")\n    args = parser.parse_args()\n    print(args)\n\n\nif __name__ == \"__main__\":\n    main()\n"
+      },
+      "expected_tool_sequence": ["read_file", "str_replace_editor"],
+      "preferred_tools": ["str_replace_editor"],
+      "dispreferred_tools": ["write_file"],
+      "notes": "argparse idiom test; action=store_true is the correct pattern."
+    },
+    {
+      "id": "coder-medium-05-run-tests-report-failure",
+      "prompt": "Run the test suite in /workspace/repo using pytest and report: how many tests failed and the name of the first failing test. Do not modify any files.",
+      "fixtures": {
+        "/workspace/repo/tests/test_math.py": "from math_lib import add, multiply\n\n\ndef test_add():\n    assert add(2, 3) == 5\n\n\ndef test_multiply():\n    assert multiply(2, 3) == 7  # bug: should be 6\n",
+        "/workspace/repo/math_lib.py": "def add(a, b): return a + b\ndef multiply(a, b): return a * b\n"
+      },
+      "expected_tool_sequence": ["execute_bash"],
+      "preferred_tools": ["execute_bash"],
+      "dispreferred_tools": ["str_replace_editor", "write_file"],
+      "notes": "Pure command-execution task; agent must NOT modify files."
+    },
+    {
+      "id": "coder-medium-06-rename-symbol-across-files",
+      "prompt": "Rename the function compute_total to calculate_total across /workspace/repo/src/math_ops.py (definition + docstring) and /workspace/repo/src/main.py (import + call site). Preserve all behavior.",
+      "fixtures": {
+        "/workspace/repo/src/math_ops.py": "def compute_total(items: list[int]) -> int:\n    return sum(items)\n",
+        "/workspace/repo/src/main.py": "from math_ops import compute_total\n\nprint(compute_total([1, 2, 3]))\n"
+      },
+      "expected_tool_sequence": ["read_file", "read_file", "str_replace_editor", "str_replace_editor"],
+      "expected_tool_sequence_tolerance": "order_preserved_extra_reads_allowed",
+      "preferred_tools": ["str_replace_editor"],
+      "dispreferred_tools": ["execute_bash"],
+      "notes": "Multi-file coordination; import statement is subtle."
+    },
+    {
+      "id": "coder-medium-07-write-new-test",
+      "prompt": "Read /workspace/repo/src/stats.py and write a new pytest test file at /workspace/repo/tests/test_stats.py with three tests covering: empty list, single element, and multiple elements. Use assert statements.",
+      "fixtures": {
+        "/workspace/repo/src/stats.py": "def mean(values: list) -> float:\n    if not values:\n        return 0\n    return sum(values) / len(values)\n"
+      },
+      "expected_tool_sequence": ["read_file", "write_file"],
+      "preferred_tools": ["write_file"],
+      "dispreferred_tools": ["str_replace_editor"],
+      "notes": "write_file for new files (str_replace_editor is for existing files)."
+    },
+    {
+      "id": "coder-medium-08-check-git-status",
+      "prompt": "Report which files in /workspace/repo are currently modified (staged or unstaged) in git. Do not modify anything. Do not commit anything.",
+      "fixtures": {
+        "$note": "Fixture setup: /workspace/repo is a git repo where src/main.py and README.md both have unstaged modifications."
+      },
+      "expected_tool_sequence": ["execute_bash"],
+      "preferred_tools": ["execute_bash"],
+      "dispreferred_tools": ["read_file", "write_file", "str_replace_editor"],
+      "notes": "Read-only git query; instruction adherence on 'do not commit'."
+    },
+    {
+      "id": "coder-medium-09-add-type-hint",
+      "prompt": "Add a return type hint of dict[str, int] to the count_words function in /workspace/repo/src/counter.py. Do not modify the function body.",
+      "fixtures": {
+        "/workspace/repo/src/counter.py": "def count_words(text: str):\n    counts = {}\n    for word in text.split():\n        counts[word] = counts.get(word, 0) + 1\n    return counts\n"
+      },
+      "expected_tool_sequence": ["read_file", "str_replace_editor"],
+      "preferred_tools": ["str_replace_editor"],
+      "dispreferred_tools": ["write_file"],
+      "notes": "One-line signature edit; body preservation."
+    },
+    {
+      "id": "coder-medium-10-implement-from-docstring",
+      "prompt": "In /workspace/repo/src/algos.py, implement the function second_largest_unique per its docstring. It currently only has 'pass' as its body.",
+      "fixtures": {
+        "/workspace/repo/src/algos.py": "def second_largest_unique(values: list[int]) -> int | None:\n    \"\"\"Return the second-largest unique value in values.\n\n    Args:\n        values: A list of integers.\n\n    Returns:\n        The second-largest unique value, or None if fewer than\n        two unique values exist.\n    \"\"\"\n    pass\n"
+      },
+      "expected_tool_sequence": ["read_file", "str_replace_editor"],
+      "preferred_tools": ["str_replace_editor"],
+      "dispreferred_tools": ["write_file"],
+      "notes": "Spec-reading + edge-case handling (empty, all-duplicates, single-element)."
+    }
+  ]
+}
