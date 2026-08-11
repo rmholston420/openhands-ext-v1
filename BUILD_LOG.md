@@ -955,3 +955,26 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0021 filed.
 - **Stop-condition status:** met. Phase 1 live UI proof complete — API smoke (v3) + headless UI smoke + headed streaming-visible smoke all PASS.
+
+## 2026-08-11 08:35 EDT — Sandbox reaper installed (systemd-user timer, 5-min cadence)
+
+- **Stage / plugin / port:** Phase 1 · Operations · sandbox cleanup convenience (not a formal port)
+- **What changed:** Added `scripts/sandbox_reaper.py` + systemd-user `oh-sandbox-reaper.{service,timer}` units that scan for stopped `oh-agent-server-*` containers every 5 minutes and `docker rm -f` them. OpenHands leaves per-conversation sandboxes running after each turn; this reaps stopped ones without touching anything else.
+- **Safety rails:**
+  - Only reaps containers whose name starts with `oh-agent-server-`.
+  - Only reaps states `exited`, `dead`, or `created`.
+  - `--min-age-sec 60` default — never reaps a container that stopped less than 60 s ago.
+  - `docker rm` never sent to running containers.
+  - Never touches `openhands-app`, `vllm-*`, `embedder`, `vllm-bench`, or any non-matching name.
+- **Verification (on install):**
+  - Dry-run correctly identified 1 leftover sandbox as reapable, did nothing.
+  - `systemctl --user start oh-sandbox-reaper.service` reaped it (`REAPED oh-agent-server-7LbUu9YuQFn1bm9g70lknJ` in `~/.forge-oh/sandbox-reaper.log`).
+  - `loginctl show-user` confirms `Linger=yes` — timer survives logout.
+- **Files touched:**
+  - `scripts/sandbox_reaper.py` (new, +x)
+  - `systemd/oh-sandbox-reaper.service` (new)
+  - `systemd/oh-sandbox-reaper.timer` (new)
+  - `systemd/README.md` (new — install/inspect/uninstall)
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none — this is Colossus operations, not a spec-load-bearing decision. Documented in-tree instead.
+- **Stop-condition status:** met.

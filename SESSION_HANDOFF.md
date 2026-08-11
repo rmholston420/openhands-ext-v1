@@ -1,4 +1,4 @@
-# Kosmos-style Session Handoff — 2026-08-11 08:30 EDT
+# Kosmos-style Session Handoff — 2026-08-11 08:35 EDT
 
 ## Current build-sequencing position
 
@@ -12,7 +12,8 @@
 - Phase 1 full-suite API smoke passed 5/5 (ADR-0020 — UFW bridge egress fix, commit `a987ddf`)
 - Phase 1 live UI Playwright smoke — headless 7/8 hard PASS + UI6 SOFT (ADR-0021)
 - Phase 1 live UI headed v2 — real streaming visible on Colossus display, natural stop at t+28.5 s, +74565 prompt / +931 generation tokens, terminal & editor Canvas tabs captured
-- BUILD_LOG: two new entries appended
+- Sandbox reaper installed — `scripts/sandbox_reaper.py` + systemd-user timer running every 5 min, first reap verified
+- BUILD_LOG: three new entries appended
 - ADR-0021 filed with headless + headed v2 baselines
 - ADR index updated
 
@@ -35,9 +36,6 @@
 
 ## Exact next action
 
-Wait for user direction. Two natural next moves:
+**Phase 0.3** — Medium-tier model matrix re-benchmark (coder / planner / embedder) to lock in production role selection. Uses `local-llm-bench` skill.
 
-1. **Phase 0.3** — Medium-tier model matrix re-benchmark (coder / planner / embedder) to lock in production role selection. Uses `local-llm-bench` skill.
-2. **Sandbox cleanup convenience** — small script that reaps stopped OpenHands sandboxes on a timer (not blocking).
-
-Ask user which to start.
+Sandbox cleanup is DONE (see systemd/README.md).

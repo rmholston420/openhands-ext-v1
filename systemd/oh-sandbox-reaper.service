@@ -1,0 +1,10 @@
+[Unit]
+Description=OpenHands sandbox reaper (one-shot)
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/dev/openhands-ext-v1/scripts/sandbox_reaper.py
+Nice=10
+StandardOutput=journal
+StandardError=journal
