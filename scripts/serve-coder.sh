@@ -2,13 +2,14 @@
 # scripts/serve-coder.sh
 #
 # Start the production coder role — qwen3-coder-30b-a3b-instruct-awq-4bit on
-# vLLM, port 8001. Per ADR-0017 (production role selection, amended
-# 2026-08-11 06:10 EDT to move coder 8000 -> 8001; OpenHands agent binds
-# 127.0.0.1:8000 on Colossus) and ADR-0011#amendment-1 (tool-call parser =
-# qwen3_coder).
+# vLLM, port 8100. Per ADR-0017 (production role selection, amended twice:
+# 2026-08-11 06:10 EDT moved coder 8000 -> 8001; 2026-08-11 06:24 EDT moved
+# coder 8001 -> 8100 after `sudo lsof` revealed OpenHands owns both 8000
+# (agent) and 8001 (node frontend). And ADR-0011#amendment-1 (tool-call
+# parser = qwen3_coder).
 #
 # Prereqs:
-#   - HF snapshot at models/qwen3-coder-30b-a3b-instruct-awq-4bit/hf/ (run
+#   - HF snapshot at models/qwen3-coder-30b-a3b-instruct-awq-4bit/ (run
 #     scripts/pull-models.sh first if missing).
 #   - Planner NOT running (co-residency Option 2, ADR-0017). If port 8082
 #     is listening, run scripts/stop-large-model.sh planner first.
@@ -30,8 +31,8 @@ cd "$REPO_ROOT"
 
 VENV_BIN="$REPO_ROOT/.venv/bin"
 VLLM="$VENV_BIN/vllm"
-HF_MODEL_DIR="$REPO_ROOT/models/qwen3-coder-30b-a3b-instruct-awq-4bit/hf"
-PORT="8001"
+HF_MODEL_DIR="$REPO_ROOT/models/qwen3-coder-30b-a3b-instruct-awq-4bit"
+PORT="8100"
 SERVED_NAME="qwen3-coder-30b-a3b-instruct-awq-4bit"
 
 GPU_MEM_UTIL="${VLLM_GPU_MEM_UTIL:-0.90}"

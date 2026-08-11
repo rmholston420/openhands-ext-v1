@@ -1,8 +1,10 @@
 # ADR-0017 — Production role selection (pre-Medium-tier)
 
-> **STATUS AMENDMENT (2026-08-11 06:10 EDT):** Coder port moved from **8000 → 8001** to avoid conflict with the OpenHands agent (which binds 127.0.0.1:8000 on Colossus). Model, runtime, parser flags, and co-residency policy unchanged. Affected files patched in the same commit: `bench/candidates/production-selection.json`, `scripts/serve-coder.sh`, `scripts/stop-large-model.sh`, `scripts/check-production-endpoints.sh`. Original decision text below is preserved verbatim; treat every reference to `port 8000` as `port 8001` under this amendment.
+> **STATUS AMENDMENT #2 (2026-08-11 06:24 EDT):** Coder port moved from **8001 → 8100** after `sudo lsof` on Colossus revealed the OpenHands node frontend already binds 0.0.0.0:8001 (PID 1670799, UID 10001 — same UID as the agent on 8000). OpenHands owns the entire 8000–8001 cluster. Broader port survey confirmed nothing on Colossus listens in 8100+, so 8100 is a safe, single-port move that keeps the pattern "large-model on 80xx" broken deliberately for clearance. Model, runtime, parser flags, and co-residency policy unchanged. Affected files re-patched in the same commit: `bench/candidates/production-selection.json`, `scripts/serve-coder.sh`, `scripts/serve-planner.sh`, `scripts/stop-large-model.sh`. Health-check script reads endpoints from selection JSON — no code change required there. Original decision text and amendment #1 both preserved verbatim below.
 
-**Status:** Ratified · Amended (2026-08-11 06:10 EDT — coder port 8000 → 8001)
+> **STATUS AMENDMENT (2026-08-11 06:10 EDT):** Coder port moved from **8000 → 8001** to avoid conflict with the OpenHands agent (which binds 127.0.0.1:8000 on Colossus). Model, runtime, parser flags, and co-residency policy unchanged. Affected files patched in the same commit: `bench/candidates/production-selection.json`, `scripts/serve-coder.sh`, `scripts/stop-large-model.sh`, `scripts/check-production-endpoints.sh`. Original decision text below is preserved verbatim; treat every reference to `port 8000` as `port 8001` under this amendment. **This amendment is superseded by amendment #2 above (8001 → 8100).**
+
+**Status:** Ratified · Amended (2026-08-11 06:10 EDT: 8000→8001; 2026-08-11 06:24 EDT: 8001→8100)
 **Lock-in phase:** Phase 0.2 (Medium-tier authoring paused) → Phase 1 handoff
 **Supersedes:** —
 
@@ -32,7 +34,7 @@ Assign production roles as follows, effective immediately:
 
 | Role | Model | Runtime | Device | Rationale anchor |
 |---|---|---|---|---|
-| **coder** | `qwen3-coder-30b-a3b-instruct-awq-4bit` | vLLM | GPU | ADR-0011 (parser `qwen3_coder`) + purpose-built coder-instruct (port **8001** per amendment above; conflict with OpenHands agent on 8000) |
+| **coder** | `qwen3-coder-30b-a3b-instruct-awq-4bit` | vLLM | GPU | ADR-0011 (parser `qwen3_coder`) + purpose-built coder-instruct (port **8100** per amendment #2 above; OpenHands owns 8000+8001) |
 | **planner** | `qwen3_6-35b-a3b-q4kxl-gguf` | llama.cpp | GPU | ADR-0015 (thinker-2507-awq eliminated) + MoE decoding advantage |
 | **embedder** | `qwen3-embedding-4b-q8-gguf` | llama.cpp | GPU | 4B > 0.6B on MTEB; Q8_0 near-lossless on embedders; ~5 GiB VRAM |
 

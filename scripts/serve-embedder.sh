@@ -6,7 +6,7 @@
 # co-exists with coder or planner (~5 GiB VRAM).
 #
 # Prereqs:
-#   - GGUF file at models/qwen3-embedding-4b-q8-gguf/gguf/Qwen3-Embedding-4B-Q8_0.gguf
+#   - GGUF file at models/qwen3-embedding-4b-q8-gguf/Qwen3-Embedding-4B-Q8_0.gguf
 #     (run scripts/pull-models.sh first if missing).
 #   - Port 8090 free.
 #
@@ -25,7 +25,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$REPO_ROOT"
 
 SERVER_BIN="$REPO_ROOT/vendor/llama.cpp/build/bin/llama-server"
-GGUF="$REPO_ROOT/models/qwen3-embedding-4b-q8-gguf/gguf/Qwen3-Embedding-4B-Q8_0.gguf"
+GGUF="$REPO_ROOT/models/qwen3-embedding-4b-q8-gguf/Qwen3-Embedding-4B-Q8_0.gguf"
 PORT="8090"
 SERVED_NAME="qwen3-embedding-4b-q8-gguf"
 

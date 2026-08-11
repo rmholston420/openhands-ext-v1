@@ -766,3 +766,31 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none directly.
 - **PORTING_LEDGER / ADR updated:** ADR-0017 amended in place.
 - **Stop-condition status:** ADR-0017 amendment landed cleanly; health-check script ready. Next action gated by user completing `scripts/pull-models.sh --role all` on Colossus to materialize the three production model files.
+
+## 2026-08-11 06:24 EDT — ADR-0017 amendment #2 (coder 8001 → 8100) + serve-script path fixes
+
+- **Stage / plugin / port:** Phase 0.2 · serve infra · port allocation (round 2) + on-disk model layout
+- **What changed:**
+  - **Second port conflict discovered:** After amendment #1 moved coder from 8000 → 8001, the initial serve attempt found port 8001 also occupied — this time by an OpenHands **node** process (PID 1670799, UID 10001; same UID as the agent on 8000). OpenHands owns the entire 8000–8001 cluster on Colossus. `sudo docker ps --filter "publish=8001"` returned empty → not a container issue.
+  - **Broader port survey run:** `sudo lsof -iTCP -sTCP:LISTEN` enumerated all listeners; nothing in the 8100+ range. Documented ports in use on Colossus: 6379 (docker-pr Redis, localhost), 8000 (openhands agent, localhost), 8001 (node frontend, all-interfaces), 8080 (python3 as root, localhost), 8888 (docker-pr, localhost), 11434 (ollama).
+  - **ADR-0017 amended a second time (amendment #2 block prepended above amendment #1):** coder port 8001 → 8100. Model, runtime, parser flags, and co-residency policy unchanged. Amendment #1 marked as superseded by #2 inside the ADR (its text preserved verbatim per Kosmos rules).
+  - **Four files patched in this single commit for the port change:**
+    - `adrs/ADR-0017-production-role-selection-pre-medium.md` (amendment #2 block + amendment #1 supersession note + status line + rationale table)
+    - `bench/candidates/production-selection.json` (coder.port 8100, endpoint, endpoints_summary, extended port_amendment_note)
+    - `scripts/serve-coder.sh` (PORT=8100, header)
+    - `scripts/serve-planner.sh` (co-residency preflight now checks 8100)
+    - `scripts/stop-large-model.sh` (CODER_PORT=8100, docstring)
+  - **Health-check script unaffected:** reads endpoints from selection JSON, so it automatically picks up the new coder endpoint.
+  - **Separately in the same commit — path layout fixes for all three serve scripts (root cause: pull-models.sh writes flat to models/<slug>/, not to models/<slug>/hf/ or models/<slug>/gguf/):**
+    - `scripts/serve-coder.sh`: HF_MODEL_DIR = models/qwen3-coder-30b-a3b-instruct-awq-4bit (removed /hf).
+    - `scripts/serve-planner.sh`: GGUF = models/qwen3_6-35b-a3b-q4kxl-gguf/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf (removed /gguf).
+    - `scripts/serve-embedder.sh`: GGUF = models/qwen3-embedding-4b-q8-gguf/Qwen3-Embedding-4B-Q8_0.gguf (removed /gguf).
+    - Header comments in each updated.
+- **Files touched:**
+  - `adrs/ADR-0017-production-role-selection-pre-medium.md`
+  - `bench/candidates/production-selection.json`
+  - `scripts/serve-coder.sh`, `scripts/serve-planner.sh`, `scripts/serve-embedder.sh`, `scripts/stop-large-model.sh`
+  - `BUILD_LOG.md`, `DEBUG_LOG.md`, `SESSION_HANDOFF.md`
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0017 amendment #2 filed in-place.
+- **Stop-condition status:** Port 8100 confirmed free by broad survey. All serve-script paths now match on-disk model layout (verified by `ls` output showing models under models/<slug>/ directly). Next: kill orphaned serve-script attempts (none — they all Exit 1'd cleanly), start embedder + coder on new port, run health-check.

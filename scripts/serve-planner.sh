@@ -7,11 +7,12 @@
 # default per ADR-0008.
 #
 # Prereqs:
-#   - GGUF file at models/qwen3_6-35b-a3b-q4kxl-gguf/gguf/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
+#   - GGUF file at models/qwen3_6-35b-a3b-q4kxl-gguf/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
 #     (run scripts/pull-models.sh first if missing).
-#   - Coder NOT running (co-residency Option 2, ADR-0017). If port 8001 is
+#   - Coder NOT running (co-residency Option 2, ADR-0017). If port 8100 is
 #     listening, run scripts/stop-large-model.sh coder first. (Coder port
-#     amended 8000 -> 8001 on 2026-08-11 06:10 EDT; OpenHands agent holds 8000.)
+#     amended twice: 8000->8001 2026-08-11 06:10 EDT, 8001->8100 2026-08-11
+#     06:24 EDT; OpenHands holds 8000 agent + 8001 node frontend.)
 #   - Free VRAM >= 24 GiB (weights ~21 GiB + Q8_0 KV cache ~3-6 GiB @ 32k ctx).
 #
 # Envs:
@@ -29,7 +30,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$REPO_ROOT"
 
 SERVER_BIN="$REPO_ROOT/vendor/llama.cpp/build/bin/llama-server"
-GGUF="$REPO_ROOT/models/qwen3_6-35b-a3b-q4kxl-gguf/gguf/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"
+GGUF="$REPO_ROOT/models/qwen3_6-35b-a3b-q4kxl-gguf/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"
 PORT="8082"
 SERVED_NAME="qwen3_6-35b-a3b-q4kxl-gguf"
 
@@ -52,8 +53,8 @@ if ss -tln "sport = :$PORT" | grep -q LISTEN; then
   ss -tln "sport = :$PORT" >&2
   exit 1
 fi
-if ss -tln "sport = :8001" | grep -q LISTEN; then
-  echo "FAIL: coder is running on port 8001 (co-residency Option 2 violation)" >&2
+if ss -tln "sport = :8100" | grep -q LISTEN; then
+  echo "FAIL: coder is running on port 8100 (co-residency Option 2 violation)" >&2
   echo "Run: bash scripts/stop-large-model.sh coder   # then retry" >&2
   exit 1
 fi

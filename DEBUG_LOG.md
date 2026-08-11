@@ -412,3 +412,46 @@ Entry format:
   - `scripts/stop-large-model.sh`
 - **Related BUILD_LOG entry:** 2026-08-11 06:10 EDT
 - **Reusable lesson:** Before assigning any port for a new local server, run `sudo lsof -iTCP:<port> -sTCP:LISTEN` on Colossus to check for existing owners. `ss -tln` alone does not reveal owning PIDs across UIDs without sudo, and `stop-large-model.sh`'s `fuser` fallback cannot kill processes owned by other UIDs.
+
+## 2026-08-11 06:22 EDT — three serve scripts Exit 1 immediately after nohup (path mismatch)
+
+- **Symptom:** `nohup bash scripts/serve-{coder,planner,embedder}.sh > /tmp/...log 2>&1 &` all reported `Exit 1` within a few seconds. Downstream: `check-production-endpoints.sh` reported port 8090 not listening for embedder; port 8001 for coder was answering HTTP 403 (NOT vLLM — see next entry).
+- **Affected stage / plugin / port:** Phase 0.2 · serve infra · path assumptions
+- **Root cause:** `scripts/pull-models.sh` writes downloaded snapshots flat to `models/<slug>/` (verified in scripts/pull-models.sh line 155: `DEST="$REPO_ROOT/models/$SLUG"`), not to `models/<slug>/hf/` (safetensors) or `models/<slug>/gguf/` (GGUF). All three serve scripts hardcoded the invented subdirectory paths, so their preflight `[ ! -f model ]` check failed and each exited 1 immediately.
+- **Fix applied:** Patched three serve scripts to reference the actual on-disk layout:
+  - `scripts/serve-coder.sh`: `HF_MODEL_DIR=".../models/qwen3-coder-30b-a3b-instruct-awq-4bit"` (removed `/hf`).
+  - `scripts/serve-planner.sh`: `GGUF=".../models/qwen3_6-35b-a3b-q4kxl-gguf/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"` (removed `/gguf`).
+  - `scripts/serve-embedder.sh`: `GGUF=".../models/qwen3-embedding-4b-q8-gguf/Qwen3-Embedding-4B-Q8_0.gguf"` (removed `/gguf`).
+  - Header comments in all three updated.
+- **Files changed:**
+  - `scripts/serve-coder.sh`
+  - `scripts/serve-planner.sh`
+  - `scripts/serve-embedder.sh`
+- **Related BUILD_LOG entry:** 2026-08-11 06:22 EDT
+- **Reusable lesson:** When authoring a serve/loader script, ALWAYS inspect the pull/materializer script first to see where files actually land. Do not guess subdirectory conventions. `grep -n "DEST=\|local-dir" scripts/pull-models.sh` gives the answer in one command.
+
+## 2026-08-11 06:22 EDT — port 8001 answers HTTP 403/405, but nothing we authored is running
+
+- **Symptom:** After the serve scripts all Exit 1, `stop-large-model.sh status` reports `coder (port 8001): RUNNING`. `check-production-endpoints.sh coder` gets HTTP 403 on `/v1/models` ("Forbidden.") and HTTP 405 on `/v1/chat/completions` ("Unsupported method POST"). vLLM would respond with JSON, not these terse HTTP error strings.
+- **Affected stage / plugin / port:** Phase 0.2 · serve infra · port allocation
+- **Root cause:** UNKNOWN. Hypotheses: (a) prior session left a stale HTTP proxy/gateway on 8001; (b) another local service (OpenHands sub-component? Docker port mapping?) claims 8001; (c) a container in a stopped-but-not-removed state has a lingering NAT rule.
+- **Fix applied:** DEFERRED — user must run `sudo lsof -iTCP:8001 -sTCP:LISTEN` and `sudo docker ps -a --filter "publish=8001"` to identify the owner before we can decide whether to kill it or move the coder port again.
+- **Files changed:** none yet.
+- **Related BUILD_LOG entry:** 2026-08-11 06:22 EDT
+- **Reusable lesson:** Before assigning ANY port in an ADR, run `sudo lsof -iTCP:<port> -sTCP:LISTEN` on Colossus to survey it — regardless of whether it seems obviously free. Ports 8000, 8001, 8081 (Forge-OH BFF default per spec Phase 4), and 8082 all have observed or documented conflicts on this workstation.
+
+## 2026-08-11 06:24 EDT — port 8001 also claimed (OpenHands node frontend); RESOLVES prior "unknown owner" entry
+
+- **Symptom:** After ADR-0017 amendment #1 moved coder 8000 → 8001, port 8001 answered HTTP 403 on GET /v1/models and 405 on POST /v1/chat/completions — not vLLM's error format. `stop-large-model.sh status` reported "RUNNING" because a listener existed, but nothing we authored had launched (all three serve scripts had Exit 1'd due to the concurrent path-layout bug).
+- **Affected stage / plugin / port:** Phase 0.2 · serve infra · port allocation
+- **Root cause:** `sudo lsof -iTCP:8001 -sTCP:LISTEN` revealed a `node` process (PID 1670799, UID 10001) bound to `*:8001` (all interfaces). Same UID as the OpenHands agent on 8000 → this is the OpenHands **node frontend** (dashboard/GUI). It's a legitimate long-running OpenHands sub-process, not stale. 403/405 responses are node's default rejection of the OpenAI-shaped requests our health-check sent to a UI endpoint.
+- **Fix applied:** ADR-0017 amended a second time (Ratified · Amended). Coder port 8001 → 8100 after a broader `sudo lsof -iTCP -sTCP:LISTEN` survey confirmed nothing on Colossus listens in 8100+. Amendment #1 marked superseded inside the ADR; original text preserved.
+- **Files changed:**
+  - `adrs/ADR-0017-production-role-selection-pre-medium.md`
+  - `bench/candidates/production-selection.json`
+  - `scripts/serve-coder.sh`
+  - `scripts/serve-planner.sh` (co-residency preflight port)
+  - `scripts/stop-large-model.sh`
+- **Related BUILD_LOG entry:** 2026-08-11 06:24 EDT
+- **Supersedes:** 2026-08-11 06:22 EDT (the earlier "port 8001 answers 403" entry — root cause now identified, action taken)
+- **Reusable lesson (compounds prior entry):** Before assigning ANY port on Colossus, run a broad port survey — not a single-port check. Command: `sudo lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null | grep -E "node|openhands|docker|python|ollama|vllm|llama|containerd"`. OpenHands is known to occupy 8000 (agent/backend) + 8001 (node/frontend) minimum. Prefer 8100+ for local model servers to guarantee clearance.
