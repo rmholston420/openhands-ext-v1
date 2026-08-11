@@ -1165,3 +1165,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** bench harness · `_probe_coder_sdk` implementation contract (to be authored in next commit)
 - **PORTING_LEDGER / ADR updated:** ADR-0026 (amendment 2 appended, decisions 1-6 unchanged)
 - **Stop-condition status:** ADR-0026 stop conditions 1-2 satisfied (SDK installed, DockerWorkspace boots). Conditions 3-4 (turn count > 20; fixture seed failure) now have concrete enforcement points defined.
+
+## 2026-08-11 10:34 EDT — Phase 0.3 gate-2 · task-set + 10 gold files authored
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · coder correctness harness v1 · task set + gold rubric
+- **What changed:** Authored `bench/tasks/coder-medium-multi-turn.json` (10 tasks derived 1:1 from coder-medium.json + 4 new per-task fields: expected_final_state, expected_final_state_mode, smoke_test_command, reversal_criteria). Authored 10 gold rubric files under `bench/gold/coder-medium-multi-turn/*.md` with three-input rubric (tool sequence + final file state + smoke result) and 0-100 bands. Computed SHA-256 for each gold file and pinned in task-set `gold_hashes` block. Mode distribution: exact=4 (01,05,06,09), normalized=1 (03), rubric_only=4 (02,04,07,10), no_changes=1 (08). Smoke coverage: 6/10 (02,03,05,07,09,10). Reversal criteria pre-registered per ADR-0026, repeated on every task and at top-level for auditability. Task-set schema_version 1.0.0, harness_version v1, max_iteration_per_run=20.
+- **Files touched:** bench/tasks/coder-medium-multi-turn.json (new; 422 lines), bench/gold/coder-medium-multi-turn/*.md (10 files, ~4.5-5 KB each)
+- **Ports / adapters affected:** bench harness will consume these next (`_probe_coder_sdk` implementation slice)
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** Prior single-turn coder-medium.json (ADR-0022) intact and locked. New task-set + gold set locked (post_hoc_edit_locked per ADR-0016 + ADR-0022). Any change requires superseding ADR + version bump.

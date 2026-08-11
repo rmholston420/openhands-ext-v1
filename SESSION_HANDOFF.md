@@ -1,4 +1,4 @@
-# Kosmos Session Handoff — 2026-08-11 10:27 EDT
+# Kosmos Session Handoff — 2026-08-11 10:35 EDT
 
 ## Current build-sequencing position
 
@@ -8,24 +8,28 @@
 
 ## Completed this session
 
-- ADR-0026 authored + ratified (six decisions: DockerWorkspace, Perplexity-Max scoring 0-100, supersede at medium tier only, new task-set `coder-medium-multi-turn.json`, SDK pin captured, D4 co-residency envelope 12-34 min)
+- ADR-0026 authored + ratified (six decisions locked)
 - ADR-0026 amendment 1: SDK 1.41.0 import path correction (`openhands.workspace.DockerWorkspace`)
-- SDK freeze file `bench/runner/openhands-sdk-freeze-20260811T142200Z.txt` (versions locked at 1.41.0)
-- Docker smoke run succeeded — DockerWorkspace boots container in ~10.5 s
-- Full SDK 1.41.0 surface introspected: DockerWorkspace, Agent, Conversation factory + LocalConversation/RemoteConversation, LLM, Event types
-- ADR-0026 amendment 2: real SDK surface locked (execute_command, file_upload, file_download, Conversation(agent=..., workspace=..., callbacks=..., max_iteration_per_run=20), event capture via callback, container reuse across 10 tasks per cell, LLM adapter contract for local vLLM)
+- ADR-0026 amendment 2: real SDK surface locked (execute_command, file_upload, file_download, Conversation factory, callbacks, max_iteration_per_run=20, container reuse across 10 tasks per cell, LLM adapter contract for local vLLM)
+- SDK freeze file `bench/runner/openhands-sdk-freeze-20260811T142200Z.txt`
+- Docker smoke run passed — DockerWorkspace boots container in ~10.5 s
+- Full SDK 1.41.0 surface introspected (DockerWorkspace, Agent, Conversation/LocalConversation/RemoteConversation, LLM, Event types)
+- Task-set `bench/tasks/coder-medium-multi-turn.json` authored (10 tasks × 4 new fields; 422 lines)
+- 10 gold rubric files authored under `bench/gold/coder-medium-multi-turn/`
+- SHA-256 hashes pinned in task-set `gold_hashes` block
 
 ## Remaining before current Definition of Done
 
-1. **Author `bench/tasks/coder-medium-multi-turn.json`** — 10 tasks derived from existing `coder-medium.json`, extended with `expected_final_state` (path → expected content), `smoke_test_command` (per task, optional), `reversal_criteria` (pre-registered per ADR-0026), and `gold_hashes` (computed post-gold-authoring).
-2. **Author 10 gold rubric files** at `bench/gold/coder-medium-multi-turn/coder-medium-01-*.md` … `coder-medium-10-*.md` — three-input rubric (tool sequence, final file state, code correctness), 0-100 bands.
-3. **Compute SHA-256 hashes** of the 10 gold files and pin them in the task-set JSON `gold_hashes` block.
-4. **Extend `bench/schema/run.py` + `bench/schema/run.schema.json`** — add `harness_version`, `openhands_sdk_version`, `docker_image` fields to `run_metadata`.
-5. **Promote `_probe_coder_sdk` in `bench/runner/probes.py:418`** from stub to full implementation per the contract locked in ADR-0026 amendment 2 (fixture-seed → Conversation.run → verify → smoke test → event trace persistence).
-6. **Smoke run**: 1 task on 1 cell (coder cell = `qwen3-coder-30b-a3b-instruct-awq-4bit` at vLLM :8100) to validate the harness end-to-end before the full 2×10 run.
-7. **Full run**: 2 cells (`qwen3-coder-30b-a3b-instruct-awq-4bit` + fallback `qwen3_6-35b-a3b-q4kxl-gguf`) × 10 tasks.
-8. **Score via Perplexity-Max** against the 10 gold files.
-9. **File ADR-0027 verdict** applying the pre-registered ADR-0026 reversal criteria.
+1. **Extend `bench/schema/run.py` + `bench/schema/run.schema.json`** — add `harness_version`, `openhands_sdk_version`, `docker_image` fields to `run_metadata`.
+2. **Promote `_probe_coder_sdk` in `bench/runner/probes.py:418`** from stub to full implementation per ADR-0026 amendment 2 contract:
+   - Construct one `DockerWorkspace` per cell (auto-boots container).
+   - For each task: wipe → seed fixtures via `file_upload` (or init git for task-08) → build `LLM` targeting the cell's local endpoint → build `Agent(llm=llm, tools=[])` → build `Conversation(agent=agent, workspace=ws, callbacks=[on_event], max_iteration_per_run=20)` → `conv.send_message(task["prompt"])` → `conv.run()` → verify final state via `execute_command('cat ...')` per `expected_final_state_mode` → smoke test if `smoke_test_command` is not null → capture event trace (ActionEvent count, tool names in order, AgentErrorEvents) → persist per-task record.
+   - After all 10 tasks: `ws.cleanup()`.
+   - Handle `fixture_seed_failed`, `agent_error`, `max_iteration_hit` as distinct outcomes.
+3. **Smoke run**: 1 task (medium-01) on 1 cell (coder = `qwen3-coder-30b-a3b-instruct-awq-4bit` at vLLM :8100) to validate the harness end-to-end.
+4. **Full run**: 2 cells × 10 tasks (`qwen3-coder-30b-a3b-instruct-awq-4bit` + `qwen3_6-35b-a3b-q4kxl-gguf`).
+5. **Score via Perplexity-Max** against the 10 gold files.
+6. **File ADR-0027 verdict** applying the pre-registered ADR-0026 reversal criteria.
 
 ## Open questions / awaiting user answer
 
@@ -33,4 +37,4 @@
 
 ## Exact next action
 
-Author `bench/tasks/coder-medium-multi-turn.json` (derived 1:1 from `bench/tasks/coder-medium.json` with the four new fields per task) + the 10 gold files at `bench/gold/coder-medium-multi-turn/` in a single agent commit. This is a volume-heavy write; scope is fully determined by ADR-0026 amendment 2 + the existing `coder-medium.json` shape.
+Extend `bench/schema/run.py` + `bench/schema/run.schema.json` with the three new `run_metadata` fields, then rewrite `_probe_coder_sdk` in `bench/runner/probes.py` per the ADR-0026 amendment 2 contract. Single commit.
