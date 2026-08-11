@@ -1402,6 +1402,7 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
   - Docker pin: `docker_image_digest_expected` pinned to SHA at Full-tier only; Medium/Fast tags left as tag-based per prior scope.
 - **Stop-condition status:** Gate-3 DoD steps 1–4 met (task set + gold + rubric + reversal criteria pre-registered and locked). Ready for probe runs. Steps 5–7 (execute probes → score → verdict ADR-0029) remain.
 
+
 ## 2026-08-11 12:19 EDT — ADR-0028 amendment 1: F05 task class swap (runner-constraint fix) + SESSION_HANDOFF probe commands corrected
 
 - **Stage / plugin / port:** Phase 0.3 gate-3 · coder Full-tier task set · bench harness
@@ -1417,3 +1418,13 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** ADR-0028 amended (in-place amendment block per kosmos-adr-authoring §6). `adrs/README.md` row updated.
 - **Stop-condition status:** Gate-3 DoD steps 1–4 remain met (task set + gold + rubric + reversal criteria pre-registered and locked, with F05 amended). Ready for probe runs. Steps 5–7 remain.
+## 2026-08-11 12:24 EDT — Full-tier runner verification + pre-flight sequence documented
+
+- **Stage / plugin / port:** Phase 0.3 gate-3 · bench harness (multi-turn) · coder role
+- **What changed:** Verified end-to-end that `scripts/benchmark-tier-runner.py` will execute the multi-turn DockerWorkspace SDK path for both Full-tier candidates. Read `bench/runner/main.py` (`run_tier`, `_run_one_cell`, `_make_server`, `_load_rubric`, `_build_run`) and `bench/runner/probes.py` (`probe_coder`, `_probe_coder_sdk`, `_run_sdk_task`, `_probe_coder_fallback`). Confirmed: entrypoint correct, port map correct (coder vLLM :8501, llama.cpp :8082), candidate JSON shape valid, rubric lock guard passes (falls back to `authored_utc = 2026-08-11T16:03:00Z`), docker0 transport rewrite intact, per-task fields (`fixtures`, `expected_final_state`, `expected_final_state_mode`, `smoke_test_command`) honored, `fixture_setup_command` genuinely not supported (F05 amendment justified), `docker_image_digest_expected` is documentation-only (pre-pull step added to pre-flight). Discovered that `_probe_coder_fallback` (invoked on SDK import failure) advertises no `finish` tool, so **SDK unavailability would silently degrade Full-tier runs and auto-fire reversal rule 2 clause 3 for both candidates**. Added a 6-step pre-flight sequence to `SESSION_HANDOFF.md` (SDK import check, docker daemon check, docker0 bridge check, digest pre-pull, port free check, dry-run). Also added an immediate-post-run assertion on `notes`/`openhands_sdk_version`/`docker_image` to catch silent degradation before scoring.
+- **Files touched:** `SESSION_HANDOFF.md` (rewritten with verified runner-behavior notes + pre-flight + immediate assertion + known-not-blocking observations), `BUILD_LOG.md` (this entry).
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** none (verification only).
+- **Stop-condition status:** gate-3 DoD step 4 (fixture lock + verification) COMPLETE. Ready to execute pre-flight then probes on Colossus.
+
+---
