@@ -136,6 +136,8 @@ def main():
     if not containers:
         if args.verbose:
             log.info(f"scan: 0 {NAME_PATTERN}* containers present")
+        if sys.stdout.isatty() or args.verbose or args.dry_run:
+            print(f"scanned 0  reaped 0  skipped 0  (no {NAME_PATTERN}* containers; log: {LOG_PATH})")
         return 0
 
     reaped = 0

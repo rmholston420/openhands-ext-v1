@@ -111,3 +111,9 @@ logs/
 # Bench raw run logs (small JSON summaries under bench/results/ are tracked)
 bench/results/*.log
 bench/results/*.tmp
+
+# transient DOM-probe scripts (not part of canonical smoke suite)
+tests/smoke/probe_*.py
+# older smoke iterations (superseded by test_openhands_suite_v3.py)
+tests/smoke/test_openhands_suite.py
+tests/smoke/test_openhands_suite_v2.py

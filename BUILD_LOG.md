@@ -978,3 +978,15 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** none — this is Colossus operations, not a spec-load-bearing decision. Documented in-tree instead.
 - **Stop-condition status:** met.
+
+## 2026-08-11 08:41 EDT — Reaper UX polish + .gitignore hygiene
+
+- **Stage / plugin / port:** Phase 1 · Operations · reaper follow-up
+- **What changed:**
+  - `scripts/sandbox_reaper.py` — print "scanned 0 reaped 0 skipped 0" line on the zero-container path when stdout is a tty, `--verbose`, or `--dry-run`. Previously silent, which made manual runs look broken.
+  - `.gitignore` — ignore `tests/smoke/probe_*.py` (transient DOM probes) and old `test_openhands_suite{,_v2}.py` (superseded by v3).
+- **Verification:** `python3 scripts/sandbox_reaper.py --dry-run --verbose` on Colossus now prints one line + still logs to `~/.forge-oh/sandbox-reaper.log`.
+- **Files touched:** `scripts/sandbox_reaper.py`, `.gitignore`
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** none
+- **Stop-condition status:** met
