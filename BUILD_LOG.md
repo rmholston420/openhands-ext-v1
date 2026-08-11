@@ -1448,3 +1448,21 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Stop-condition status:** **Phase 0.3 gate-3 CLOSED.** All DoD met: task-set + rubric + gold + reversal criteria locked (steps 1-4); both probes executed with real SDK+Docker path (step 5); scored against gold with reasoning (step 6); verdict ADR filed (step 7). Next: Phase 0.4 embedder Full-tier re-eval.
 
 ---
+
+## 2026-08-11 13:08 EDT — Phase 0.4 gate-4 OPENED (ADR-0030 Proposed): embedder Full-tier re-eval three-way
+
+- **Stage / plugin / port:** Phase 0.4 gate-4 · embedder role re-eval · bench harness (Full-tier)
+- **What changed:** Opened Phase 0.4 with a pre-registered three-way embedder Full-tier re-eval. Candidate pool authored: incumbent `qwen3-embedding-4B-Q8_0` (llama.cpp CPU per ADR-0017 amend #3, 3.99 GiB) vs challenger_upsize `qwen3-embedding-8B-Q6_K` (5.79 GiB) vs challenger_downsize `qwen3-embedding-0.6B-Q8_0` (0.60 GiB); all three on llama.cpp CPU per co-residency contract with GPU coder (ADR-0029) + GPU planner (ADR-0025). Verified 8B-Q6_K GGUF exists at `Qwen/Qwen3-Embedding-8B-GGUF/Qwen3-Embedding-8B-Q6_K.gguf` on HF (5.79 GiB) before locking. Bench shape: 3 candidates × 2 chunkers (H1 fixed 512+64 · H2 structure-aware) × 2 blocks (code CC3: openhands-ext-v1 + Kosmos + Rigpa-LMS Python; docs DD2: both projects' governance) = 12 cells; 20 queries per block = 40 total; top-20 returned. Metrics: nDCG@10 + Recall@10 + MRR@10 + Recall@1 composite (weights 0.40/0.25/0.20/0.15). Graded 0-3 gold with primary/secondary flag; primary at (repo, source_file_path, line_range) tuple, chunker-agnostic (P1). Perplexity-Max labels pooled union-of-top-20 across all 12 cells (~600-2400 labels; 2-4 sessions budget). Reversal criteria V3+W3 pre-locked: confirm_4B if any of {overall macro within 3 of max, or no challenger passes W3 on code, or no challenger passes W3 on docs}; flip_to_8B or flip_to_0.6B requires all of {+3 block-macro both blocks, no per-metric regression >5, no single-metric loss >2 on any of 4 metrics, plus per-candidate RAM/speed safety clause}. Boundary values default to preserving incumbent. Post-hoc reinterpretation prohibited. INTERMEDIATE possible → per-block role split requires follow-up ADR.
+- **Files touched:**
+  - `adrs/ADR-0030-phase-0-4-embedder-full-tier-re-eval.md` (created, Proposed)
+  - `adrs/README.md` (row 0030 appended)
+  - `bench/candidates/embedder-full-pool.json` (created; three-way pool with weight_bytes + role_designation)
+  - `bench/tasks/embedder-full-multi-block.json` (created; task-set + co-residency contract + chunking sub-cells + metrics + reversal criteria + DoD; queries deferred to fixture lock-in)
+  - `bench/gold/embedder-full-multi-block/` (dir created, empty until qrels labeling)
+  - `bench/scoring/full-embedder/` (dir created, empty until inference runs)
+- **Ports / adapters affected:** none yet (runner extension `probe_embedder_full_multi_block` in `bench/runner/probes.py` is prerequisite for step 7 of DoD; separate BUILD_LOG entry when built).
+- **PORTING_LEDGER / ADR updated:** ADR-0030 filed Proposed. ADR-0029 (coder locked) and ADR-0025 (planner locked) both referenced as VRAM-budget precedent. ADR-0017 amend #3 referenced as embedder-CPU-placement precedent.
+- **Stop-condition status:** Gate-4 DoD steps 1-2 COMPLETE (candidate pool + task-set with pre-locked reversal criteria committed). Steps 3-6 (corpus manifest with pinned SHAs, 40 queries authored blind, rubric commit, qrels labeling + hash lock) BLOCK gate progression. Steps 7-9 (inference + scoring + verdict ADR-0031) come after fixture lock-in.
+- **35b coder retirement:** deferred to Phase 1 per user directive 2026-08-11 12:56 EDT. Not addressed in Phase 0.4.
+
+---

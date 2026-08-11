@@ -1,0 +1,203 @@
+{
+  "$comment": "Phase 0.4 Full-tier embedder task-set. Locks the three-way pool (4B-Q8 incumbent vs 8B-Q6_K challenger_upsize vs 0.6B-Q8 challenger_downsize), all on llama.cpp CPU per ADR-0017 amend #3. Two retrieval blocks (code + docs), 20 queries per block = 40 queries total. Two chunking strategies (H1 fixed 512+64, H2 symbol/section-aware with H1 fallback) as sub-cells. Metrics: nDCG@10, Recall@10, MRR@10, Recall@1. Graded 0-3 relevance with primary/secondary flag; primary defined at source-file + line-range level (chunker-agnostic per P1). Gold labels produced by Perplexity-Max on pooled union-of-top-20 per query across all cells. Reversal criteria V3+W3 pre-locked. post_hoc_edit_locked flips to true on ADR-0030 Ratification (fixture lock-in). Authored 2026-08-11 13:05 EDT.",
+  "schema_version": "1.0.0",
+  "tier": "full",
+  "role": "embedder",
+  "task_id": "embedder-full-multi-block",
+  "authored_utc": "2026-08-11T17:05:00Z",
+  "adr_anchor": "adrs/ADR-0030-phase-0-4-embedder-full-tier-re-eval.md",
+  "post_hoc_edit_locked": false,
+  "post_hoc_edit_lockin_trigger": "ADR-0030 status flip Proposed→Ratified upon fixture lock-in",
+
+  "candidate_pool_ref": "bench/candidates/embedder-full-pool.json",
+  "candidates_locked": ["e04b_q8_cpu", "e08b_q6k_cpu", "e006b_q8_cpu"],
+
+  "co_residency_contract": {
+    "vram_budget_gib": 32,
+    "vram_reserved_for_coder_planner_gib": 32,
+    "embedder_placement": "cpu_ram_only",
+    "rationale": "Coder (qwen3-coder-30b-a3b-instruct-awq-4bit vLLM GPU per ADR-0029) + planner (qwen3_6-27b-q6k-gguf llama.cpp GPU per ADR-0025) together saturate VRAM in production. Embedder must not compete. All 3 candidates run llama.cpp CPU. RAM peak per cell ≤ 8 GiB (8B-Q6_K weights 5.79 GiB + KV + overhead) — well within 128 GiB Colossus RAM.",
+    "harness_enforcement": "runner must pass -ngl 0 to llama.cpp for every embedder cell"
+  },
+
+  "blocks": [
+    {
+      "block_id": "code",
+      "block_class": "code_retrieval",
+      "query_count": 20,
+      "corpus": {
+        "scope": "CC3",
+        "repos": [
+          {"name": "openhands-ext-v1", "path_in_bench": "corpus/code/openhands-ext-v1", "snapshot_commit_sha": "TBD_LOCKED_AT_ADR_RATIFICATION"},
+          {"name": "Kosmos",           "path_in_bench": "corpus/code/kosmos",           "snapshot_commit_sha": "TBD_LOCKED_AT_ADR_RATIFICATION"},
+          {"name": "Rigpa-LMS",        "path_in_bench": "corpus/code/rigpa-lms",        "snapshot_commit_sha": "TBD_LOCKED_AT_ADR_RATIFICATION"}
+        ],
+        "file_globs_included": ["**/*.py", "**/*.pyi"],
+        "file_globs_excluded": ["**/.venv/**", "**/node_modules/**", "**/__pycache__/**", "**/.pplx/**", "**/*.min.js"],
+        "expected_source_file_count_range": [800, 2500],
+        "notes": "Corpus is 3 real project repositories at pinned commit SHAs. Distractors are natural (production code plus tests, adapters, dead-code paths)."
+      },
+      "queries_placeholder_count": 20,
+      "queries_locked_at": "ADR-0030 ratification (fixture lock-in commit)",
+      "query_authoring_notes": "Queries are natural intents a coding agent would issue: 'find the function that computes X', 'where is Y adapter registered', 'which module implements Z protocol'. Query set is authored blind to the corpus (no chunk-peeking); queries answerable only via chunk semantics not filename matching are preferred."
+    },
+    {
+      "block_id": "docs",
+      "block_class": "governance_docs_retrieval",
+      "query_count": 20,
+      "corpus": {
+        "scope": "DD2",
+        "sources": [
+          {"name": "openhands-ext-v1 governance", "path_in_bench": "corpus/docs/openhands-ext-v1", "snapshot_commit_sha": "TBD_LOCKED_AT_ADR_RATIFICATION",
+           "file_globs": ["adrs/*.md", "BUILD_LOG.md", "DEBUG_LOG.md", "KNOWN_ISSUES.md", "docs/**/*.md"]},
+          {"name": "Kosmos governance", "path_in_bench": "corpus/docs/kosmos", "snapshot_commit_sha": "TBD_LOCKED_AT_ADR_RATIFICATION",
+           "file_globs": ["adrs/*.md", "BUILD_LOG.md", "DEBUG_LOG.md", "KNOWN_ISSUES.md", "Kosmos-Build-Spec-v25.md", "Kosmos-Build-Sequence-v25.md", "PORTING_LEDGER.md", "docs/**/*.md"]}
+        ],
+        "expected_source_file_count_range": [80, 300]
+      },
+      "queries_placeholder_count": 20,
+      "queries_locked_at": "ADR-0030 ratification (fixture lock-in commit)",
+      "query_authoring_notes": "Spec-lookup intents: 'which ADR set the coder role', 'what does ADR-0007 say about R2 warnings', 'find the section of Kosmos spec that defines MemoryPort'. Preference for queries that require semantic matching (e.g. paraphrased ADR titles), not exact-title lookup."
+    }
+  ],
+
+  "chunking_sub_cells": [
+    {
+      "chunker_id": "H1_fixed_512_64",
+      "params": {"target_tokens": 512, "overlap_tokens": 64, "tokenizer": "cl100k_base"},
+      "applies_to_blocks": ["code", "docs"]
+    },
+    {
+      "chunker_id": "H2_structure_aware",
+      "code_strategy": {
+        "primary": "per-symbol via ast.parse (function-level + class-level; each method its own chunk; module docstring one chunk)",
+        "fallback": "H1_fixed_512_64 for files where ast.parse fails or produces >1024-token symbols (split symbol into fixed chunks)"
+      },
+      "docs_strategy": {
+        "primary": "per-heading (## and ### as chunk boundaries; each heading section is one chunk)",
+        "fallback": "H1_fixed_512_64 for sections >1024 tokens"
+      },
+      "applies_to_blocks": ["code", "docs"]
+    }
+  ],
+
+  "cell_matrix": {
+    "shape": "3 candidates x 2 chunkers x 2 blocks = 12 cells",
+    "cell_naming": "<candidate_cell_id>__<chunker_id>__<block_id>",
+    "example": "e04b_q8_cpu__H1_fixed_512_64__code"
+  },
+
+  "primary_gold_key_rule": {
+    "id": "P1",
+    "definition": "primary gold hit is defined at (repo, source_file_path, line_range) tuple. A retrieved chunk counts as MRR@1 hit if its (source_file_path, line_span) intersects the labeled primary line_range. Chunker-agnostic: same qrel file is used for both H1 and H2 sub-cells within a block.",
+    "line_range_intersection_predicate": "chunk.line_start <= gold.line_end AND chunk.line_end >= gold.line_start"
+  },
+
+  "gold_labeling": {
+    "protocol": "G1_pooled_perplexity_max",
+    "pooling_strategy": "union_of_top_k",
+    "pool_k": 20,
+    "pool_composition": "For each query, union the top-20 chunks (by embedder similarity score) across ALL 12 cells. Deduplicate at (repo, source_file_path, line_range) key. Label each unique (repo, file, line_range) once.",
+    "expected_pool_size_per_query_range": [15, 60],
+    "expected_total_labels_range": [600, 2400],
+    "grading_scale": {
+      "0": "irrelevant",
+      "1": "marginal (touches topic but does not answer query)",
+      "2": "relevant (partial answer)",
+      "3": "exact (contains the specific fact/function/decision the query asks about)"
+    },
+    "primary_secondary_flag": {
+      "per_query": {
+        "primary_count": 1,
+        "secondary_count": "0 to unbounded",
+        "primary_definition": "the single most-canonical (file, line_range) that best answers the query; used as the MRR@1 target"
+      }
+    },
+    "scorer": "Perplexity-Max (Claude Sonnet 4.6 via Perplexity Computer)",
+    "labeling_locked_at": "before first embedder inference on any candidate",
+    "labeling_lock_hash_file": "bench/gold/embedder-full-multi-block/QRELS.locked.sha256",
+    "post_hoc_relabeling_prohibited": true
+  },
+
+  "metrics": {
+    "primary_composite": {
+      "name": "composite_score",
+      "range": "0-100 (linear rescale from unit-interval component metrics)",
+      "components": [
+        {"name": "nDCG@10", "weight": 0.40, "computed_over": "graded_relevance_0_3"},
+        {"name": "Recall@10", "weight": 0.25, "computed_over": "relevance_ge_2"},
+        {"name": "MRR@10", "weight": 0.20, "computed_over": "primary_only"},
+        {"name": "Recall@1", "weight": 0.15, "computed_over": "primary_only"}
+      ],
+      "rescale_formula": "composite = 100 * (0.40*nDCG10 + 0.25*Recall10 + 0.20*MRR10 + 0.15*Recall1)"
+    },
+    "per_block_reporting": "Composite AND all 4 components reported per (candidate, chunker, block). Cell-level macros = mean across queries within cell.",
+    "candidate_block_macro": "mean of composite across the 2 chunker sub-cells for that (candidate, block).",
+    "candidate_overall_macro": "mean of composite across all 4 (chunker × block) sub-cells for that candidate."
+  },
+
+  "reversal_criteria": {
+    "shape": "V3_per_block_gated_with_W3_strictness",
+    "incumbent": "e04b_q8_cpu",
+    "note": "Boundary values default to preserving incumbent (confirms 4B-Q8). Post-hoc interpretation prohibited.",
+
+    "confirm_incumbent_4b_q8_if": [
+      "AT LEAST ONE OF THESE HOLDS AT SCORING TIME:",
+      "1. 4B composite candidate_overall_macro >= (max of challenger overall_macros) - 3.0 (within tiebreak band; incumbent retained on tie)",
+      "2. On the code block, no challenger passes W3 strict gate (defined below)",
+      "3. On the docs block, no challenger passes W3 strict gate (defined below)"
+    ],
+
+    "flip_to_8b_q6k_if": [
+      "ALL OF THESE MUST HOLD:",
+      "1. 8B block-macro on code >= 4B block-macro on code + 3.0 (W1)",
+      "2. 8B block-macro on docs >= 4B block-macro on docs + 3.0 (W1)",
+      "3. On code block AND docs block: no per-metric regression from 4B > 5.0 points (W2)",
+      "4. On code block AND docs block: no per-metric loss from 4B > 2.0 points on any of {nDCG10, Recall10, MRR10, Recall1} (W3)",
+      "5. RAM peak of 8B-Q6_K on either block <= 12 GiB (co-residency safety guard)"
+    ],
+
+    "flip_to_0_6b_q8_if": [
+      "ALL OF THESE MUST HOLD:",
+      "1. 0.6B block-macro on code >= 4B block-macro on code + 3.0 (W1)",
+      "2. 0.6B block-macro on docs >= 4B block-macro on docs + 3.0 (W1)",
+      "3. On code block AND docs block: no per-metric regression from 4B > 5.0 points (W2)",
+      "4. On code block AND docs block: no per-metric loss from 4B > 2.0 points on any of {nDCG10, Recall10, MRR10, Recall1} (W3)",
+      "5. 0.6B frees at least 3.0 GiB RAM headroom vs 4B AND wall-time speedup >= 2x (headroom/speed justification for a downsize)"
+    ],
+
+    "intermediate_if_neither_confirm_nor_flip": "If confirm_incumbent conditions fail on BOTH blocks AND no challenger passes its full W3 gate on BOTH blocks, verdict is INTERMEDIATE and a per-block role split may be proposed in the verdict ADR (e.g. 8B for docs, 4B for code) — such a split requires its own follow-up ADR.",
+
+    "tiebreak": "Wall-time median per query, applied ONLY within a 3-point composite band on the winning block(s). Speed cannot flip a tie in favor of a challenger against incumbent (incumbent wins ties)."
+  },
+
+  "harness_contract": {
+    "embed_endpoint": "OpenAI-compatible /v1/embeddings on llama.cpp",
+    "batch_size_ceiling": 16,
+    "deterministic_seed": 42,
+    "index": "flat cosine similarity (no ANN/FAISS at Full-tier; exact search)",
+    "similarity": "cosine",
+    "top_k_returned": 20,
+    "runtime_env_note": "coder vLLM and planner llama.cpp GPU processes MUST be stopped before running each embedder cell (VRAM is not needed but process contention on CPU cores would skew wall-time). Runner enforces via systemctl stop / docker stop."
+  },
+
+  "artifacts_locked": {
+    "candidates_ref": "bench/candidates/embedder-full-pool.json",
+    "rubric_ref": "bench/rubrics/full-embedder-scored.json (TBD_CREATE_AT_FIXTURE_LOCKIN)",
+    "gold_qrels_ref": "bench/gold/embedder-full-multi-block/qrels.jsonl (TBD_CREATE_AT_FIXTURE_LOCKIN)",
+    "corpus_manifest_ref": "bench/corpus/embedder-full-multi-block/MANIFEST.json (TBD_CREATE_AT_FIXTURE_LOCKIN)",
+    "query_set_ref": "bench/tasks/embedder-full-multi-block.queries.json (TBD_CREATE_AT_FIXTURE_LOCKIN)"
+  },
+
+  "definition_of_done_gate_4": [
+    "1. bench/candidates/embedder-full-pool.json committed with all 3 candidates + weight_bytes + role_designation (DONE at ADR-0030 Proposed)",
+    "2. bench/tasks/embedder-full-multi-block.json committed with pre-locked reversal criteria (DONE at ADR-0030 Proposed)",
+    "3. Corpus manifest committed: repo snapshot SHAs pinned; file lists frozen; total chunk count reported for both H1 and H2 (blocks BOTH steps)",
+    "4. Query set committed: 40 queries authored blind to corpus indexes; queries frozen",
+    "5. Rubric committed at bench/rubrics/full-embedder-scored.json with post_hoc_edit_locked=true after step 4",
+    "6. Gold qrels labeled by Perplexity-Max over pooled union-of-top-20 and locked with sha256 file",
+    "7. All 12 cells inference-run under harness; per-cell top-20 retrieval saved to bench/scoring/full-embedder/runs/",
+    "8. Composite + component metrics computed per cell; per-block macros computed",
+    "9. Reversal criteria applied mechanically; verdict ADR-0031 filed"
+  ]
+}

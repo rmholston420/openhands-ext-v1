@@ -1,0 +1,50 @@
+[
+  {
+    "cell_id": "e04b_q8_cpu",
+    "model": "qwen3-embedding-4b-q8-gguf",
+    "hf_repo": "Qwen/Qwen3-Embedding-4B-GGUF",
+    "format": "gguf",
+    "runtime": "llama.cpp",
+    "device": "cpu",
+    "role": "embedder",
+    "quant": "q8_0",
+    "gguf_file": "Qwen3-Embedding-4B-Q8_0.gguf",
+    "weight_bytes": 4285464576,
+    "weight_gib_actual": 3.99,
+    "role_designation": "incumbent",
+    "provenance_adrs": ["ADR-0017 (amend #3)", "ADR-0027", "ADR-0029"],
+    "notes": "Incumbent production embedder. CPU device per ADR-0017 amend #3 (preserves VRAM for coder+planner). Full-tier pool authored 2026-08-11 13:04 EDT."
+  },
+  {
+    "cell_id": "e08b_q6k_cpu",
+    "model": "qwen3-embedding-8b-q6k-gguf",
+    "hf_repo": "Qwen/Qwen3-Embedding-8B-GGUF",
+    "format": "gguf",
+    "runtime": "llama.cpp",
+    "device": "cpu",
+    "role": "embedder",
+    "quant": "q6_k",
+    "gguf_file": "Qwen3-Embedding-8B-Q6_K.gguf",
+    "weight_bytes": 6218430464,
+    "weight_gib_actual": 5.79,
+    "role_designation": "challenger_upsize",
+    "provenance_adrs": ["ADR-0030"],
+    "notes": "Quality-first challenger. Verified exists at Qwen/Qwen3-Embedding-8B-GGUF/Qwen3-Embedding-8B-Q6_K.gguf on HF (5.79 GiB). CPU device for co-residency parity with incumbent."
+  },
+  {
+    "cell_id": "e006b_q8_cpu",
+    "model": "qwen3-embedding-0_6b-q8-gguf",
+    "hf_repo": "Qwen/Qwen3-Embedding-0.6B-GGUF",
+    "format": "gguf",
+    "runtime": "llama.cpp",
+    "device": "cpu",
+    "role": "embedder",
+    "quant": "q8_0",
+    "gguf_file": "Qwen3-Embedding-0.6B-Q8_0.gguf",
+    "weight_bytes": 644245094,
+    "weight_gib_actual": 0.60,
+    "role_designation": "challenger_downsize",
+    "provenance_adrs": ["ADR-0030"],
+    "notes": "Speed/RAM-headroom challenger. Same runtime + device as incumbent. Full-tier pool authored 2026-08-11 13:04 EDT."
+  }
+]
