@@ -1277,3 +1277,16 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** LLM transport between the SDK-side agent and the runner-launched coder / planner LLM servers.
 - **PORTING_LEDGER / ADR updated:** ADR-0026 amendment 3 (this entry stands in for the amendment; formal amendment block to be appended in the ADR before the next verdict).
 - **Stop-condition status:** Complementary fix — DEBUG_LOG 2026-08-11 08:11 EDT already recorded the UFW-side of this same interaction (openhands-app → 172.17.0.1). ADR-0020 added `ufw allow from 172.17.0.0/16 to any` (confirmed active — `Anywhere ALLOW 172.17.0.0/16`). Bench-side flow was still broken because vLLM/llama.cpp bound 127.0.0.1 and the probe passed the container the same loopback URL. With today's two edits, the full path is: container → 172.17.0.1:8501 (allowed by UFW) → 0.0.0.0-bound vLLM ✓.
+
+## 2026-08-11 11:16 EDT — Fix tools=[] in _probe_coder_sdk (SDK 1.41 default tool preset)
+
+- **Stage / plugin / port:** Phase 0.3 gate-2 · stage-2 · bench/runner/probes.py
+- **What changed:**
+  - Import `openhands.tools.preset.default.get_default_tools` alongside the other SDK 1.41 imports.
+  - Build `default_tools = get_default_tools(enable_browser=False, enable_sub_agents=False)` once per cell. `enable_browser=False` because bench containers have no display and we do not allow network fetches during scored coder tasks. `enable_sub_agents=False` to keep the event trace single-agent (no TaskToolSet delegation), matching the ADR-0026 v1 harness contract.
+  - Replace `Agent(llm=llm, tools=[])` with `Agent(llm=llm, tools=default_tools)`. Guard with `assert default_tools` to fail fast if a future SDK revision returns an empty list.
+- **Files touched:** bench/runner/probes.py
+- **Ports / adapters affected:** LLMPort tool wiring in the coder probe. Planner probe (llama.cpp path) not yet touched — same treatment likely needed when stage-3 planner probe is written.
+- **PORTING_LEDGER / ADR updated:** None yet (empty tools=[] was a bug, not an architectural choice — no ADR needed). Formal ADR-0026 amendment 3 to be authored covering both the transport rewrite (previous entry) and this tool-preset wire-up before stage-3.
+- **Stop-condition status:** Not yet re-run. The 34 KB probe artifact at `bench/results/smoke/smoke-medium-coder-qwen3-coder-30b-a3b-instruct-awq-4bit-vllm-gpu-20260811T151156Z.probe.json` reflects a run where the agent had only `['finish','think']` available — every scored task hit an Action/Error loop and its verdict is NOT usable for the coder gate. Keep on disk (never rm bench/results/*.json) but treat as invalid for scoring.
+

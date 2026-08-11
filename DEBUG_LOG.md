@@ -581,3 +581,17 @@ Entry format:
   - `bench/runner/server.py`: change vLLM and llama.cpp `--host` from `127.0.0.1` to `0.0.0.0` so `172.17.0.1:<port>` accepts. Health-check URLs kept on `127.0.0.1` (host loopback still served by wildcard bind).
 - **Files changed:** bench/runner/probes.py, bench/runner/server.py
 - **Related BUILD_LOG entry:** 2026-08-11 11:10 EDT
+
+## 2026-08-11 11:16 EDT — Agent has only ['finish','think'] tools; every action rejected
+
+- **Symptom:** stage-2 smoke run completed and wrote its probe artifact (34 KB), but every task in the run generated repeated `Agent Error` events with `Tool 'execute_bash' not found. Available: ['finish', 'think']` (also `'execute'`, `'read'`, `'edit'` — all rejected). SDK stuck_detector fired `Action, Error loop detected` on multiple tasks. LLM WAS responding (vLLM returned 200 on `POST /v1/chat/completions`, prompt tokens flowing), but no filesystem or bash tool was wired.
+- **Affected stage / plugin / port:** Phase 0.3 gate-2 · stage-2 · `_probe_coder_sdk` Agent construction.
+- **Root cause:** `agent = Agent(llm=llm, tools=[])` at probes.py:658. The empty tool list means the Agent's tool preset falls back to the auto-registered meta-tools (`finish`, `think`) only — no `execute_bash`, no file-editor. The ADR-0026 v1 harness spec requires the agent to be able to write / edit / bash inside DockerWorkspace, but the probe never wired those in.
+- **Fix applied:** Import `get_default_tools` from `openhands.tools.preset.default`, build `default_tools = get_default_tools(enable_browser=False, enable_sub_agents=False)` once per cell, pass into `Agent(llm=llm, tools=default_tools)`. Assert non-empty to fail fast if a future SDK returns nothing.
+- **Files changed:** bench/runner/probes.py
+- **Related BUILD_LOG entry:** 2026-08-11 11:16 EDT
+
+### Reusable lessons
+
+1. **`Agent(llm=..., tools=[])` is silently non-fatal** — the SDK registers `finish` + `think` automatically and lets the run continue, so the failure only shows up as `Action, Error loop` inside the container's LLM/tool trace, not as a Python exception. Always assert non-empty tool list before launching.
+2. **Grep the DOCKER lines of a stage-2 run for `Tool '...' not found. Available:` before any other diagnosis** — if that line appears, the transport is fine and the wiring is wrong.

@@ -448,10 +448,20 @@ def _probe_coder_sdk(
         from openhands.sdk.event import (  # type: ignore
             ActionEvent, AgentErrorEvent, MessageEvent, ObservationEvent,
         )
+        from openhands.tools.preset.default import get_default_tools  # type: ignore
         from openhands.workspace import DockerWorkspace  # type: ignore
         from pydantic import SecretStr  # type: ignore
     except ImportError as exc:
         raise NotImplementedError(f"SDK import mismatch at runtime: {exc}") from exc
+
+    # Standard coder tool set for stage-2 correctness runs.
+    # `enable_browser=False`: bench containers have no display and we do not
+    # allow network fetches during scored coder tasks.
+    # `enable_sub_agents=False`: keep this a single-agent trace so events
+    # match the harness contract (no TaskToolSet delegation).
+    default_tools = get_default_tools(
+        enable_browser=False, enable_sub_agents=False,
+    )
 
     result = ProbeResult(role="coder")
     tasks = task_set.get("tasks", [])
@@ -655,7 +665,14 @@ def _run_sdk_task(
     hit_iter_cap = False
     run_error: Optional[str] = None
     try:
-        agent = Agent(llm=llm, tools=[])
+        # Fail fast if the tool preset silently returns nothing — an empty
+        # tool list is what caused stage-2 attempt 4 (2026-08-11 EDT) to burn
+        # ~5 min in an Action/Error loop with only ['finish','think'] wired.
+        assert default_tools, (
+            "get_default_tools returned an empty list; refusing to launch "
+            "a coder probe with no filesystem/bash tools"
+        )
+        agent = Agent(llm=llm, tools=default_tools)
         conv = Conversation(
             agent=agent, workspace=ws, callbacks=[_on_event],
             max_iteration_per_run=max_iter,
