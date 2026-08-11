@@ -1817,3 +1817,19 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** `LLM` port (sentinel-value pitfall documented). No new ports.
 - **PORTING_LEDGER / ADR updated:** —
 - **Stop-condition status:** 3.c DoD met (`pass=true` under DockerWorkspace, real winning coder endpoint, real event stream with tool actions and finish). Router-under-RemoteConversation intentionally scoped out and tracked as 3.j.
+
+## 2026-08-11 19:14 EDT — Phase 3.g planner half PASSED (native tool_calls against llama.cpp :8082)
+
+- **Stage / plugin / port:** Phase 3 · Runtime · LLM adapter · planner endpoint (llama.cpp :8082, `--jinja`)
+- **What changed:** Item 3.g planner tool-calling proven. `bench/smoke-phase-3-item-3g-planner/` `pass=true`. Direct `LLM.completion(messages=[Message(...)], tools=[_LLMOnlyTerminalTool])` returned a native OpenAI `tool_calls` array in 2.92 s with `command="echo hello-planner-3g"` and a self-generated `summary`. Confirms the planner endpoint (qwen3_6-27b-q6k-gguf on llama.cpp) speaks native tool-calling correctly — the `--jinja` chat template is in effect. Row-2 pattern (direct LLM, no Conversation/router/DockerWorkspace) isolated the check to the endpoint capability.
+- **Files touched:**
+  - `bench/smoke-phase-3-item-3g-planner/task.md` (new)
+  - `bench/smoke-phase-3-item-3g-planner/run.sh` (new; `_LLMOnlyTerminalTool` local subclass of `ToolDefinition[TerminalAction, TerminalObservation]` with a no-executor `.create()`; predicate relaxed to argument-content check)
+  - `bench/smoke-phase-3-item-3g-planner/recompute_verdict.py` (new; re-scores existing verdict without re-running the LLM call)
+  - `docs/verification/verification-matrix.md` (3.g → ⚠️ partial with coder ✓ + planner ✓; embedder tool-calling framed as not-meaningful; embedding round-trip is a separate item)
+- **Ports / adapters affected:** LLM port (planner endpoint capability confirmed for tool-calling).
+- **PORTING_LEDGER / ADR updated:** —
+- **Stop-condition status:** 3.g planner half met. 3.g remains ⚠️ partial pending an embedder-appropriate verification (embedding round-trip, not tool-calling).
+- **Follow-up learnings:**
+  - `ToolDefinition` is abstract; concrete subclasses must implement `.create()`. `TerminalTool.create()` requires a `ConversationState` and eagerly instantiates a real `TerminalExecutor` — too much machinery for LLM-only tool-calling checks. Solution used here: local minimal subclass with no executor.
+  - The SDK auto-derives the OpenAI tool `name` from the `ToolDefinition` class name (snake_case). If future smokes want to assert a specific tool name, name the class deliberately (e.g. `class Terminal(ToolDefinition[...]): ...` renders as `terminal`).
