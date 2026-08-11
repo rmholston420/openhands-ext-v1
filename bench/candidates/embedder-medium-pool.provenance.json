@@ -1,0 +1,12 @@
+{
+  "$comment": "Embedder-Medium pool. Mechanically extracted from bench/candidates/embedder-fast-pool.json (6 cells) with no elimination between Fast and Medium. Authored 2026-08-11 08:49 EDT retroactively for Phase 0.2 record \u2014 the medium-tier embedder run already completed 2026-08-11 06:05 EDT with verdict at bench/results/verdicts/medium-verdict-embedder-20260811T100541Z.json. Cell definitions copied verbatim from fast-pool.",
+  "tier": "medium",
+  "role": "embedder",
+  "pool_authored_utc": "20260811T124900Z",
+  "sourced_from": "bench/candidates/embedder-fast-pool.json",
+  "adr_anchors": [
+    "adrs/ADR-0016-medium-tier-scoring-rubric-hybrid.md",
+    "adrs/ADR-0017-production-role-selection-pre-medium.md"
+  ],
+  "verdict_file": "bench/results/verdicts/medium-verdict-embedder-20260811T100541Z.json"
+}

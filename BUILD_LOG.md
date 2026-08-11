@@ -1035,3 +1035,18 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none
 - **PORTING_LEDGER / ADR updated:** — (implements ADR-0022; no new ADR)
 - **Stop-condition status:** Phase 0.2 coder + planner authorship met. Ready to run Medium tier via `bench/runner/main.py` against `bench/candidates/{coder,planner}-medium-pool.json`. Sequential swap protocol per ADR-0022 §Decision 4: all 4 coder cells → one large-model teardown → both planner cells. Total runtime estimate ~2.5 hr.
+
+## 2026-08-11 09:16 EDT — Medium pool files reshaped to bare-list (fast-pool convention)
+
+- **Stage / plugin / port:** Phase 0.2 · Medium tier · candidate-file schema
+- **What changed:** `bench/candidates/{coder,planner,embedder}-medium-pool.json` reshaped from `{"tier","role","cells":[...]}` wrapped shape → bare `[...]` list of cell dicts, matching `coder-fast-pool.json` / `planner-fast-pool.json` / `embedder-fast-pool.json` convention. Runner's `_from_candidate_dict` iterates `candidates_raw` as a list at `bench/runner/main.py:643` — dict-wrapped shape iterates keys and hits `TypeError: string indices must be integers, not 'str'` at `row["model"]`. Provenance metadata (`$comment`, `adr_anchors`, `pool_authored_utc`, `sourced_from`, `eliminated_from_fast_pool`) moved to sibling `.provenance.json` files; original wrapped shape remains in git history at commit 1755e76.
+- **Files touched:**
+  - `bench/candidates/coder-medium-pool.json` (reshaped)
+  - `bench/candidates/planner-medium-pool.json` (reshaped)
+  - `bench/candidates/embedder-medium-pool.json` (reshaped for consistency; embedder verdict already locked)
+  - `bench/candidates/coder-medium-pool.provenance.json` (new)
+  - `bench/candidates/planner-medium-pool.provenance.json` (new)
+  - `bench/candidates/embedder-medium-pool.provenance.json` (new)
+- **Ports / adapters affected:** none
+- **PORTING_LEDGER / ADR updated:** — (implementation detail; ADR-0022 unaffected)
+- **Stop-condition status:** Ready for Medium dry-run retry.

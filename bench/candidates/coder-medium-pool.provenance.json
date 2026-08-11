@@ -1,0 +1,12 @@
+{
+  "$comment": "Coder-Medium pool. Mechanically extracted from bench/candidates/coder-fast-pool.json (ADR-0014-locked, 4 cells) with no elimination between Fast and Medium \u2014 ADR-0014 explicitly carries the reinstated 4-cell pool into Medium tier. Authored 2026-08-11 08:49 EDT for Phase 0.2 record. NOT edited: cell definitions copied verbatim from fast-pool. Tier metadata added.",
+  "tier": "medium",
+  "role": "coder",
+  "pool_authored_utc": "20260811T124900Z",
+  "sourced_from": "bench/candidates/coder-fast-pool.json",
+  "adr_anchors": [
+    "adrs/ADR-0011-fast-tier-coder-tool-call-parser-hermes.md",
+    "adrs/ADR-0012-registry-dual-role-30b-thinker.md",
+    "adrs/ADR-0014-coder-fast-pool-reinstate-r2-warning-survivors.md"
+  ]
+}

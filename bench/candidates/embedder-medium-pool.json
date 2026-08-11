@@ -1,84 +1,72 @@
-{
-  "$comment": "Embedder-Medium pool. Mechanically extracted from bench/candidates/embedder-fast-pool.json (6 cells) with no elimination between Fast and Medium. Authored 2026-08-11 08:49 EDT retroactively for Phase 0.2 record — the medium-tier embedder run already completed 2026-08-11 06:05 EDT with verdict at bench/results/verdicts/medium-verdict-embedder-20260811T100541Z.json. Cell definitions copied verbatim from fast-pool.",
-  "tier": "medium",
-  "role": "embedder",
-  "pool_authored_utc": "20260811T124900Z",
-  "sourced_from": "bench/candidates/embedder-fast-pool.json",
-  "adr_anchors": [
-    "adrs/ADR-0016-medium-tier-scoring-rubric-hybrid.md",
-    "adrs/ADR-0017-production-role-selection-pre-medium.md"
-  ],
-  "verdict_file": "bench/results/verdicts/medium-verdict-embedder-20260811T100541Z.json",
-  "cells": [
-    {
-      "model": "qwen3-embedding-0_6b-bf16",
-      "hf_repo": "Qwen/Qwen3-Embedding-0.6B",
-      "format": "safetensors",
-      "runtime": "vllm",
-      "device": "gpu",
-      "role": "embedder",
-      "quant": "bf16",
-      "approx_size_gib": 2,
-      "notes": "0.6B bf16 embedder, vLLM GPU. Pool authored 2026-08-11 04:55 EDT."
-    },
-    {
-      "model": "qwen3-embedding-0_6b-q8-gguf",
-      "hf_repo": "Qwen/Qwen3-Embedding-0.6B-GGUF",
-      "format": "gguf",
-      "runtime": "llama.cpp",
-      "device": "gpu",
-      "role": "embedder",
-      "quant": "q8_0",
-      "gguf_file": "Qwen3-Embedding-0.6B-Q8_0.gguf",
-      "approx_size_gib": 1,
-      "notes": "0.6B Q8_0 embedder, llama.cpp GPU. Pool authored 2026-08-11 04:55 EDT."
-    },
-    {
-      "model": "qwen3-embedding-0_6b-q8-gguf",
-      "hf_repo": "Qwen/Qwen3-Embedding-0.6B-GGUF",
-      "format": "gguf",
-      "runtime": "llama.cpp",
-      "device": "cpu",
-      "role": "embedder",
-      "quant": "q8_0",
-      "gguf_file": "Qwen3-Embedding-0.6B-Q8_0.gguf",
-      "approx_size_gib": 1,
-      "notes": "0.6B Q8_0 embedder, llama.cpp CPU (-ngl 0). Pool authored 2026-08-11 04:55 EDT."
-    },
-    {
-      "model": "qwen3-embedding-4b-bf16",
-      "hf_repo": "Qwen/Qwen3-Embedding-4B",
-      "format": "safetensors",
-      "runtime": "vllm",
-      "device": "gpu",
-      "role": "embedder",
-      "quant": "bf16",
-      "approx_size_gib": 8,
-      "notes": "4B bf16 embedder, vLLM GPU. Pool authored 2026-08-11 04:55 EDT. WINNER per verdict 20260811T100541Z (nDCG@10 macro 0.5505)."
-    },
-    {
-      "model": "qwen3-embedding-4b-q8-gguf",
-      "hf_repo": "Qwen/Qwen3-Embedding-4B-GGUF",
-      "format": "gguf",
-      "runtime": "llama.cpp",
-      "device": "gpu",
-      "role": "embedder",
-      "quant": "q8_0",
-      "gguf_file": "Qwen3-Embedding-4B-Q8_0.gguf",
-      "approx_size_gib": 5,
-      "notes": "4B Q8_0 embedder, llama.cpp GPU. Pool authored 2026-08-11 04:55 EDT."
-    },
-    {
-      "model": "qwen3-embedding-4b-q8-gguf",
-      "hf_repo": "Qwen/Qwen3-Embedding-4B-GGUF",
-      "format": "gguf",
-      "runtime": "llama.cpp",
-      "device": "cpu",
-      "role": "embedder",
-      "quant": "q8_0",
-      "gguf_file": "Qwen3-Embedding-4B-Q8_0.gguf",
-      "approx_size_gib": 5,
-      "notes": "4B Q8_0 embedder, llama.cpp CPU (-ngl 0). Pool authored 2026-08-11 04:55 EDT. Production embedder per ADR-0017 amendment #3 (CPU device to preserve full VRAM for large model)."
-    }
-  ]
-}
+[
+  {
+    "model": "qwen3-embedding-0_6b-bf16",
+    "hf_repo": "Qwen/Qwen3-Embedding-0.6B",
+    "format": "safetensors",
+    "runtime": "vllm",
+    "device": "gpu",
+    "role": "embedder",
+    "quant": "bf16",
+    "approx_size_gib": 2,
+    "notes": "0.6B bf16 embedder, vLLM GPU. Pool authored 2026-08-11 04:55 EDT."
+  },
+  {
+    "model": "qwen3-embedding-0_6b-q8-gguf",
+    "hf_repo": "Qwen/Qwen3-Embedding-0.6B-GGUF",
+    "format": "gguf",
+    "runtime": "llama.cpp",
+    "device": "gpu",
+    "role": "embedder",
+    "quant": "q8_0",
+    "gguf_file": "Qwen3-Embedding-0.6B-Q8_0.gguf",
+    "approx_size_gib": 1,
+    "notes": "0.6B Q8_0 embedder, llama.cpp GPU. Pool authored 2026-08-11 04:55 EDT."
+  },
+  {
+    "model": "qwen3-embedding-0_6b-q8-gguf",
+    "hf_repo": "Qwen/Qwen3-Embedding-0.6B-GGUF",
+    "format": "gguf",
+    "runtime": "llama.cpp",
+    "device": "cpu",
+    "role": "embedder",
+    "quant": "q8_0",
+    "gguf_file": "Qwen3-Embedding-0.6B-Q8_0.gguf",
+    "approx_size_gib": 1,
+    "notes": "0.6B Q8_0 embedder, llama.cpp CPU (-ngl 0). Pool authored 2026-08-11 04:55 EDT."
+  },
+  {
+    "model": "qwen3-embedding-4b-bf16",
+    "hf_repo": "Qwen/Qwen3-Embedding-4B",
+    "format": "safetensors",
+    "runtime": "vllm",
+    "device": "gpu",
+    "role": "embedder",
+    "quant": "bf16",
+    "approx_size_gib": 8,
+    "notes": "4B bf16 embedder, vLLM GPU. Pool authored 2026-08-11 04:55 EDT. WINNER per verdict 20260811T100541Z (nDCG@10 macro 0.5505)."
+  },
+  {
+    "model": "qwen3-embedding-4b-q8-gguf",
+    "hf_repo": "Qwen/Qwen3-Embedding-4B-GGUF",
+    "format": "gguf",
+    "runtime": "llama.cpp",
+    "device": "gpu",
+    "role": "embedder",
+    "quant": "q8_0",
+    "gguf_file": "Qwen3-Embedding-4B-Q8_0.gguf",
+    "approx_size_gib": 5,
+    "notes": "4B Q8_0 embedder, llama.cpp GPU. Pool authored 2026-08-11 04:55 EDT."
+  },
+  {
+    "model": "qwen3-embedding-4b-q8-gguf",
+    "hf_repo": "Qwen/Qwen3-Embedding-4B-GGUF",
+    "format": "gguf",
+    "runtime": "llama.cpp",
+    "device": "cpu",
+    "role": "embedder",
+    "quant": "q8_0",
+    "gguf_file": "Qwen3-Embedding-4B-Q8_0.gguf",
+    "approx_size_gib": 5,
+    "notes": "4B Q8_0 embedder, llama.cpp CPU (-ngl 0). Pool authored 2026-08-11 04:55 EDT. Production embedder per ADR-0017 amendment #3 (CPU device to preserve full VRAM for large model)."
+  }
+]
