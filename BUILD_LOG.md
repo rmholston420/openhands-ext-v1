@@ -2071,3 +2071,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** no (test-harness fix; ADR-0034 and ADR-0036 unchanged).
 - **Stop-condition status:** in-progress (needs one clean 22:42-equivalent run with `pass=true` to close Phase 3.j).
+
+## 2026-08-11 22:46 EDT — Phase 3.j smoke false-negative fix round 2: switch OpenAI-fallback check from `api.openai.com` to `AuthenticationError`
+
+- **Stage / plugin / port:** Phase 3 sign-off · item 3.j · smoke harness.
+- **What changed:** The 22:44 run confirmed the router works end-to-end (stdout shows every LLM call routed to coder :8100; task completed in 3.27s; `rebuild_preserves_coder_url=true`), but `events_mention_openai_host=true` because the substring `api.openai.com` appears in inert content: litellm's cost-calculation warning docstring and OpenHands' SystemPromptEvent doc URLs. Switched the load-bearing negative check to `events_mention_openai_auth_error` (matches `AuthenticationError` / `Incorrect API key` / `openai.AuthenticationError`) — the actual litellm fallback signature. Retained `events_mention_openai_host` as diagnostic-only.
+- **Files touched:** `bench/smoke-phase-3-item-3j/run.sh`, `BUILD_LOG.md`, `DEBUG_LOG.md`.
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** no.
+- **Stop-condition status:** in-progress (needs one clean run with `pass=true`).

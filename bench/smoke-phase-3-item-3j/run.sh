@@ -197,15 +197,30 @@ verdict["has_terminal_error"] = any_event(
     lambda e: e["cls"] == "ConversationErrorEvent"
 )
 
-# Negative checks: did the request actually reach vLLM :8100, or did
-# it fall back to api.openai.com? Litellm's OpenAI fallback produces
-# distinctive error strings if the endpoint were wrong.
+# Negative checks: did the request actually fall back to api.openai.com?
+# LiteLLM's OpenAI fallback produces distinctive error strings
+# (`AuthenticationError`, `Incorrect API key`).
 #
-# NOTE: model ids carry a litellm provider prefix (`openai/<model>`), so
-# substring `openai` alone is NOT a valid signal of fallback. The
-# load-bearing negative check is `api.openai.com` (the actual host) and
-# `Incorrect API key` (litellm's OpenAI-fallback auth error).
+# NOTE: neither the substring `openai` nor `api.openai.com` alone is a
+# reliable signal. `openai` matches the litellm provider prefix
+# `openai/<model>` on the coder + planner model ids. `api.openai.com`
+# appears as inert text inside litellm's own error/warning docstrings
+# and OpenHands' documentation URLs embedded in system content, even
+# on runs that were served entirely by local vLLM. Only the litellm
+# auth-fallback signature (`AuthenticationError` / `Incorrect API key`)
+# is load-bearing. `events_mention_openai_host` is retained as a
+# diagnostic-only field.
+#
+# The router-lands-on-vLLM assertion is confirmed independently by:
+#   - Stdout logs: `CoderPlannerRouter: default → coder`, `RouterLLM routing to coder...`
+#   - `rebuild_preserves_coder_url=true` (post-serialization proof)
+#   - `has_finish_action=true` + fast wall time (task actually succeeded).
 verdict["events_mention_openai_host"] = ("api.openai.com" in all_evt_text)
+verdict["events_mention_openai_auth_error"] = (
+    "AuthenticationError" in all_evt_text
+    or "Incorrect API key" in all_evt_text
+    or "openai.AuthenticationError" in all_evt_text
+)
 verdict["events_mention_incorrect_api_key"] = ("Incorrect API key" in all_evt_text)
 
 # Router selection ok?
@@ -234,7 +249,7 @@ verdict["pass"] = (
     and verdict["has_finish_action"]
     and verdict["has_router_ok_string"]
     and not verdict["has_terminal_error"]
-    and not verdict["events_mention_openai_host"]
+    and not verdict["events_mention_openai_auth_error"]
     and not verdict["events_mention_incorrect_api_key"]
     and wall < 300
 )

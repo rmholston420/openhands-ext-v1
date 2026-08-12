@@ -856,3 +856,13 @@ Entry format:
 - **Files changed:** `bench/smoke-phase-3-item-3j/run.sh`.
 - **Related BUILD_LOG entry:** 2026-08-11 22:45 EDT (this fix).
 - **Related DEBUG_LOG search terms (for future):** `events_mention_openai`, `litellm openai/ prefix`, `provider prefix false positive`, `api.openai.com negative check`, `router false negative pass criterion`.
+
+## 2026-08-11 22:46 EDT — 3.j smoke false-negative round 2: `api.openai.com` substring in inert event content (litellm/openhands docstrings)
+
+- **Symptom:** After 22:45 fix, 3.j run 20260811_224406 still `pass=false` with `events_mention_openai_host=true`. Task completed correctly (`rebuild_is_router=true`, both base URLs preserved, `router-ok-3j` file created + verified, finish called, `wall_seconds=3.27`, stdout shows `CoderPlannerRouter: default → coder` + `RouterLLM routing to coder...` at every step, no AuthenticationError, no `Incorrect API key`).
+- **Affected stage / plugin / port:** Phase 3 sign-off · item 3.j · smoke harness pass criteria.
+- **Root cause:** The substring `api.openai.com` appears in inert event content on successful local-vLLM runs. It shows up in (a) litellm's own error/warning docstrings that get serialized when telemetry logs the cost-calculation warning (`Cost calculation failed: This model isn't mapped yet. ...`), and (b) OpenHands' `SystemPromptEvent`/`MessageEvent` content that references OpenAI docs URLs. Neither is evidence of a live call to OpenAI. Only the litellm auth-fallback signature (`AuthenticationError` / `Incorrect API key`) reliably distinguishes an actual OpenAI fallback from inert doc strings.
+- **Fix applied:** Kept `events_mention_openai_host` as a diagnostic-only field (not in `pass`). Added `events_mention_openai_auth_error` matching the litellm fallback signatures (`AuthenticationError`, `Incorrect API key`, `openai.AuthenticationError`). `pass` now checks the auth-error field. The independent evidence that the router actually landed on vLLM is: stdout `RouterLLM routing to coder...`, `rebuild_preserves_coder_url=true` (post-serialization proof), `has_finish_action=true` with fast wall time.
+- **Files changed:** `bench/smoke-phase-3-item-3j/run.sh`.
+- **Related BUILD_LOG entry:** 2026-08-11 22:46 EDT.
+- **Related DEBUG_LOG search terms (for future):** `api.openai.com substring false positive`, `litellm cost warning docstring`, `SystemPromptEvent OpenAI URL`, `AuthenticationError`, `openai auth fallback signature`, `router false negative round 2`.
