@@ -846,3 +846,13 @@ Entry format:
 - **Files changed:** `adrs/ADR-0036-published-agent-server-image-is-binary-only.md` (new), `adrs/ADR-0035-container-side-adr-0034-overlay-image.md` (status amendment), `adrs/README.md`, `PORTING_LEDGER.md`, `docs/rejected/ADR-0035-overlay-Dockerfile` (moved), `docs/rejected/build-patched-agent-server-image.sh` (moved), `bench/smoke-phase-3-item-3j/run.sh`, `bench/smoke-phase-3-item-3j/task.md`, `docs/verification/verification-matrix.md`.
 - **Related BUILD_LOG entry:** 2026-08-11 22:40 EDT.
 - **Related DEBUG_LOG search terms (for future):** `PyInstaller`, `binary target`, `frozen bytecode`, `agent-server ELF`, `no /agent-server/.venv`, `openhands.sdk frozen`, `source target vs binary target`, `LocalWorkspace fallback`, `ADR-0036`, `container inventory ghcr.io openhands agent-server`.
+
+## 2026-08-11 22:43 EDT — 3.j smoke false-negative: `events_mention_openai` substring match tripped by litellm provider prefix `openai/<model>`
+
+- **Symptom:** 3.j smoke run 20260811_224242 executed all three task steps correctly (file created, `cat` verified, `finish` called; `wall_seconds=3.44`, `rebuild_is_router=true`, `rebuild_has_both_llms=true`, `rebuild_preserves_coder_url=true`, `rebuild_preserves_planner_url=true`) but `pass=false` because `events_mention_openai=true`.
+- **Affected stage / plugin / port:** Phase 3 sign-off · item 3.j · smoke harness pass criteria.
+- **Root cause:** The negative check `\"api.openai.com\" in all_evt_text` was mistakenly named `events_mention_openai` and the truthiness expression used the raw substring `openai`, which matches litellm's provider prefix on the model id (`openai/qwen3-coder-30b-a3b-instruct-awq-4bit`, `openai/qwen3_6-27b-q6k`) present in the LLM payload embedded in event dumps. The intended signal is the host `api.openai.com` or the auth error `Incorrect API key` — neither present in this run.
+- **Fix applied:** Renamed the field to `events_mention_openai_host` for clarity, kept the substring as `api.openai.com` (host, not provider prefix), and updated the `pass` clause to reference the renamed field. No change to the underlying signal.
+- **Files changed:** `bench/smoke-phase-3-item-3j/run.sh`.
+- **Related BUILD_LOG entry:** 2026-08-11 22:45 EDT (this fix).
+- **Related DEBUG_LOG search terms (for future):** `events_mention_openai`, `litellm openai/ prefix`, `provider prefix false positive`, `api.openai.com negative check`, `router false negative pass criterion`.

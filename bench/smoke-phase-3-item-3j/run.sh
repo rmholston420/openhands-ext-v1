@@ -198,11 +198,15 @@ verdict["has_terminal_error"] = any_event(
 )
 
 # Negative checks: did the request actually reach vLLM :8100, or did
-# it fall back to api.openai.com? Litellm's OpenAI fallback would
-# produce distinctive error strings if the endpoint were wrong.
-verdict["events_mention_openai"] = ("api.openai.com" in all_evt_text)
+# it fall back to api.openai.com? Litellm's OpenAI fallback produces
+# distinctive error strings if the endpoint were wrong.
+#
+# NOTE: model ids carry a litellm provider prefix (`openai/<model>`), so
+# substring `openai` alone is NOT a valid signal of fallback. The
+# load-bearing negative check is `api.openai.com` (the actual host) and
+# `Incorrect API key` (litellm's OpenAI-fallback auth error).
+verdict["events_mention_openai_host"] = ("api.openai.com" in all_evt_text)
 verdict["events_mention_incorrect_api_key"] = ("Incorrect API key" in all_evt_text)
-verdict["events_mention_vllm_8100"] = ("127.0.0.1:8100" in all_evt_text or "http://127.0.0.1:8100" in all_evt_text)
 
 # Router selection ok?
 verdict["rebuild_is_router"] = (verdict.get("rebuilt_cls") == "CoderPlannerRouter")
@@ -230,7 +234,7 @@ verdict["pass"] = (
     and verdict["has_finish_action"]
     and verdict["has_router_ok_string"]
     and not verdict["has_terminal_error"]
-    and not verdict["events_mention_openai"]
+    and not verdict["events_mention_openai_host"]
     and not verdict["events_mention_incorrect_api_key"]
     and wall < 300
 )

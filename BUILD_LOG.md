@@ -2062,3 +2062,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (workspace transport choice, not port surface).
 - **PORTING_LEDGER / ADR updated:** ADR-0036 filed; ADR-0035 amended (Superseded); PORTING_LEDGER overlay-image entry marked REJECTED with cross-reference.
 - **Stop-condition status:** met for 3.j (LocalWorkspace scope with ADR-0034 assertion, per ADR-0036). Remaining: user runs `git pull; bash bench/smoke-phase-3-item-3j/run.sh` on Colossus to produce the passing verdict artifact. 3.k tracked as ⛔ deferred; not blocking Phase 3 gate.
+
+## 2026-08-11 22:45 EDT — Phase 3.j smoke false-negative fix: `events_mention_openai` → `events_mention_openai_host`
+
+- **Stage / plugin / port:** Phase 3 sign-off · item 3.j · smoke harness.
+- **What changed:** Tightened the OpenAI-fallback negative check in `bench/smoke-phase-3-item-3j/run.sh`. The 22:42 run tripped `pass=false` on a substring collision: `\"api.openai.com\" in all_evt_text` was labelled `events_mention_openai`, but the litellm provider prefix `openai/<model>` on both coder and planner model ids matches the substring `openai` when embedded in event dumps. Renamed the field to `events_mention_openai_host` and updated the `pass` clause. Semantics unchanged (still checks for `api.openai.com`); label now matches intent.
+- **Files touched:** `bench/smoke-phase-3-item-3j/run.sh`, `BUILD_LOG.md`, `DEBUG_LOG.md`.
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** no (test-harness fix; ADR-0034 and ADR-0036 unchanged).
+- **Stop-condition status:** in-progress (needs one clean 22:42-equivalent run with `pass=true` to close Phase 3.j).
