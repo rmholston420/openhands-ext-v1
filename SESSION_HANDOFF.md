@@ -1,36 +1,41 @@
-# OpenHands-Ext v1 — Session Handoff (2026-08-11 23:07 EDT)
+# OpenHands-Ext v1 — Session Handoff — 2026-08-11 23:22 EDT
 
 ## Current build-sequencing position
-- **Stage / phase:** Phase 9 (Loop Guard) — in progress; awaits smoke PASS.
-- **Plugin / kernel component:** vendored `openhands-sdk` `StuckDetector` extension (ADR-0037).
-- **Port(s) in progress:** none new. Extends the same vendored openhands-sdk tree already ported by ADR-0034; the new scenario slots into `is_stuck()` via `LocalConversation._check_stuck_or_nudge`.
+
+- **Stage / phase:** Phase 9 (Loop Guard) — **SIGNED OFF**. Next up: **Phase 5 — GPU Telemetry MCP**.
+- **Plugin / kernel component:** none active. Phase 5 will introduce a new MCP server (GPU telemetry: `nvidia-smi` samples + VRAM / thermal readings exposed as MCP tools/resources).
+- **Port(s) in progress:** none.
 
 ## Completed this session
-- Chose Phase 9→5 ROI order; committed to Phase 9 first.
-- Design: **Fork A** (host-process, LocalWorkspace scope) + **option (b)** exact+normalized detection + **option (ii)** stop-the-run via `is_stuck()`.
-- Inspected vendored SDK — confirmed upstream already ships `StuckDetector` with 5 scenarios, wired in `LocalConversation._check_stuck_or_nudge` (line 655). Gap vs Phase 9 DoD is only the "near-identical" clause.
-- Selected **Path B** (vendor+patch upstream) over Path A (do nothing) or Path C (full rewrite). Selected idempotent Python transformer over unified diff for the two-file, five-hunk shape.
-- Filed **ADR-0037** (Proposed): extend `StuckDetector` with a `near_identical: int = Field(default=3)` threshold + `_is_stuck_near_identical` scenario 6.
-- Added `scripts/apply-stuckdetector-patch.py` (idempotent, string-anchored, sentinel-verified).
-- Extended `scripts/vendor-openhands-sdk.sh` to invoke the transformer after the ADR-0034 patch and verify four ADR-0037 sentinels.
-- Added contract test `tests/sdk_patch/test_stuckdetector_near_identical.py` (7 cases).
-- Added smoke bench `bench/smoke-phase-9-loop-guard/{run.sh, task.md}` — deterministic in-process, no LLM.
-- Updated `adrs/README.md`, `PORTING_LEDGER.md`, `docs/verification/verification-matrix.md` (Phase 9 row), `BUILD_LOG.md`.
+
+- ADR-0037 authored (near-identical StuckDetector scenario; string-anchored Python transformer; 4-sentinel verification).
+- `scripts/apply-stuckdetector-patch.py` — idempotent transformer over vendored SDK `openhands/sdk/conversation/{types.py, stuck_detector.py}`.
+- `scripts/vendor-openhands-sdk.sh` extended to run + verify the ADR-0037 patch after the ADR-0034 patch, then editable reinstall.
+- Contract test suite `tests/sdk_patch/test_stuckdetector_near_identical.py` (9 cases: sentinel + positives + negatives).
+- Smoke `bench/smoke-phase-9-loop-guard/run.sh` (deterministic in-process; no LLM / vLLM / Docker).
+- **Bug fix** (commit `679e9af`): test + smoke fixtures rebuilt on SDK `MessageToolCall` (not raw litellm `ChatCompletionMessageToolCall`). Detector patch bytes unchanged.
+- **Smoke PASS on Colossus**: 9/9 unit tests + end-to-end near-identical flag; below-threshold and different-content negatives correct.
+- ADR-0037 status: Proposed → **Ratified** 2026-08-11.
+- Verification matrix row 9.a → ✅.
+- BUILD_LOG entries at 23:07, 23:19, 23:22 EDT. DEBUG_LOG entry at 23:18 EDT.
+- PORTING_LEDGER: StuckDetector patch row (already VENDORED-PATCHED at 23:07 EDT).
 
 ## Remaining before current Definition of Done
-- User: `cd ~/dev/openhands-ext-v1 && git pull`.
-- User: `bash scripts/vendor-openhands-sdk.sh` — expected: both ADR-0034 (3 anchors) and ADR-0037 (4 sentinels) verified; SDK re-installed editable.
-- User: `bash bench/smoke-phase-9-loop-guard/run.sh` — expected: all 3 steps PASS, final line `OK Phase 9 smoke PASSED (ADR-0037)`.
-- On smoke PASS: flip ADR-0037 status to **Ratified**, flip verification-matrix row 9.a to ✅, commit + push, then move to Phase 5 (GPU Telemetry MCP).
+
+- Phase 9 DoD met.
 
 ## Open questions / awaiting user answer
-- None.
+
+- Phase 5 (GPU Telemetry MCP) design not yet started. Open questions when we begin:
+  1. Poll-based vs event-stream sampling cadence?
+  2. Which telemetry fields are in scope? (util, VRAM used/free, temp, power, per-process VRAM) Suggest all five as MVP.
+  3. Transport: SSE (matches upstream OpenHands MCP defaults) vs stdio? SSE preferred for a long-running host telemetry server.
+  4. Vendor candidate: are there permissively-licensed nvidia-smi MCP servers already? Should scan before hand-building.
 
 ## Exact next action
-User (on Colossus):
-```bash
-cd ~/dev/openhands-ext-v1 && git pull && \
-  bash scripts/vendor-openhands-sdk.sh && \
-  bash bench/smoke-phase-9-loop-guard/run.sh
-```
-Paste the last ~40 lines of output back — I'll flip ADR-0037 / matrix to Ratified/✅ and hand off to Phase 5.
+
+**When user resumes:**
+1. Scope Phase 5 GPU Telemetry MCP against `Kosmos-Build-Spec-v25.md` (or its OpenHands-Ext analog).
+2. Search for an existing permissively-licensed `nvidia-smi` MCP server before hand-building.
+3. Confirm answers to the four open questions above.
+4. Author ADR-0038 draft before any code.

@@ -2120,3 +2120,16 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (test fixtures only; StuckDetector patch bytes identical).
 - **PORTING_LEDGER / ADR updated:** none (ADR-0037 detector logic unchanged; no ledger row affected).
 - **Stop-condition status:** in-progress — pending clean smoke on Colossus.
+
+## 2026-08-11 23:22 EDT — Phase 9 Loop Guard (ADR-0037) Ratified on smoke PASS
+
+- **Stage / plugin / port:** Phase 9 · StuckDetector patch (ADR-0037) · vendored openhands-sdk v1.41.0.
+- **What changed:** Ratified ADR-0037 on clean Colossus smoke: 9/9 contract tests + end-to-end (3 near-identical → flagged; 2-call and different-content did not). No detector-code change vs prior commit; test/smoke fixtures use SDK `MessageToolCall` (matches live shape).
+- **Files touched:**
+  - `adrs/ADR-0037-stuckdetector-near-identical-scenario.md` (Proposed → Ratified)
+  - `adrs/README.md` (index row → Ratified 2026-08-11)
+  - `docs/verification/verification-matrix.md` (row 9.a → ✅)
+  - `SESSION_HANDOFF.md` (overwritten for Phase 9 sign-off; next = Phase 5 GPU Telemetry MCP)
+- **Ports / adapters affected:** none new.
+- **PORTING_LEDGER / ADR updated:** ADR-0037 Ratified; PORTING_LEDGER row unchanged (already listed as VENDORED-PATCHED at 2026-08-11 23:07 EDT).
+- **Stop-condition status:** met (Phase 9 DoD row 9.a green).

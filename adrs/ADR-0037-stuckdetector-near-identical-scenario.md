@@ -1,6 +1,6 @@
 # ADR-0037 — Extend `StuckDetector` with a near-identical scenario (Phase 9 Loop Guard)
 
-**Status:** Proposed
+**Status:** Ratified · 2026-08-11 23:20 EDT (smoke PASS on Colossus: 9/9 contract tests + end-to-end flag)
 **Lock-in phase:** Phase 9 (Loop Guard)
 **Supersedes:** —
 

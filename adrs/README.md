@@ -45,7 +45,7 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0034 | [Vendor openhands-sdk to patch `LLM` for `DiscriminatedUnion` serialization (Phase 3.j: RouterLLM subclass survives RemoteConversation boundary)](ADR-0034-llm-discriminated-union-vendored-sdk-patch.md) | Ratified | Phase 3.j |
 | 0035 | [Container-side ADR-0034 patch via overlay agent-server image (Phase 3.j: patch must live in both host venv and DockerWorkspace container)](ADR-0035-container-side-adr-0034-overlay-image.md) | Superseded by ADR-0036 | Phase 3.j |
 | 0036 | [Published `agent-server:*-python` images are PyInstaller binary; 3.j runs under LocalWorkspace; source-target rebuild deferred to 3.k](ADR-0036-published-agent-server-image-is-binary-only.md) | Ratified | Phase 3.j · Phase 3.k |
-| 0037 | [Extend `StuckDetector` with a near-identical scenario (Phase 9 Loop Guard)](ADR-0037-stuckdetector-near-identical-scenario.md) | Proposed (Ratifies on smoke PASS) | Phase 9 |
+| 0037 | [Extend `StuckDetector` with a near-identical scenario (Phase 9 Loop Guard)](ADR-0037-stuckdetector-near-identical-scenario.md) | Ratified 2026-08-11 | Phase 9 |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 
