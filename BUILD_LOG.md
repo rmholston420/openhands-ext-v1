@@ -1941,3 +1941,25 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
   - Script uses `patch(1)` not `git apply` because the vendor tree has its `.git` stripped (deliberate — makes it a plain source dir, not a nested repo).
   - Script hard-fails if the pinned SHA doesn't match after clone (protects against upstream tag movement) or if the patch's anchor lines aren't found (protects against silent partial application).
   - SDK upgrades (v1.42.0 exists but has the same bug) require: (1) bumping `PIN_TAG` and `PIN_SHA` in the script, (2) re-running to verify the patch still applies, (3) if it doesn't, updating the patch file, (4) re-running 3.j smoke, (5) amending ADR-0034. Documented in ADR-0034 §9.
+
+## 2026-08-11 21:52 EDT — Vendor script PASSED on Colossus + contract test added
+
+- **Stage / plugin / port:** Phase 3.j · Runtime · openhands-sdk (vendored, editable install) · contract test
+- **What changed:**
+  - `scripts/vendor-openhands-sdk.sh` executed successfully on Colossus at 2026-08-11T21:47:32-04:00. All verification gates passed:
+    - `OK: HEAD == ca46719d5e9a0b0af79f7de2da37067a5b94563c`
+    - `OK: patch applied` (both anchors verified: import + class line)
+    - `openhands.sdk.__file__: /home/rmholston/dev/openhands-ext-v1/vendor/openhands-sdk/openhands-sdk/openhands/sdk/__init__.py`
+    - `LLM MRO: ['LLM', 'DiscriminatedUnionMixin', 'OpenHandsModel', 'BaseModel', 'RetryMixin', 'NonNativeToolCallingMixin', 'object']`
+    - Provenance recorded: `bench/results/vendor-oh-sdk-20260812T014743Z.json`
+  - Added contract test: `tests/vendor/test_llm_discriminated_union.py`. Three tests: (a) LLM has DiscriminatedUnionMixin in MRO, (b) CoderPlannerRouter survives `LLM.model_validate(dumped_router)` round-trip with `llms_for_routing` intact, (c) plain LLM still round-trips as base LLM.
+- **Files touched:**
+  - `tests/vendor/__init__.py` (new)
+  - `tests/vendor/test_llm_discriminated_union.py` (new)
+  - `BUILD_LOG.md` (this entry)
+- **Ports / adapters affected:** none (test only).
+- **PORTING_LEDGER / ADR updated:** none.
+- **Stop-condition status:** in-progress. Contract test needs to execute-and-PASS on Colossus before ADR-0034 ratification. NOT yet run.
+- **Notes:**
+  - **Concern flagged for verification:** the `_validate_subtype` wrap-validator in `DiscriminatedUnionMixin` (`openhands-sdk/openhands/sdk/utils/models.py:207-252`) dispatches to subclasses only when `_is_abstract(cls)` returns True (either ABC in bases or has abstract methods). Base `LLM` after our patch is `LLM(DiscriminatedUnionMixin, RetryMixin, NonNativeToolCallingMixin):` — concrete, no ABC, no abstractmethods. In the concrete-branch of `_validate_subtype`, there's an `assert kind is None or kind == cls.__name__` which would fail if we hand `kind="CoderPlannerRouter"` to `LLM.model_validate`. The contract test will surface this if the patch as-is is insufficient. Contingency: adding `ABC` to LLM's bases in the patch (or an abstract method) would trigger the subclass-dispatch branch. See DEBUG_LOG entry to be written after the test run.
+  - Non-blocking pip warning during install: opentelemetry-* downgraded from 1.44.0 → 1.39.1 due to `lmnr<0.8.0` transitive constraint. `opentelemetry-exporter-otlp` meta-package now has version-conflict warnings but we don't use it directly. Will log to DEBUG_LOG separately if it causes downstream issues.
