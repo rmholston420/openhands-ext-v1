@@ -1963,3 +1963,29 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Notes:**
   - **Concern flagged for verification:** the `_validate_subtype` wrap-validator in `DiscriminatedUnionMixin` (`openhands-sdk/openhands/sdk/utils/models.py:207-252`) dispatches to subclasses only when `_is_abstract(cls)` returns True (either ABC in bases or has abstract methods). Base `LLM` after our patch is `LLM(DiscriminatedUnionMixin, RetryMixin, NonNativeToolCallingMixin):` — concrete, no ABC, no abstractmethods. In the concrete-branch of `_validate_subtype`, there's an `assert kind is None or kind == cls.__name__` which would fail if we hand `kind="CoderPlannerRouter"` to `LLM.model_validate`. The contract test will surface this if the patch as-is is insufficient. Contingency: adding `ABC` to LLM's bases in the patch (or an abstract method) would trigger the subclass-dispatch branch. See DEBUG_LOG entry to be written after the test run.
   - Non-blocking pip warning during install: opentelemetry-* downgraded from 1.44.0 → 1.39.1 due to `lmnr<0.8.0` transitive constraint. `opentelemetry-exporter-otlp` meta-package now has version-conflict warnings but we don't use it directly. Will log to DEBUG_LOG separately if it causes downstream issues.
+
+## 2026-08-11 22:05 EDT — ADR-0034 patch expanded to override `_validate_subtype` (concern from previous entry fired)
+
+- **Stage / plugin / port:** Phase 3.j · Runtime · openhands-sdk vendored patch · ADR-0034 amendment
+- **What changed:**
+  - Contract test run from previous entry FAILED on `test_router_subclass_survives_llm_annotated_round_trip` exactly as the "concern flagged" note predicted. Base `LLM` is concrete, so `DiscriminatedUnionMixin._validate_subtype`'s concrete branch fires `assert kind is None or kind == cls.__name__` and rejects a `kind="CoderPlannerRouter"` payload validated against `LLM`.
+  - Second test failure (`test_base_llm_still_round_trips_as_base_llm`) was a test-authoring bug: the actual LLM field is `usage_id`, not `service_id`. Fixed.
+  - Making LLM abstract via `ABC` in bases was considered and rejected: `resolve_kind("LLM")` searches subclasses only, so an abstract LLM cannot round-trip to itself; also breaks upstream and user-code `LLM(...)` instantiation.
+  - **Resolution:** patch now also inserts an override of `_validate_subtype` inside the LLM class. Pydantic recognizes the same-name `@model_validator(mode="wrap")` as a subclass override of the inherited mixin validator (verified via a minimal reproducer). The override dispatches to `cls.resolve_kind(kind)` on subclass discriminators; strips the computed `kind` field otherwise; falls through to the pydantic handler.
+  - Simulation of the override against a pure-Python model of `DiscriminatedUnionMixin` PASSES all three round-trip cases (base LLM, router via base annotation, router via own class).
+  - Patch grew from ~2 lines to ~35 lines (still one file: `openhands-sdk/openhands/sdk/llm/llm.py`).
+- **Files touched:**
+  - `patches/openhands-sdk-llm-discriminated-union.patch` (regenerated; adds override hunk at line ~889 of llm.py)
+  - `scripts/vendor-openhands-sdk.sh` (adds a third patch-verification grep for `"ADR-0034 override of"`)
+  - `adrs/ADR-0034-llm-discriminated-union-vendored-sdk-patch.md` (2 amendments: new STATUS AMENDMENT block at top; patch-surface bullet extended)
+  - `tests/sdk_patch/test_llm_discriminated_union.py` (fixed `service_id` → `usage_id`)
+  - `BUILD_LOG.md` (this entry)
+- **Ports / adapters affected:** none (still vendor patch; no port change).
+- **PORTING_LEDGER / ADR updated:** ADR-0034 amended. `PORTING_LEDGER.md` entry unchanged (patch file path unchanged).
+- **Stop-condition status:** in-progress. Colossus needs to re-run vendor script (regenerates tree, applies new patch) and re-run contract test. Cannot ratify ADR-0034 until all 3 tests pass.
+- **Next action on Colossus:**
+    ```
+    cd ~/dev/openhands-ext-v1 && git pull --ff-only
+    bash scripts/vendor-openhands-sdk.sh
+    .venv/bin/python -m pytest tests/sdk_patch/test_llm_discriminated_union.py -v
+    ```

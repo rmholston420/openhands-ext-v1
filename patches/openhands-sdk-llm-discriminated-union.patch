@@ -1,5 +1,5 @@
---- a/openhands-sdk/openhands/sdk/llm/llm.py	2026-08-12 01:43:29.028824304 +0000
-+++ b/openhands-sdk/openhands/sdk/llm/llm.py	2026-08-12 01:43:29.040824304 +0000
+--- a/openhands-sdk/openhands/sdk/llm/llm.py	2026-08-12 01:56:53.712824304 +0000
++++ b/openhands-sdk/openhands/sdk/llm/llm.py	2026-08-12 01:57:07.768824304 +0000
 @@ -117,6 +117,7 @@
      litellm_call_kwargs,
  )
@@ -17,3 +17,41 @@
      """Language model interface for OpenHands agents.
  
      The LLM class provides a unified interface for interacting with various
+@@ -888,6 +889,37 @@
+         finally:
+             _serialized_is_subscription.reset(token)
+ 
++    @model_validator(mode="wrap")
++    @classmethod
++    def _validate_subtype(cls, data, handler, info):
++        """ADR-0034 override of ``DiscriminatedUnionMixin._validate_subtype``.
++
++        ``LLM`` is a concrete base with subclasses (e.g. ``RouterLLM``,
++        ``CoderPlannerRouter``). The default mixin only dispatches to
++        subclasses when the base is abstract (ABC in bases or an
++        ``@abstractmethod``); its concrete branch asserts that the
++        discriminator matches ``cls.__name__``, which fails on
++        ``LLM.model_validate({..., "kind": "CoderPlannerRouter"})``.
++
++        We can\'t make ``LLM`` abstract without breaking widespread
++        ``LLM(...)`` instantiation in existing user code. Instead, this
++        override adds subclass dispatch on the concrete base while
++        preserving plain-``LLM`` round-trip semantics.
++        """
++        if isinstance(data, cls):
++            return data
++        if isinstance(data, dict):
++            kind = data.get("kind")
++            if kind and kind != cls.__name__:
++                subclass = cls.resolve_kind(kind)
++                data_clean = {k: v for k, v in data.items() if k != "kind"}
++                return subclass.model_validate(data_clean, context=info.context)
++            if kind == cls.__name__:
++                # Strip computed discriminator so pydantic doesn\'t choke on
++                # the read-only ``@computed_field`` value coming back in.
++                data = {k: v for k, v in data.items() if k != "kind"}
++        return handler(data)
++
+     def restore_metrics(self, metrics: Metrics) -> None:
+         # Only used by ConversationStats to seed metrics
+         self._metrics = metrics

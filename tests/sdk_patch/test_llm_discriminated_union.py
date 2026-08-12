@@ -34,10 +34,10 @@ from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from config.router import CoderPlannerRouter
 
 
-def _make_llm(service_id: str, model: str, base_url: str) -> LLM:
+def _make_llm(usage_id: str, model: str, base_url: str) -> LLM:
     """Build a minimal LLM instance without triggering network preflight."""
     return LLM(
-        service_id=service_id,
+        usage_id=usage_id,
         model=model,
         base_url=base_url,
         api_key=SecretStr("sk-test-not-used"),
@@ -47,17 +47,17 @@ def _make_llm(service_id: str, model: str, base_url: str) -> LLM:
 def _make_router() -> CoderPlannerRouter:
     """Build a CoderPlannerRouter with two concrete LLMs for routing."""
     coder = _make_llm(
-        service_id="coder",
+        usage_id="coder",
         model="hosted_vllm/qwen3-coder-30b-a3b-instruct-awq-4bit",
         base_url="http://127.0.0.1:8100/v1",
     )
     planner = _make_llm(
-        service_id="planner",
+        usage_id="planner",
         model="hosted_vllm/qwen3_6-27b-q6k",
         base_url="http://127.0.0.1:8082/v1",
     )
     return CoderPlannerRouter(
-        service_id="router",
+        usage_id="router",
         # Router-level model is required by the LLM base — reuse coder's
         # so `active_llm` defaulting to None is safe.
         model="hosted_vllm/qwen3-coder-30b-a3b-instruct-awq-4bit",
@@ -110,7 +110,7 @@ def test_router_subclass_survives_llm_annotated_round_trip():
     # Nested LLMs should be base LLM instances (not routers)
     for name, sub in reconstructed.llms_for_routing.items():
         assert isinstance(sub, LLM), f"llms_for_routing[{name!r}] is not an LLM: {type(sub)}"
-        assert sub.service_id == name
+        assert sub.usage_id == name
 
     # router_name must survive
     assert reconstructed.router_name == "coder_planner_router"
@@ -119,7 +119,7 @@ def test_router_subclass_survives_llm_annotated_round_trip():
 def test_base_llm_still_round_trips_as_base_llm():
     """A plain LLM must not be misclassified as a router by discriminator dispatch."""
     original = _make_llm(
-        service_id="plain",
+        usage_id="plain",
         model="hosted_vllm/qwen3-coder-30b-a3b-instruct-awq-4bit",
         base_url="http://127.0.0.1:8100/v1",
     )
@@ -129,9 +129,9 @@ def test_base_llm_still_round_trips_as_base_llm():
     assert type(reconstructed) is LLM, (
         f"Base LLM misclassified as {type(reconstructed).__name__}"
     )
-    assert reconstructed.service_id == "plain"
+    assert reconstructed.usage_id == "plain"
 
 
 if __name__ == "__main__":
-    # Also runnable standalone: `python tests/vendor/test_llm_discriminated_union.py`
+    # Also runnable standalone: `python tests/sdk_patch/test_llm_discriminated_union.py`
     pytest.main([__file__, "-v"])

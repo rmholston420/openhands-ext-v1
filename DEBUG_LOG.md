@@ -766,3 +766,44 @@ Entry format:
   - `DEBUG_LOG.md` (this entry)
 - **Supersedes:** 2026-08-11 21:11 EDT (this session, earlier DEBUG_LOG line 687). Earlier entry claimed `llms_for_routing` was not a Pydantic field — factually wrong; supersede reason. Append-only-log integrity: prior entry retained.
 - **Related BUILD_LOG entry:** 2026-08-11 21:31 EDT (ADR-0034 draft entry).
+
+## 2026-08-11 22:05 EDT — `LLM.model_validate` on router dump asserts `kind == cls.__name__`
+
+- **Symptom:**
+    ```
+    pydantic_core._pydantic_core.ValidationError: 1 validation error for LLM
+      Assertion failed,  [type=assertion_error, input_value={'model': 'hosted_vllm/qw...is_subscription':
+    False}, input_type=dict]
+    ```
+  Raised from `openhands-sdk/openhands/sdk/utils/models.py:235` when calling `LLM.model_validate(coder_planner_router.model_dump(mode="json"))` against a `DiscriminatedUnionMixin`-augmented `LLM` (per ADR-0034 initial 2-line patch).
+- **Affected stage / plugin / port:** Phase 3.j · Runtime · openhands-sdk vendored patch (`LLM` class · `DiscriminatedUnionMixin._validate_subtype`).
+- **Root cause:** `DiscriminatedUnionMixin._validate_subtype` has two branches split by `_is_abstract(cls)`. The subclass-dispatch branch only runs when the base is abstract (ABC in bases or `@abstractmethod`). Base `LLM` is neither. On the concrete branch it pops `kind` and asserts `kind is None or kind == cls.__name__` — a dumped subclass discriminator (`"CoderPlannerRouter"`) trips the assert. Making LLM abstract via `ABC` was rejected because `resolve_kind("LLM")` can't find LLM in its own subclass list, so plain LLM instances would no longer round-trip. This is a design-time hole in the mixin for concrete-base + subclass cases.
+- **Fix applied:** Override `_validate_subtype` inside the `LLM` class itself (same-name `@model_validator(mode="wrap")` replaces the inherited mixin validator on `LLM` and its subclasses; verified empirically). The override:
+    1. Returns early if `data` is already an instance.
+    2. If `data.get("kind")` names a strict subclass, calls `cls.resolve_kind(kind).model_validate(data_without_kind, context=info.context)` and returns.
+    3. If `kind == cls.__name__`, strips it (avoids pydantic choking on the read-only computed field) and falls through.
+    4. Otherwise falls through to the pydantic handler.
+- **Files changed:**
+  - `patches/openhands-sdk-llm-discriminated-union.patch` (regenerated to add the override hunk; now 57 lines)
+  - `scripts/vendor-openhands-sdk.sh` (added a third grep-based verification for the override)
+  - `tests/sdk_patch/test_llm_discriminated_union.py` (unrelated field-name fix: `service_id` → `usage_id`)
+  - `adrs/ADR-0034-llm-discriminated-union-vendored-sdk-patch.md` (amendment block)
+- **Related BUILD_LOG entry:** 2026-08-11 22:05 EDT (patch expansion).
+- **Related DEBUG_LOG search terms (for future):** `_validate_subtype`, `DiscriminatedUnionMixin`, `RouterLLM`, `CoderPlannerRouter`, `assert kind`, `resolve_kind`, `_is_abstract`.
+
+## 2026-08-11 22:05 EDT — pip resolver downgrades opentelemetry-* to 1.39.1 during vendor install
+
+- **Symptom:**
+    ```
+    ERROR: pip's dependency resolver does not currently take into account all the packages that are installed.
+    This behaviour is the source of the following dependency conflicts.
+    opentelemetry-exporter-otlp 1.44.0 requires opentelemetry-exporter-otlp-proto-grpc==1.44.0, but you have
+    opentelemetry-exporter-otlp-proto-grpc 1.39.1 which is incompatible.
+    ```
+  Emitted (non-fatal, exit 0) during `pip install -e vendor/openhands-sdk/openhands-sdk` step of `scripts/vendor-openhands-sdk.sh`.
+- **Affected stage / plugin / port:** Phase 3.j · vendor install path. No runtime impact yet.
+- **Root cause:** `lmnr` (Laminar tracing) pins `opentelemetry-api,-sdk,-exporter-otlp-proto-grpc,-exporter-otlp-proto-http < 0.8.0` era (1.39.x line). Meta-package `opentelemetry-exporter-otlp` is at 1.44.0 and expects its 3 sub-exporters at 1.44.0. Resolver downgrades the individual exporter packages to satisfy lmnr; the meta-package's version pin is left behind, hence the warning.
+- **Fix applied:** None yet. We don't import `opentelemetry-exporter-otlp` directly. If Phase 3.j smoke or downstream tests hit `ImportError` from otlp modules, options are: (a) uninstall the `opentelemetry-exporter-otlp` meta-package (leaves the sub-exporters at 1.39.1, which lmnr wants); (b) bump lmnr to a version compatible with otel 1.44.x when one exists.
+- **Files changed:** none.
+- **Related BUILD_LOG entry:** 2026-08-11 22:05 EDT (vendor install output).
+- **Related DEBUG_LOG search terms (for future):** `opentelemetry`, `lmnr`, `otlp`, `pip resolver conflict`.

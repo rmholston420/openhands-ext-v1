@@ -96,7 +96,12 @@ fi
     echo "FAIL: DiscriminatedUnionMixin import not present" >&2
     exit 1
   fi
-  echo "OK: patch applied"
+  if ! grep -q "ADR-0034 override of" \
+       "$VENDOR_DIR/openhands-sdk/openhands/sdk/llm/llm.py"; then
+    echo "FAIL: _validate_subtype override not present" >&2
+    exit 1
+  fi
+  echo "OK: patch applied (all 3 anchors verified)"
 
   echo ""
   echo "--- uninstall pip-installed openhands-sdk (avoid version conflict) ---"
