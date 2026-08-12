@@ -42,7 +42,7 @@ Filing procedure: see space skill `kosmos-adr-authoring` (loaded).
 | 0031 | [Phase 0.4 gate-4 embedder verdict: DEFER (accept 4-query calibration, retain 4B-Q8 incumbent; N=4 below rubric N=20/block threshold; step-6b pool + calibration qrels persist for future re-eval)](ADR-0031-phase-0-4-embedder-verdict-defer.md) | Ratified | Phase 0.4 gate-4 |
 | 0032 | [Phase 1 spec-scope closure: 1.1 DockerWorkspace-only policy CLOSED (hook clean full-tree); 1.2 code-explorer registration DEFERRED to §2.4/Phase 3 where the runtime tool registry actually gets scaffolded; docs/BENCHMARK_UNPAUSE_GATES.md added to hook allow-list](ADR-0032-phase-1-spec-scope-closure-and-1-2-defer.md) | Ratified | Phase 1 |
 | 0033 | [Phase 2.4 config surface: Python module `config/agent.py`, not TOML (SDK 1.41 has no TOML loader; `RouterLLM` is Pydantic; option 6c = LLMCallContext metadata dispatch; option 7a = coder-as-condenser)](ADR-0033-phase-2-4-config-surface-python-not-toml.md) | Ratified | Phase 2.4 · Phase 3 |
-| 0034 | [Vendor openhands-sdk to patch `LLM` for `DiscriminatedUnion` serialization (Phase 3.j: RouterLLM subclass survives RemoteConversation boundary)](ADR-0034-llm-discriminated-union-vendored-sdk-patch.md) | Proposed | Phase 3.j |
+| 0034 | [Vendor openhands-sdk to patch `LLM` for `DiscriminatedUnion` serialization (Phase 3.j: RouterLLM subclass survives RemoteConversation boundary)](ADR-0034-llm-discriminated-union-vendored-sdk-patch.md) | Ratified | Phase 3.j |
 
 Not yet filed (deferred to their lock-in phase; numbers reserved but not committed — renumber at filing time):
 

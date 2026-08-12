@@ -1989,3 +1989,29 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
     bash scripts/vendor-openhands-sdk.sh
     .venv/bin/python -m pytest tests/sdk_patch/test_llm_discriminated_union.py -v
     ```
+
+## 2026-08-11 22:00 EDT — ADR-0034 RATIFIED (contract test passed on Colossus); 3.j smoke harness written
+
+- **Stage / plugin / port:** Phase 3.j · Runtime · openhands-sdk vendored patch · ADR-0034 sign-off + 3.j smoke authoring
+- **What changed:**
+  - Colossus ran `bash scripts/vendor-openhands-sdk.sh` cleanly: fresh clone at pinned SHA `ca46719d5e9a0b0af79f7de2da37067a5b94563c`, patch applied cleanly (3 anchors verified: import, class line, "ADR-0034 override of"), editable install successful, LLM MRO shows `['LLM', 'DiscriminatedUnionMixin', 'OpenHandsModel', 'BaseModel', 'RetryMixin', 'NonNativeToolCallingMixin', 'object']`. Provenance JSON: `bench/results/vendor-oh-sdk-20260812T015936Z.json`.
+  - Contract test suite PASSED all 3 cases in 1.81 s: `test_llm_inherits_discriminated_union_mixin`, `test_router_subclass_survives_llm_annotated_round_trip`, `test_base_llm_still_round_trips_as_base_llm`.
+  - **ADR-0034 ratified.** Status flipped Proposed → Ratified in both the ADR file and `adrs/README.md`. Added a 3rd STATUS AMENDMENT block documenting the ratification evidence and the vendor script provenance file.
+  - Authored 3.j smoke bench at `bench/smoke-phase-3-item-3j/`:
+    - `task.md` — trivial "create `/workspace/router-ok.txt`=`router-ok-3j`, cat it, finish" task
+    - `run.sh` — preflights coder :8100 AND planner :8082, runs `build_agent()` (WITH the router, not bypassed), performs the ADR-0034 round-trip proof (`agent.model_dump → LLM.model_validate → CoderPlannerRouter`) inside the harness before the DockerWorkspace call, then runs the trivial task under DockerWorkspace and checks: rebuilt class is CoderPlannerRouter with both llms_for_routing keys; finish action present; `router-ok-3j` string in events; no `api.openai.com` or `Incorrect API key` strings anywhere in the event stream (negative check that we're on vLLM, not OpenAI); no ConversationErrorEvent; wall <300 s.
+- **Files touched:**
+  - `adrs/ADR-0034-llm-discriminated-union-vendored-sdk-patch.md` (status → Ratified; 3rd amendment block)
+  - `adrs/README.md` (row 0034 status → Ratified)
+  - `bench/smoke-phase-3-item-3j/task.md` (new)
+  - `bench/smoke-phase-3-item-3j/run.sh` (new, +x)
+  - `BUILD_LOG.md` (this entry)
+- **Ports / adapters affected:** none new. `CoderPlannerRouter` now correct under `RemoteConversation` (Path A workaround from ADR-0033 amend #4 continues to hold; ADR-0034 patch complements it).
+- **PORTING_LEDGER / ADR updated:** ADR-0034 ratified.
+- **Stop-condition status:** in-progress. Colossus needs to run the 3.j smoke on the machine that has both endpoints up + Docker + free :8000. On PASS, 3.j is signed off, `docs/verification/verification-matrix.md` row 3.j flips to ✅, and Phase 3 sign-off is complete except for 3.i (joint co-residency, hardware-blocked per ADR-0017 XOR).
+- **Next action on Colossus:**
+    ```
+    cd ~/dev/openhands-ext-v1 && git pull --ff-only
+    # Ensure BOTH endpoints are up (planner :8082 too, not just coder :8100).
+    bash bench/smoke-phase-3-item-3j/run.sh
+    ```
