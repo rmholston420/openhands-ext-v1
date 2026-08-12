@@ -26,10 +26,12 @@ class TestStuckDetectorNearIdentical(unittest.TestCase):
         from openhands.sdk.conversation.stuck_detector import StuckDetector
         from openhands.sdk.conversation.types import StuckDetectionThresholds
         from openhands.sdk.event import ActionEvent
+        from openhands.sdk.llm.message import MessageToolCall
 
         cls.StuckDetector = StuckDetector
         cls.StuckDetectionThresholds = StuckDetectionThresholds
         cls.ActionEvent = ActionEvent
+        cls.MessageToolCall = MessageToolCall
 
     # -- sentinel: patched fields exist ------------------------------------
 
@@ -149,27 +151,24 @@ class TestStuckDetectorNearIdentical(unittest.TestCase):
         return det
 
     def _make_action_event(self, *, tool_name: str, arguments: str) -> Any:
-        """Build a minimal ActionEvent that carries a MessageToolCall with the
-        given `arguments` JSON string.
+        """Build a minimal ActionEvent carrying an SDK `MessageToolCall`
+        with the given `arguments` JSON string.
 
-        Uses Pydantic's model_construct to skip full validation (we don't
-        care about `action` object shape for this test — only tool_name,
-        tool_call.arguments, and source are read by ADR-0037 code).
+        `MessageToolCall` is the SDK's transport-agnostic wrapper (flat
+        `arguments: str` field), not litellm's `ChatCompletionMessageToolCall`
+        (nested `.function.arguments`). ADR-0037 reads `tool_call.arguments`
+        directly, matching every other consumer in the SDK
+        (security/toolshield_llm_analyzer, defense_in_depth, grayswan).
+
+        Uses Pydantic's `model_construct` on the ActionEvent to skip full
+        validation for fields ADR-0037 does not touch (`action`, thought).
         """
-        # Late import to keep test collection cheap on missing SDK.
-        try:
-            from litellm.types.utils import ChatCompletionMessageToolCall
-            from litellm.types.utils import Function as _Function
-        except Exception as e:  # pragma: no cover
-            self.skipTest(f"litellm types unavailable: {e}")
-
-        tool_call = ChatCompletionMessageToolCall(
+        tool_call = self.MessageToolCall(
             id=f"call_{tool_name}_{abs(hash(arguments)) % 10_000}",
-            type="function",
-            function=_Function(name=tool_name, arguments=arguments),
+            name=tool_name,
+            arguments=arguments,
+            origin="completion",
         )
-        # ActionEvent has many required fields; use model_construct to
-        # bypass validation and set only what ADR-0037 touches.
         evt = self.ActionEvent.model_construct(
             source="agent",
             tool_name=tool_name,

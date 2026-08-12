@@ -866,3 +866,14 @@ Entry format:
 - **Files changed:** `bench/smoke-phase-3-item-3j/run.sh`.
 - **Related BUILD_LOG entry:** 2026-08-11 22:46 EDT.
 - **Related DEBUG_LOG search terms (for future):** `api.openai.com substring false positive`, `litellm cost warning docstring`, `SystemPromptEvent OpenAI URL`, `AuthenticationError`, `openai auth fallback signature`, `router false negative round 2`.
+
+## 2026-08-11 23:18 EDT — Phase 9 smoke unittest AttributeError on tool_call.arguments
+
+- **Symptom:** `AttributeError: 'ChatCompletionMessageToolCall' object has no attribute 'arguments'` in 5 of 9 contract tests (`test_stuckdetector_near_identical.py`) and would repeat in `bench/smoke-phase-9-loop-guard/run.sh` step 3 inline Python.
+- **Affected stage / plugin / port:** Phase 9 · StuckDetector patch (ADR-0037) · vendored SDK.
+- **Root cause:** Test fixture (and smoke's `mk_evt`) constructed the tool call as a raw litellm `ChatCompletionMessageToolCall(function=Function(name, arguments))`, which nests `.function.arguments`. The vendored SDK **wraps** litellm calls into its own transport-agnostic `openhands.sdk.llm.message.MessageToolCall` (flat `arguments: str`) before they ever land on `ActionEvent.tool_call` — see `MessageToolCall.from_chat_tool_call` at `openhands/sdk/llm/message.py`. Every SDK consumer (`security/toolshield_llm_analyzer.py:177`, `security/defense_in_depth/utils.py:121`, `security/grayswan/utils.py:86`, `conversation/stuck_detector.py:442`) reads `tool_call.arguments` directly. The **patch code was correct**; the test fixture built the wrong type.
+- **Fix applied:** Rebuilt test + smoke fixtures to construct `MessageToolCall(id=..., name=..., arguments=..., origin="completion")` directly — matches the live `ActionEvent.tool_call` shape post-`from_chat_tool_call`.
+- **Files changed:**
+  - `tests/sdk_patch/test_stuckdetector_near_identical.py` (setUpClass + `_make_action_event`)
+  - `bench/smoke-phase-9-loop-guard/run.sh` (step 3 `mk_evt`)
+- **Related BUILD_LOG entry:** 2026-08-11 23:19 EDT

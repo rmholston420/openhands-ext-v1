@@ -2108,3 +2108,15 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none new. Extends the same vendored openhands-sdk tree ADR-0034 already ports; the new scenario slots into existing `is_stuck()` control flow wired through `LocalConversation._check_stuck_or_nudge`.
 - **PORTING_LEDGER / ADR updated:** ADR-0037 filed (Proposed); PORTING_LEDGER new "StuckDetector near-identical scenario patch" entry.
 - **Stop-condition status:** in-progress. DoD ratifies on smoke PASS: user runs `bash scripts/vendor-openhands-sdk.sh && bash bench/smoke-phase-9-loop-guard/run.sh`, both exit 0, then ADR-0037 flips to Ratified and verification-matrix Phase 9 row flips to ✅.
+
+## 2026-08-11 23:19 EDT — Phase 9 smoke fixtures: rebuild on SDK MessageToolCall (test-only fix)
+
+- **Stage / plugin / port:** Phase 9 · StuckDetector patch (ADR-0037) · vendored SDK contract test + smoke fixture.
+- **What changed:** Rebuilt test + smoke tool-call construction to use `openhands.sdk.llm.message.MessageToolCall` (the SDK's flat transport-agnostic wrapper), not raw litellm `ChatCompletionMessageToolCall(function=Function(...))`. ADR-0037 detector code unchanged.
+- **Files touched:**
+  - `tests/sdk_patch/test_stuckdetector_near_identical.py`
+  - `bench/smoke-phase-9-loop-guard/run.sh`
+  - `DEBUG_LOG.md` (2026-08-11 23:18 EDT entry)
+- **Ports / adapters affected:** none (test fixtures only; StuckDetector patch bytes identical).
+- **PORTING_LEDGER / ADR updated:** none (ADR-0037 detector logic unchanged; no ledger row affected).
+- **Stop-condition status:** in-progress — pending clean smoke on Colossus.

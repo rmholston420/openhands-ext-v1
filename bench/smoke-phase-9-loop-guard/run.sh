@@ -54,16 +54,17 @@ import json, sys
 from openhands.sdk.conversation.stuck_detector import StuckDetector
 from openhands.sdk.conversation.types import StuckDetectionThresholds
 from openhands.sdk.event import ActionEvent
-from litellm.types.utils import (
-    ChatCompletionMessageToolCall,
-    Function as LLMFunction,
-)
+from openhands.sdk.llm.message import MessageToolCall
 
 def mk_evt(tool_name: str, arguments: str) -> ActionEvent:
-    tc = ChatCompletionMessageToolCall(
+    # ADR-0037 reads tool_call.arguments (flat, on the SDK's MessageToolCall),
+    # not tool_call.function.arguments (litellm's shape). Build the SDK type
+    # directly to match how live ActionEvents look post-from_chat_tool_call.
+    tc = MessageToolCall(
         id=f"call_{tool_name}_{abs(hash(arguments)) % 10_000}",
-        type="function",
-        function=LLMFunction(name=tool_name, arguments=arguments),
+        name=tool_name,
+        arguments=arguments,
+        origin="completion",
     )
     return ActionEvent.model_construct(
         source="agent",
