@@ -2015,3 +2015,20 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
     # Ensure BOTH endpoints are up (planner :8082 too, not just coder :8100).
     bash bench/smoke-phase-3-item-3j/run.sh
     ```
+
+---
+
+## 2026-08-11 22:15 EDT — ADR-0035 authored; overlay agent-server image build wired into 3.j smoke
+
+- **Stage / plugin / port:** Phase 3.j · openhands-sdk container-side patch · DockerWorkspace `server_image`
+- **What changed:** Diagnosed 3.j smoke second-run failure (`LLMAuthenticationError: Incorrect API key provided: local`, hitting `api.openai.com`). Root cause: container-side `openhands-sdk` is unpatched, so `LLM.model_validate` inside the agent-server flattens `CoderPlannerRouter` to base `LLM`, drops `llms_for_routing`, drops `base_url`, and litellm defaults to OpenAI. Client-side round-trip proof still PASSES (rebuilt_cls=CoderPlannerRouter, both llms intact). Authored ADR-0035: build a thin overlay image `openhands-ext-v1/agent-server-patched:<sha256(patch)[:12]>` FROM `ghcr.io/openhands/agent-server:latest-python` that pip-installs the vendor tree over the container's `/agent-server/.venv`. Idempotent, content-addressed, self-verifying (final RUN asserts DiscriminatedUnionMixin in LLM.__mro__).
+- **Files touched:**
+  - `adrs/ADR-0035-container-side-adr-0034-overlay-image.md` (new)
+  - `adrs/README.md` (row 0035 added, Proposed)
+  - `docker/agent-server-patched/Dockerfile` (new; 2 instructions + verify)
+  - `scripts/build-patched-agent-server-image.sh` (new; idempotent, content-addressed tag)
+  - `bench/smoke-phase-3-item-3j/run.sh` (calls build script, captures resolved tag as IMAGE; stale-container filter now matches any `agent-server` image, not just upstream tag)
+  - `PORTING_LEDGER.md` (Phase 3 section: overlay image entry, ADR-0035)
+- **Ports / adapters affected:** none (no new formal port; overlay is a same-package upgrade inside the existing DockerWorkspace surface, mirroring ADR-0034's decision on the SDK side).
+- **PORTING_LEDGER / ADR updated:** yes — PORTING_LEDGER Phase 3 section, ADR-0035 Proposed.
+- **Stop-condition status:** in-progress (3.j DoD unmet until smoke PASS with `has_finish_action=true` and no `events_mention_openai`).

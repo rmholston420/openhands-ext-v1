@@ -807,3 +807,15 @@ Entry format:
 - **Files changed:** none.
 - **Related BUILD_LOG entry:** 2026-08-11 22:05 EDT (vendor install output).
 - **Related DEBUG_LOG search terms (for future):** `opentelemetry`, `lmnr`, `otlp`, `pip resolver conflict`.
+
+---
+
+## 2026-08-11 22:15 EDT — RemoteConversation hits `api.openai.com` despite client-side vLLM router config
+
+- **Symptom:** 3.j smoke, run at `~/.forge-oh/bench_smoke_phase_3_item_3j/20260811_221115_run/verdict.json`. Client-side round-trip PROOF PASSED (rebuilt_cls=CoderPlannerRouter, rebuilt_llms_for_routing_keys=[coder, planner], rebuilt_coder_base_url=http://127.0.0.1:8100/v1). But `conversation.run()` raised: `ConversationRunError: LLMAuthenticationError: litellm.AuthenticationError: AuthenticationError: OpenAIException - Incorrect API key provided: local. You can find your API key at https://platform.openai.com/account/api-keys.` `has_router_ok_string=true`, `has_router_ok_file=true` (client-side rebuild wrote both), `has_finish_action=false`, `events_mention_openai=true`, `has_terminal_error=true`. Wall 21.28s, 8 events, 1 ConversationErrorEvent.
+- **Affected stage / plugin / port:** Phase 3.j · openhands-sdk container-side deserialization · DockerWorkspace server_image
+- **Root cause:** The RemoteConversation boundary requires BOTH endpoints to run the ADR-0034 patched SDK. Our vendor-tree patch lives only in the host `.venv`. The `ghcr.io/openhands/agent-server:latest-python` container ships upstream `openhands-sdk` in its self-contained `/agent-server/.venv`. Container-side `LLM.model_validate(payload)` hits the unpatched `_validate_subtype`, takes the concrete-class branch, flattens the router to base `LLM`, drops `llms_for_routing`, drops `base_url`. litellm falls back to `api.openai.com` with the placeholder API key `"local"`, which OpenAI rejects.
+- **Fix applied:** ADR-0035 — build a thin overlay image FROM the upstream tag that pip-installs the patched vendor SDK over the container's `/agent-server/.venv`, with a final `RUN` asserting `DiscriminatedUnionMixin in LLM.__mro__`. Content-addressed tag (`openhands-ext-v1/agent-server-patched:<sha256(patch)[:12]>`). 3.j smoke `run.sh` now calls `scripts/build-patched-agent-server-image.sh` and passes the resolved tag as `server_image`. Verification: rerun the smoke and confirm `pass=true` with `has_finish_action=true`, `events_mention_openai=false`, `events_mention_vllm_8100=true`.
+- **Files changed:** `adrs/ADR-0035-container-side-adr-0034-overlay-image.md`, `adrs/README.md`, `docker/agent-server-patched/Dockerfile`, `scripts/build-patched-agent-server-image.sh`, `bench/smoke-phase-3-item-3j/run.sh`, `PORTING_LEDGER.md`, `BUILD_LOG.md`.
+- **Related BUILD_LOG entry:** 2026-08-11 22:15 EDT.
+- **Related DEBUG_LOG search terms (for future):** `Incorrect API key provided: local`, `api.openai.com`, `LLMAuthenticationError`, `RemoteConversation`, `container-side deserialization`, `flatten to base LLM`.

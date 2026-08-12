@@ -52,7 +52,7 @@ if ! docker version --format '{{.Server.Version}}' >/dev/null 2>&1; then
   exit 2
 fi
 
-STALE_CIDS=$(docker ps -a --filter 'ancestor=ghcr.io/openhands/agent-server:latest-python' --format '{{.ID}}' 2>/dev/null)
+STALE_CIDS=$(docker ps -a --format '{{.ID}} {{.Image}}' 2>/dev/null | awk '/agent-server/ {print $1}')
 if [ -n "$STALE_CIDS" ]; then
   echo "Removing stale agent-server container(s): $STALE_CIDS"
   echo "$STALE_CIDS" | xargs -r docker rm -f >/dev/null
@@ -64,7 +64,16 @@ if ss -ltn 2>/dev/null | awk '{print $4}' | grep -qE '(^|:)8000$'; then
 fi
 
 TASK_FILE="$REPO_ROOT/bench/smoke-phase-3-item-3j/task.md"
-IMAGE="ghcr.io/openhands/agent-server:latest-python"
+
+# ADR-0035: build (or reuse) the overlay agent-server image that applies
+# the ADR-0034 SDK patch inside the DockerWorkspace container. Content-
+# addressed tag; idempotent when the patch hash is unchanged.
+echo "--- ensuring ADR-0035 overlay image is present ---"
+IMAGE="$(bash "$REPO_ROOT/scripts/build-patched-agent-server-image.sh")"
+if [ -z "$IMAGE" ]; then
+  echo "FAIL: build-patched-agent-server-image.sh produced no tag" >&2
+  exit 3
+fi
 
 echo "=== Phase 3 sign-off item 3.j smoke — $(date -Iseconds) ==="
 echo "OUT_DIR=$OUT_DIR"
