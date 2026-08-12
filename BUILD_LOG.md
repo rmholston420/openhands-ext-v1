@@ -2080,3 +2080,12 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** no.
 - **Stop-condition status:** in-progress (needs one clean run with `pass=true`).
+
+## 2026-08-11 22:47 EDT — Phase 3.j signed off (LocalWorkspace scope per ADR-0036)
+
+- **Stage / plugin / port:** Phase 3 sign-off · item 3.j · ADR-0034 patch (LLM DiscriminatedUnion serialization).
+- **What changed:** 3.j smoke PASS end-to-end at `~/.forge-oh/bench_smoke_phase_3_item_3j/20260811_224545_run/verdict.json`. `pass=true`; `rebuild_is_router=true`; both base URLs preserved (coder http://127.0.0.1:8100/v1, planner http://127.0.0.1:8082/v1); `Conversation.run()` completed in 3.27 s wall via LocalWorkspace; stdout logs `CoderPlannerRouter: default → coder` + `RouterLLM routing to coder...` for every LLM call; no `AuthenticationError` / `Incorrect API key`; no `ConversationErrorEvent`; `router-ok-3j` marker file created + verified via `has_finish_action=true`. ADR-0034 amended to RATIFIED end-to-end (LocalWorkspace scope). Verification-matrix row 3.j evidence line updated. SESSION_HANDOFF overwritten.
+- **Files touched:** `adrs/ADR-0034-llm-discriminated-union-vendored-sdk-patch.md`, `docs/verification/verification-matrix.md`, `SESSION_HANDOFF.md`, `BUILD_LOG.md`.
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** ADR-0034 status amendment (2026-08-11 22:47 EDT).
+- **Stop-condition status:** met (LocalWorkspace scope). 3.k (container-side under DockerWorkspace with source-target agent-server image) deferred to Phase 3.5 / Phase 4.
