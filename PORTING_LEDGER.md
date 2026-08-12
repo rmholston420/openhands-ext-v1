@@ -36,17 +36,19 @@ Both donors are owned by the same GitHub user (`rmholston420`) as this repo.
 - **ADR:** ADR-0034 (Proposed until 3.j smoke PASS ratifies).
 - **Logged:** 2026-08-11 21:45 EDT
 
-#### `ghcr.io/openhands/agent-server:latest-python` (overlay for ADR-0034 patch) — VENDORED (image overlay)
+#### `ghcr.io/openhands/agent-server:latest-python` (overlay for ADR-0034 patch) — REJECTED by ADR-0036
 - **Source (base image):** `ghcr.io/openhands/agent-server` — the `latest-python` tag matching upstream `openhands-agent-server` at pin `ca46719d5e9a0b0af79f7de2da37067a5b94563c` (v1.41.0)
 - **License:** MIT (upstream `OpenHands/software-agent-sdk`)
-- **Kosmos location:** `docker/agent-server-patched/Dockerfile` (recipe, tracked) + local Docker image `openhands-ext-v1/agent-server-patched:<sha256(patch)[:12]>` (regenerable per ADR-0003; not committed — rebuilt on Colossus by `scripts/build-patched-agent-server-image.sh`)
+- **Kosmos location (rejected):** `docs/rejected/ADR-0035-overlay-Dockerfile` + `docs/rejected/build-patched-agent-server-image.sh`. Original planned paths were `docker/agent-server-patched/Dockerfile` and `scripts/build-patched-agent-server-image.sh`; both moved under `docs/rejected/` with REJECTED headers on 2026-08-11 22:40 EDT.
 - **Port(s):** no new formal port. Same DockerWorkspace surface as ADR-0002; the overlay only replaces the container's pre-built `openhands-sdk` package inside `/agent-server/.venv` with the ADR-0034-patched vendor tree.
 - **Modifications:**
   - COPY `vendor/openhands-sdk/openhands-sdk` → `/agent-server/openhands-sdk-patched`.
   - `pip install --no-deps --force-reinstall /agent-server/openhands-sdk-patched` inside the container's venv.
   - Final `RUN` asserts `DiscriminatedUnionMixin in LLM.__mro__` so a missing patch fails the build (not runtime).
   - Tag is content-addressed on `sha256(patch_file)[:12]`; any change to `patches/openhands-sdk-llm-discriminated-union.patch` produces a new tag and cannot silently reuse an unpatched cache.
-- **ADR:** ADR-0035 (Proposed until 3.j smoke PASS ratifies).
+- **ADR:** ADR-0035 (Superseded by ADR-0036).
+- **Rejection reason:** Every published `ghcr.io/openhands/agent-server:*-python` tag is the upstream Dockerfile's `binary` target — a PyInstaller ELF at `/usr/local/bin/openhands-agent-server` with `openhands.sdk` bytecode frozen inside. There is no importable `openhands.sdk` in any site-packages, no `/agent-server/.venv/`, and PyInstaller's frozen importer bypasses `sys.path`. No `pip`/`uv pip`/`LD_PRELOAD`/`PYTHONPATH` overlay can replace bytecode inside the ELF. See ADR-0036 for container-inventory evidence.
+- **Rejected:** 2026-08-11 22:40 EDT
 - **Logged:** 2026-08-11 22:15 EDT
 
 ---

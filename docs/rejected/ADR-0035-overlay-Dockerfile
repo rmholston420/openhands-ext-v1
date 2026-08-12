@@ -1,5 +1,14 @@
 # syntax=docker/dockerfile:1.7
 #
+# REJECTED by ADR-0036 (2026-08-11 22:40 EDT). Do NOT build. Do NOT reference
+# from any active path. Retained here for historical readability alongside the
+# ADR that killed it. The overlay approach is impossible because every
+# published `ghcr.io/openhands/agent-server:*-python` tag is the `binary`
+# target: a PyInstaller ELF at `/usr/local/bin/openhands-agent-server` with all
+# `openhands.sdk` bytecode frozen inside; there is no importable `openhands.sdk`
+# in any site-packages, and `pip install` cannot inject one that the ELF will
+# consult. See adrs/ADR-0036 for the full container-inventory evidence.
+#
 # Overlay agent-server image applying ADR-0034 client-side SDK patch inside the
 # DockerWorkspace container. Per ADR-0035 — required because RemoteConversation
 # crosses the client/container boundary and both endpoints must run the patched

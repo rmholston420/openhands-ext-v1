@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # bench/smoke-phase-3-item-3j/run.sh — Phase 3 sign-off item 3.j smoke.
 #
-# CoderPlannerRouter (RouterLLM subclass) under DockerWorkspace
-# (RemoteConversation). ADR-0034 patch adds DiscriminatedUnionMixin to
-# LLM and overrides `_validate_subtype` on LLM so that server-side
-# `LLM.model_validate(dumped)` reconstructs the router subclass with
-# `llms_for_routing` intact.
+# CoderPlannerRouter (RouterLLM subclass) survives the ADR-0034 serialization
+# boundary. Per ADR-0036, this smoke runs under LocalWorkspace, not
+# DockerWorkspace: the published `ghcr.io/openhands/agent-server:*-python`
+# tags are PyInstaller binary target with frozen `openhands.sdk` bytecode
+# inside the ELF, so no overlay-image approach can inject the ADR-0034 patch
+# into the container. The container-side leg is deferred to sign-off item 3.k
+# (source-target agent-server rebuild). LocalWorkspace exercises the same
+# patched code path (`LLM._validate_subtype` via `LLM.model_validate`) in the
+# client interpreter, which is sufficient evidence for ADR-0034.
 #
 # Verdict criteria:
 #   - agent.llm is CoderPlannerRouter client-side.
@@ -13,6 +17,7 @@
 #     round-trips through LLM.model_validate back to CoderPlannerRouter
 #     with llms_for_routing.coder.base_url == vLLM :8100 and
 #     llms_for_routing.planner.base_url == llama.cpp :8082 preserved.
+#     This is the load-bearing ADR-0034 assertion.
 #   - Task finishes (has_finish_action).
 #   - No 'Incorrect API key' / 'api.openai.com' string in event stream
 #     (positive check that we did not fall back to OpenAI).
@@ -47,62 +52,35 @@ else
   export PLANNER_ENDPOINT_UP=0
   echo "NOTE: planner :8082 not reachable (ADR-0017 XOR while coder holds GPU). Continuing — planner presence is field-only in 3.j."
 fi
-if ! docker version --format '{{.Server.Version}}' >/dev/null 2>&1; then
-  echo "PRECONDITION FAIL: Docker daemon not reachable." >&2
-  exit 2
-fi
-
-STALE_CIDS=$(docker ps -a --format '{{.ID}} {{.Image}}' 2>/dev/null | awk '/agent-server/ {print $1}')
-if [ -n "$STALE_CIDS" ]; then
-  echo "Removing stale agent-server container(s): $STALE_CIDS"
-  echo "$STALE_CIDS" | xargs -r docker rm -f >/dev/null
-fi
-if ss -ltn 2>/dev/null | awk '{print $4}' | grep -qE '(^|:)8000$'; then
-  echo "PRECONDITION FAIL: host port 8000 is bound by something else." >&2
-  ss -ltnp 2>/dev/null | grep ':8000' >&2
-  exit 2
-fi
 
 TASK_FILE="$REPO_ROOT/bench/smoke-phase-3-item-3j/task.md"
 
-# ADR-0035: build (or reuse) the overlay agent-server image that applies
-# the ADR-0034 SDK patch inside the DockerWorkspace container. Content-
-# addressed tag; idempotent when the patch hash is unchanged.
-echo "--- ensuring ADR-0035 overlay image is present ---"
-IMAGE="$(bash "$REPO_ROOT/scripts/build-patched-agent-server-image.sh")"
-if [ -z "$IMAGE" ]; then
-  echo "FAIL: build-patched-agent-server-image.sh produced no tag" >&2
-  exit 3
-fi
-
 echo "=== Phase 3 sign-off item 3.j smoke — $(date -Iseconds) ==="
 echo "OUT_DIR=$OUT_DIR"
-echo "IMAGE=$IMAGE"
+echo "workspace: LocalWorkspace (per ADR-0036)"
 echo ""
 
 env \
   OUT_DIR="$OUT_DIR" \
-  IMAGE="$IMAGE" \
   TASK_FILE="$TASK_FILE" \
   "$VENV_PY" - <<'PY'
-import json, os, time, traceback
+import json, os, tempfile, time, traceback
 from pathlib import Path
 from datetime import datetime, timezone
 
 OUT_DIR = Path(os.environ["OUT_DIR"])
-IMAGE   = os.environ["IMAGE"]
 TASK    = Path(os.environ["TASK_FILE"]).read_text()
 
 from config.agent import build_agent
 from config.router import CoderPlannerRouter
 from openhands.sdk import Conversation, Message, TextContent
 from openhands.sdk.llm.llm import LLM
-from openhands.workspace.docker.workspace import DockerWorkspace
-from openhands.sdk.workspace import RemoteWorkspace
+from openhands.sdk.workspace import LocalWorkspace
 
 verdict = {
-    "task": "3j_router_under_dockerworkspace",
-    "image": IMAGE,
+    "task": "3j_router_local_workspace",
+    "workspace_kind": "LocalWorkspace",
+    "adr_reference": "ADR-0034 (client-side, load-bearing) + ADR-0036 (LocalWorkspace decision; 3.k defers container-side)",
     "started_utc": datetime.now(timezone.utc).isoformat(),
     "planner_endpoint_up": (os.environ.get("PLANNER_ENDPOINT_UP") == "1"),
 }
@@ -116,8 +94,8 @@ verdict["llms_for_routing_keys"] = sorted(list(getattr(agent.llm, "llms_for_rout
 
 # --- ADR-0034 round-trip proof: dump the whole agent the way
 #     RemoteConversation does, then re-validate through LLM base class
-#     annotation to prove the container-side rebuild reconstructs the
-#     router subclass with llms_for_routing intact. ---
+#     annotation to prove the rebuild reconstructs the router subclass
+#     with llms_for_routing intact. This is the load-bearing assertion.
 try:
     dumped = agent.model_dump(mode="json", context={"expose_secrets": True})
     llm_payload = dumped["llm"]
@@ -127,8 +105,6 @@ try:
     if "llms_for_routing" in llm_payload:
         verdict["llm_payload_llms_for_routing_keys"] = sorted(list(llm_payload["llms_for_routing"].keys()))
 
-    # This is the critical assertion: LLM.model_validate on the payload
-    # returns a CoderPlannerRouter with llms_for_routing preserved.
     rebuilt = LLM.model_validate(llm_payload)
     verdict["rebuilt_cls"]         = type(rebuilt).__name__
     verdict["rebuilt_router_name"] = getattr(rebuilt, "router_name", None)
@@ -144,7 +120,7 @@ except Exception as e:
     verdict["roundtrip_exception"] = f"{type(e).__name__}: {e}"
     verdict["roundtrip_traceback"] = traceback.format_exc()
 
-# --- Run the task under DockerWorkspace ---
+# --- Run the task under LocalWorkspace ---
 events = []
 def on_event(ev):
     try:
@@ -155,21 +131,23 @@ def on_event(ev):
 
 t0 = time.time()
 err = None
-try:
-    with DockerWorkspace(
-        server_image=IMAGE,
-        network="host",
-        host_port=8000,
-        enable_gpu=False,
-        health_check_timeout=180.0,
-    ) as ws:
-        verdict["workspace_cls"]       = type(ws).__name__
-        verdict["workspace_is_remote"] = isinstance(ws, RemoteWorkspace)
-        verdict["workspace_host"]      = getattr(ws, "host", None)
+with tempfile.TemporaryDirectory(prefix="oh-3j-ws-") as ws_dir:
+    try:
+        # LocalWorkspace exposes `working_dir` for the task's cwd. The task
+        # writes /workspace/router-ok.txt inside the sandbox path.
+        # We use a temp dir per run so smoke runs are hermetic.
+        ws = LocalWorkspace(working_dir=ws_dir)
+        verdict["workspace_cls"]  = type(ws).__name__
+        verdict["workspace_dir"]  = ws_dir
+
+        # Rewrite the task to use the temp workspace path so LocalWorkspace's
+        # cwd conventions match. Replace /workspace/ with the temp dir.
+        task_local = TASK.replace("/workspace/router-ok.txt", f"{ws_dir}/router-ok.txt") \
+                         .replace("cat /workspace/router-ok.txt", f"cat {ws_dir}/router-ok.txt")
 
         conv = Conversation(agent=agent, workspace=ws, callbacks=[on_event])
         conv.send_message(Message(role="user",
-                                  content=[TextContent(text=TASK)]))
+                                  content=[TextContent(text=task_local)]))
         conv.run()
 
         try:
@@ -177,10 +155,16 @@ try:
             verdict["state_workspace_cls"] = type(st_ws).__name__
         except Exception as e:
             verdict["state_workspace_cls_err"] = f"{type(e).__name__}: {e}"
-except Exception as e:
-    err = f"{type(e).__name__}: {e}"
-    verdict["exception"] = err
-    verdict["traceback"] = traceback.format_exc()
+
+        # File-existence check inside the workspace dir as additional evidence.
+        router_ok_path = Path(ws_dir) / "router-ok.txt"
+        verdict["router_ok_file_exists"] = router_ok_path.exists()
+        if router_ok_path.exists():
+            verdict["router_ok_file_contents"] = router_ok_path.read_text().strip()
+    except Exception as e:
+        err = f"{type(e).__name__}: {e}"
+        verdict["exception"] = err
+        verdict["traceback"] = traceback.format_exc()
 
 wall = time.time() - t0
 verdict["wall_seconds"] = round(wall, 2)
@@ -206,7 +190,7 @@ verdict["has_finish_action"] = any_event(
 verdict["has_router_ok_string"] = any_event(
     lambda e: "router-ok-3j" in evt_text(e)
 )
-verdict["has_router_ok_file"] = any_event(
+verdict["has_router_ok_file_ref"] = any_event(
     lambda e: "router-ok.txt" in evt_text(e)
 )
 verdict["has_terminal_error"] = any_event(
@@ -226,12 +210,22 @@ verdict["rebuild_has_both_llms"] = (
     verdict.get("rebuilt_llms_for_routing_keys") == ["coder", "planner"]
 )
 
+# ADR-0034 assertion (load-bearing): both base URLs preserved through
+# the dump→validate round-trip.
+verdict["rebuild_preserves_coder_url"] = (
+    verdict.get("rebuilt_coder_base_url", "").startswith("http://127.0.0.1:8100")
+)
+verdict["rebuild_preserves_planner_url"] = (
+    verdict.get("rebuilt_planner_base_url", "").startswith("http://127.0.0.1:8082")
+)
+
 verdict["pass"] = (
     err is None
-    and verdict.get("workspace_is_remote", False)
     and verdict.get("agent_llm_cls") == "CoderPlannerRouter"
     and verdict["rebuild_is_router"]
     and verdict["rebuild_has_both_llms"]
+    and verdict["rebuild_preserves_coder_url"]
+    and verdict["rebuild_preserves_planner_url"]
     and verdict["event_count"] > 0
     and verdict["has_finish_action"]
     and verdict["has_router_ok_string"]

@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
-# scripts/build-patched-agent-server-image.sh
+# docs/rejected/build-patched-agent-server-image.sh
+#
+# REJECTED by ADR-0036 (2026-08-11 22:40 EDT). Do NOT execute. Do NOT reference
+# from any active path. Retained for historical readability. See adrs/ADR-0036
+# for why the overlay approach is impossible (published `-python` tags are
+# PyInstaller `binary` target with frozen `openhands.sdk` bytecode inside the
+# `openhands-agent-server` ELF).
+#
+# scripts/build-patched-agent-server-image.sh (former path)
 #
 # Build the ADR-0035 overlay agent-server image that applies the ADR-0034
 # openhands-sdk patch inside the DockerWorkspace container. Idempotent:

@@ -8,5 +8,10 @@ Please do exactly the following three steps and then finish:
 
 Do not do anything else. No preamble, no additional files, no additional
 explanations. Trivial task; the point is to prove the router survives the
-DockerWorkspace serialization boundary and lands on the local vLLM coder
-endpoint, not `api.openai.com`.
+ADR-0034 serialization boundary (`agent.model_dump → LLM.model_validate`)
+and lands on the local vLLM coder endpoint, not `api.openai.com`. Per
+ADR-0036, this smoke runs under LocalWorkspace; container-side ADR-0034
+verification is deferred to sign-off item 3.k. The `run.sh` harness rewrites
+the `/workspace/router-ok.txt` path above to the per-run temp workspace dir
+before sending the task; the router-lands-on-vLLM assertion is the load-
+bearing verdict criterion here, not the workspace transport.

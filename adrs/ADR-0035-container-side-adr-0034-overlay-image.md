@@ -1,9 +1,11 @@
 # ADR-0035 — Container-side ADR-0034 patch via overlay agent-server image (Phase 3.j RouterLLM survival across container boundary)
 
-**Status:** Proposed
+> **STATUS AMENDMENT (2026-08-11 22:40 EDT):** Superseded by ADR-0036. The overlay approach is infeasible because the published `ghcr.io/openhands/agent-server:*-python` tags are built with `TARGET: binary` (PyInstaller ELF, frozen `openhands.sdk` bytecode; no `/agent-server/.venv/`; no importable `openhands.sdk` in any site-packages). No `pip`/`uv pip`/`LD_PRELOAD`/`PYTHONPATH` overlay can replace bytecode frozen in the ELF. See ADR-0036 for the container-inventory evidence, the four options considered (A/B/C/D), and the Option D decision. Original decision text below is preserved verbatim.
+
+**Status:** Superseded by ADR-0036
 **Lock-in phase:** Phase 3.j
 **Supersedes:** —
-**Related:** ADR-0002 (DockerWorkspace policy), ADR-0003 (repo/colossus mirror discipline; `vendor/` is category-2 regenerable), ADR-0034 (client-side SDK patch)
+**Related:** ADR-0002 (DockerWorkspace policy), ADR-0003 (repo/colossus mirror discipline; `vendor/` is category-2 regenerable), ADR-0034 (client-side SDK patch), ADR-0036 (supersession)
 
 ## Context
 

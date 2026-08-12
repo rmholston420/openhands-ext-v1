@@ -2043,3 +2043,22 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** no (ADR-0035 decision is unchanged; only the mechanism of overlay install changes from `pip` to `uv pip`, which the ADR permits as an implementation detail).
 - **Stop-condition status:** in-progress.
+
+## 2026-08-11 22:40 EDT — Phase 3.j · ADR-0036 filed; 3.j downgraded to LocalWorkspace; 3.k opened; overlay artifacts moved to docs/rejected/
+
+- **Stage / plugin / port:** Phase 3 sign-off · item 3.j · ADR-0034 verification surface.
+- **What changed:** Authored ADR-0036 (Ratified) documenting that every published `ghcr.io/openhands/agent-server:*-python` tag is the upstream Dockerfile's `binary` target (PyInstaller ELF at `/usr/local/bin/openhands-agent-server` with frozen `openhands.sdk` bytecode; no `/agent-server/.venv/`; no importable `openhands.sdk` in any site-packages), making every overlay-image approach impossible. Amended ADR-0035 status to `Superseded by ADR-0036` with a status-amendment block preserving the original decision text. Moved overlay artifacts under `docs/rejected/` with REJECTED headers cross-referencing ADR-0036. Rewrote `bench/smoke-phase-3-item-3j/run.sh` to run under `LocalWorkspace` (which exercises the load-bearing ADR-0034 code path — `LLM._validate_subtype` via `LLM.model_validate` on `agent.model_dump(...)` — in the same interpreter as `build_agent()`) and updated its `task.md` and the verification-matrix row accordingly. Added new verification-matrix row 3.k marking container-side ADR-0034 verification as ⛔ deferred (options A/C from ADR-0036).
+- **Files touched:**
+  - `adrs/ADR-0036-published-agent-server-image-is-binary-only.md` (new)
+  - `adrs/ADR-0035-container-side-adr-0034-overlay-image.md` (status amendment)
+  - `adrs/README.md` (row 0035 status; new row 0036)
+  - `PORTING_LEDGER.md` (overlay-image entry → REJECTED with rejection reason + rejected-timestamp)
+  - `docs/rejected/ADR-0035-overlay-Dockerfile` (moved from `docker/agent-server-patched/Dockerfile`; REJECTED header prepended)
+  - `docs/rejected/build-patched-agent-server-image.sh` (moved from `scripts/`; REJECTED header prepended)
+  - `bench/smoke-phase-3-item-3j/run.sh` (LocalWorkspace rewrite; drops overlay-image build step; retains coder :8100 preflight and full ADR-0034 round-trip assertion)
+  - `bench/smoke-phase-3-item-3j/task.md` (workspace-path rewrite documented; ADR-0036 cross-reference)
+  - `docs/verification/verification-matrix.md` (row 3.j ❌ → ✅ scoped to LocalWorkspace + ADR-0034 assertion; new row 3.k ⛔ deferred)
+  - `BUILD_LOG.md`, `DEBUG_LOG.md`, `SESSION_HANDOFF.md` (this session's log/handoff)
+- **Ports / adapters affected:** none (workspace transport choice, not port surface).
+- **PORTING_LEDGER / ADR updated:** ADR-0036 filed; ADR-0035 amended (Superseded); PORTING_LEDGER overlay-image entry marked REJECTED with cross-reference.
+- **Stop-condition status:** met for 3.j (LocalWorkspace scope with ADR-0034 assertion, per ADR-0036). Remaining: user runs `git pull; bash bench/smoke-phase-3-item-3j/run.sh` on Colossus to produce the passing verdict artifact. 3.k tracked as ⛔ deferred; not blocking Phase 3 gate.
