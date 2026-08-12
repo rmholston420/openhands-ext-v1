@@ -747,3 +747,22 @@ Entry format:
 - **Files changed:** none in the ext repo. Only `~/.openhands/settings.json` on Colossus (backup + delete).
 - **Related BUILD_LOG entry:** 2026-08-11 21:11 EDT
 - **Follow-up:** If we later persist Canvas across session-key rotations (e.g. pinning the session key in a deploy manifest), consider either exporting `OPENHANDS_SESSION_API_KEY=<stable-value>` before Canvas boot, or having the settings file re-encrypt itself on key rotation. Out of scope for 3.e/3.f.
+
+## 2026-08-11 21:31 EDT — RouterLLM subclass lost across RemoteConversation boundary (root-cause supersede)
+
+- **Symptom:** `RemoteConversation` built with `Agent(llm=CoderPlannerRouter(...))` ships requests to `api.openai.com` with `model="router"`, not to `http://127.0.0.1:8100/v1`. Router's child LLMs (`coder`, `planner`) never dispatched.
+- **Affected stage / plugin / port:** Phase 3.j · Runtime · `LLM` polymorphism under `RemoteConversation`; `CoderPlannerRouter` / `RouterLLM` serialization.
+- **Root cause:** Corrects the entry above (2026-08-11 21:11 EDT DEBUG_LOG line 687). Direct SDK inspection on Colossus 2026-08-11 21:24 EDT established:
+  - `RouterLLM.llms_for_routing` IS a proper Pydantic field (`dict[str, LLM]`, default_factory=dict). It serializes correctly under `model_dump(mode="json")` — both nested `coder` and `planner` LLM payloads appear in the JSON with `model` and `base_url` intact.
+  - `CoderPlannerRouter.model_validate(dumped)` round-trips correctly. Rebuilt instance IS `CoderPlannerRouter`, `llms_for_routing` has both keys.
+  - **The real bug:** `LLM.model_validate(dumped)` LOSES the subclass. Because `Agent.llm: LLM` is annotated as base `LLM` with no discriminator, pydantic instantiates a base `LLM(model="router", base_url=None)` and silently drops `llms_for_routing`, `router_name`, `active_llm`. This is what `RemoteConversation` does container-side: `StartConversationRequest.agent: AgentBase` deserializes correctly (via `DiscriminatedUnionMixin`), but nested `Agent.llm: LLM` deserializes to base `LLM`, so any `RouterLLM` subclass is flattened before the agent runs.
+  - Contrast: `AgentBase` inherits `DiscriminatedUnionMixin` (`openhands/sdk/utils/models.py`) — that's why `Agent` survives the boundary. `LLM` does not inherit the mixin. Its MRO is `[LLM, BaseModel, RetryMixin, NonNativeToolCallingMixin, object]` — no discriminator infrastructure.
+  - `Tool`, `Event`, `Condenser`, `Workspace`, `Analyzer`, `Critic`, `Secret`, `Agent`, `MCPTool` all use `DiscriminatedUnionMixin`. `LLM` is the only major SDK polymorphic type that does not.
+- **Fix applied:** ADR-0034 (Proposed) — vendor openhands-sdk into `vendor/openhands-sdk/` and add `DiscriminatedUnionMixin` to `LLM`'s MRO (two-line patch in `openhands-sdk/openhands/sdk/llm/llm.py`). `RouterLLM` and `CoderPlannerRouter` inherit the mixin transitively.
+- **Files changed (this diagnosis):**
+  - `adrs/ADR-0034-llm-discriminated-union-vendored-sdk-patch.md` (draft, Proposed)
+  - `adrs/README.md` (index row)
+  - `BUILD_LOG.md` (2026-08-11 21:31 EDT entry)
+  - `DEBUG_LOG.md` (this entry)
+- **Supersedes:** 2026-08-11 21:11 EDT (this session, earlier DEBUG_LOG line 687). Earlier entry claimed `llms_for_routing` was not a Pydantic field — factually wrong; supersede reason. Append-only-log integrity: prior entry retained.
+- **Related BUILD_LOG entry:** 2026-08-11 21:31 EDT (ADR-0034 draft entry).

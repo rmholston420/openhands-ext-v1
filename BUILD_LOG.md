@@ -1894,3 +1894,20 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
   - Canvas onboarding Advanced tab exposes plain-text inputs (`llm-custom-model-input`, `base-url-input`, `llm-api-key-input`) — bypasses the Basic-tab combobox click-hang trap for programmatic drivers.
   - Canvas settings PATCH body must use diff field names (`agent_settings_diff`, `conversation_settings_diff`, `misc_settings_diff`), not the plain `agent_settings` field name (returns 400).
   - `~/.openhands/settings.json` is Fernet-encrypted with the Canvas session API key; rotating that key (Canvas restart) makes the settings file unreadable and PATCH fails 500. Fix: `rm settings.json` and re-onboard or re-PATCH.
+
+## 2026-08-11 21:31 EDT — ADR-0034 drafted (Proposed): vendor openhands-sdk to patch LLM for DiscriminatedUnion serialization
+
+- **Stage / plugin / port:** Phase 3.j · SDK patch surface · openhands-sdk vendor
+- **What changed:** Drafted ADR-0034 to unblock 3.j. Root cause diagnosed via direct SDK inspection on Colossus (2026-08-11 21:24 EDT):
+  - `llms_for_routing` IS a proper Pydantic field on `RouterLLM` (`dict[str, LLM]`, default_factory=dict). It serializes correctly under `model_dump(mode="json")`. The 2026-08-11 21:11 EDT entry's characterization ("`llms_for_routing` not in Pydantic field surface") is factually wrong — retained for append-only-log integrity; this entry supersedes.
+  - The actual bug: `Agent.llm: LLM` is annotated as base `LLM` with no discriminator. `AgentBase` inherits `DiscriminatedUnionMixin` (which is why `Agent` subclasses survive `RemoteConversation`'s boundary), but `LLM` does not. Container-side `LLM.model_validate(dumped)` returns a base `LLM` instance, silently dropping `llms_for_routing`, `router_name`, `active_llm` — the entire `RouterLLM` subclass surface. Requests then ship to litellm with `model="router"` and `base_url=None`, hitting `api.openai.com`.
+  - Every other major SDK polymorphic type (`Tool`, `Event`, `Condenser`, `Workspace`, `Analyzer`, `Critic`, `Secret`, `Agent`, `MCPTool`) inherits `DiscriminatedUnionMixin`. `LLM` is the only one that does not. No upstream issue or PR exists — verified via `gh search`.
+  - **Decision:** vendor openhands-sdk into `vendor/openhands-sdk/` and add `DiscriminatedUnionMixin` to `LLM`'s MRO. Minimum surface: two lines in `openhands-sdk/openhands/sdk/llm/llm.py` (import + class-line change). `RouterLLM` and `CoderPlannerRouter` inherit the mixin transitively.
+  - Contingency: SDK upgrades must re-apply the patch and re-run 3.j smoke (documented in ADR-0034 §9).
+  - Upstream PR path: after 3.j PASS, open PR at `OpenHands/software-agent-sdk` with ADR-0034 body as rationale.
+- **Files touched:**
+  - `adrs/ADR-0034-llm-discriminated-union-vendored-sdk-patch.md` (new)
+  - `adrs/README.md` (index row for 0034)
+- **Ports / adapters affected:** openhands-sdk (vendor target — vendor pull + patch apply happen in next entry, not this one).
+- **PORTING_LEDGER / ADR updated:** ADR-0034 authored (Proposed). PORTING_LEDGER entry deferred to vendor-pull step.
+- **Stop-condition status:** ADR authored. Vendor pull + patch apply + 3.j smoke are separate BUILD_LOG entries per Kosmos append-only-per-step discipline.
