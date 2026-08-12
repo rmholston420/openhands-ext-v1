@@ -35,10 +35,17 @@ if ! curl -sf http://127.0.0.1:8100/v1/models >/dev/null 2>&1; then
   echo "  nohup bash scripts/serve-coder.sh > /tmp/oh-serve/coder.log 2>&1 &" >&2
   exit 2
 fi
-if ! curl -sf http://127.0.0.1:8082/v1/models >/dev/null 2>&1; then
-  echo "PRECONDITION FAIL: planner :8082 not reachable. Start it with" >&2
-  echo "  nohup bash scripts/serve-planner.sh > /tmp/oh-serve/planner.log 2>&1 &" >&2
-  exit 2
+# Planner :8082 endpoint reachability is NOT part of 3.j's DoD.
+# 3.j proves ADR-0034 round-trip + router-lands-on-vLLM for the coder
+# leg. Planner is a static field in `llms_for_routing` (verified by the
+# in-harness round-trip check), not called during the trivial task.
+# ADR-0017 XOR co-residency blocks planner while coder holds the 5090,
+# which is expected. Recorded in the verdict as `planner_endpoint_up`.
+if curl -sf http://127.0.0.1:8082/v1/models >/dev/null 2>&1; then
+  export PLANNER_ENDPOINT_UP=1
+else
+  export PLANNER_ENDPOINT_UP=0
+  echo "NOTE: planner :8082 not reachable (ADR-0017 XOR while coder holds GPU). Continuing — planner presence is field-only in 3.j."
 fi
 if ! docker version --format '{{.Server.Version}}' >/dev/null 2>&1; then
   echo "PRECONDITION FAIL: Docker daemon not reachable." >&2
@@ -88,6 +95,7 @@ verdict = {
     "task": "3j_router_under_dockerworkspace",
     "image": IMAGE,
     "started_utc": datetime.now(timezone.utc).isoformat(),
+    "planner_endpoint_up": (os.environ.get("PLANNER_ENDPOINT_UP") == "1"),
 }
 
 # --- Build agent with the router (no bypass; this is the whole point) ---
