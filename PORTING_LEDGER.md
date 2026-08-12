@@ -21,6 +21,23 @@ Both donors are owned by the same GitHub user (`rmholston420`) as this repo.
 
 ---
 
+## Phase 3 — Runtime / SDK vendored patch
+
+#### `openhands-sdk` (LLM discriminated-union patch) — VENDORED
+- **Source:** https://github.com/OpenHands/software-agent-sdk
+- **Commit / Version:** `ca46719d5e9a0b0af79f7de2da37067a5b94563c` (tag `v1.41.0`, released 2026-08-06T13:29:11Z)
+- **License:** MIT (upstream `LICENSE` — permissive per Kosmos vendor rules)
+- **Kosmos location:** `vendor/openhands-sdk/` (regenerable per ADR-0003; tree is gitignored, produced deterministically by `scripts/vendor-openhands-sdk.sh` from the pinned commit + tracked patch)
+- **Port(s):** replaces the pip-installed `openhands-sdk==1.41.0` (from `scripts/install-oh-sdk.sh`) with an editable install of the same source plus the ADR-0034 patch. No new formal port — this is a same-package upgrade of an existing SDK dependency, not the introduction of a new adapter surface.
+- **Modifications:**
+  - `openhands-sdk/openhands/sdk/llm/llm.py`: add `from openhands.sdk.utils.models import DiscriminatedUnionMixin` import (line 118); change `class LLM(BaseModel, RetryMixin, NonNativeToolCallingMixin):` to `class LLM(DiscriminatedUnionMixin, RetryMixin, NonNativeToolCallingMixin):` (line 209). Two lines total. Full patch: `patches/openhands-sdk-llm-discriminated-union.patch`.
+  - Rationale: makes `Agent.llm: LLM` container-side deserialization dispatch to the correct concrete subclass (e.g. `CoderPlannerRouter`) via `DiscriminatedUnionMixin._validate_subtype`, instead of flattening to base `LLM` and dropping `llms_for_routing`. Every other major SDK polymorphic type (`Tool`, `Event`, `Condenser`, `Workspace`, `Analyzer`, `Critic`, `Secret`, `Agent`, `MCPTool`) already inherits `DiscriminatedUnionMixin`; `LLM` was the only outlier. Upstreamable as a PR after Phase 3.j smoke PASS.
+  - Regeneration: on Colossus, run `scripts/vendor-openhands-sdk.sh` — it re-clones the pinned commit, verifies the SHA, applies the patch, and pip-installs `-e vendor/openhands-sdk/openhands-sdk` into `.venv`. Records provenance to `bench/results/vendor-oh-sdk-<UTC-timestamp>.json`.
+- **ADR:** ADR-0034 (Proposed until 3.j smoke PASS ratifies).
+- **Logged:** 2026-08-11 21:45 EDT
+
+---
+
 ## Phase 5 — GPU Telemetry MCP Server
 
 #### `gpu_monitor` — PLANNED

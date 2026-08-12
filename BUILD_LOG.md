@@ -1921,3 +1921,23 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (ADR-only edit).
 - **PORTING_LEDGER / ADR updated:** ADR-0034 amended (still Proposed). Ratification still awaits 3.j smoke PASS.
 - **Stop-condition status:** ADR now has decision-quality alternatives coverage. Next: vendor pull + patch + PORTING_LEDGER entry + tests (separate BUILD_LOG entries).
+
+## 2026-08-11 21:45 EDT — openhands-sdk vendored + LLM DiscriminatedUnionMixin patch (Phase 3.j implementation)
+
+- **Stage / plugin / port:** Phase 3.j · Runtime · openhands-sdk (vendored, editable install)
+- **What changed:** Vendored openhands-sdk at pin `v1.41.0` / `ca46719d5e9a0b0af79f7de2da37067a5b94563c` per ADR-0034 discipline (regenerable vendor tree, ADR-0003 category 2):
+  - `patches/openhands-sdk-llm-discriminated-union.patch` (new, tracked) — the 2-line patch: adds `from openhands.sdk.utils.models import DiscriminatedUnionMixin` import; changes `class LLM(BaseModel, RetryMixin, NonNativeToolCallingMixin):` to `class LLM(DiscriminatedUnionMixin, RetryMixin, NonNativeToolCallingMixin):`.
+  - `scripts/vendor-openhands-sdk.sh` (new, tracked) — deterministic regeneration script. Clones the pinned commit into `vendor/openhands-sdk/` (gitignored per `.gitignore:104`), strips upstream `.git`, applies the patch, verifies both anchors (import line + class line), uninstalls the pip-installed `openhands-sdk`, pip installs `-e vendor/openhands-sdk/openhands-sdk` into `.venv`, and verifies `openhands.sdk.__file__` points at the vendored tree AND `DiscriminatedUnionMixin in LLM.__mro__`. Records provenance to `bench/results/vendor-oh-sdk-<UTC-timestamp>.json`. Idempotent — re-runs by deleting the vendor tree and re-cloning.
+  - `PORTING_LEDGER.md` — new "Phase 3 — Runtime / SDK vendored patch" section with the ledger entry (upstream URL, commit SHA, MIT license, patch file reference, regeneration procedure). Logged at 2026-08-11 21:45 EDT.
+- **Files touched:**
+  - `patches/openhands-sdk-llm-discriminated-union.patch` (new)
+  - `scripts/vendor-openhands-sdk.sh` (new, executable)
+  - `PORTING_LEDGER.md` (Phase 3 section added)
+- **Ports / adapters affected:** openhands-sdk (in-place upgrade of same package; no new formal port surface). All downstream code that imports `openhands.sdk.*` transparently now uses the vendored+patched version.
+- **PORTING_LEDGER / ADR updated:** ADR-0034 (Proposed → awaits 3.j smoke to ratify); PORTING_LEDGER new entry.
+- **Stop-condition status:** Vendor tree regeneration script + patch committed and pushed. Colossus-side execution (`./scripts/vendor-openhands-sdk.sh`) is the next step; on PASS, proceed to round-trip contract test then 3.j smoke.
+- **Notes:**
+  - `vendor/` remains gitignored per ADR-0003 category 2 (regenerable). The pinned commit + tracked patch file + tracked vendor script are the authoritative source of truth; the tree itself is not committed. This matches the existing `.gitignore:104` line and the pattern set by `scripts/build-llama-cpp.sh` for `vendor/llama.cpp/`.
+  - Script uses `patch(1)` not `git apply` because the vendor tree has its `.git` stripped (deliberate — makes it a plain source dir, not a nested repo).
+  - Script hard-fails if the pinned SHA doesn't match after clone (protects against upstream tag movement) or if the patch's anchor lines aren't found (protects against silent partial application).
+  - SDK upgrades (v1.42.0 exists but has the same bug) require: (1) bumping `PIN_TAG` and `PIN_SHA` in the script, (2) re-running to verify the patch still applies, (3) if it doesn't, updating the patch file, (4) re-running 3.j smoke, (5) amending ADR-0034. Documented in ADR-0034 §9.

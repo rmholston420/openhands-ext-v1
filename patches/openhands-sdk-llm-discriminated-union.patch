@@ -1,0 +1,19 @@
+--- a/openhands-sdk/openhands/sdk/llm/llm.py	2026-08-12 01:43:29.028824304 +0000
++++ b/openhands-sdk/openhands/sdk/llm/llm.py	2026-08-12 01:43:29.040824304 +0000
+@@ -117,6 +117,7 @@
+     litellm_call_kwargs,
+ )
+ from openhands.sdk.llm.utils.retry_mixin import RetryMixin
++from openhands.sdk.utils.models import DiscriminatedUnionMixin
+ from openhands.sdk.llm.utils.telemetry import Telemetry
+ from openhands.sdk.llm.utils.vertex_preflight import assert_vertex_sdk_available
+ from openhands.sdk.logger import ENV_LOG_DIR, get_logger
+@@ -206,7 +207,7 @@
+     session_id: str | None = None
+ 
+ 
+-class LLM(BaseModel, RetryMixin, NonNativeToolCallingMixin):
++class LLM(DiscriminatedUnionMixin, RetryMixin, NonNativeToolCallingMixin):
+     """Language model interface for OpenHands agents.
+ 
+     The LLM class provides a unified interface for interacting with various
