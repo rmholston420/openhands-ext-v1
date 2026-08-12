@@ -15,16 +15,18 @@ FROM ${BASE_IMAGE}
 USER root
 
 # Overlay patched openhands-sdk on top of the pre-built /agent-server/.venv.
-# --no-deps: dependency graph is already resolved by the base image's uv sync;
-#            we only replace the package source.
-# --force-reinstall: base image installs from the same version string, so pip
-#                    would otherwise no-op.
+# Base image is built with `uv sync --no-editable --managed-python`; the
+# resulting venv is pip-less by design, so we use `uv pip install --python`
+# (uv is present at /bin/uv per the upstream Dockerfile) to overlay the
+# patched package. --no-deps because the base image's uv sync already
+# resolved the graph; we only replace the openhands-sdk source. --reinstall
+# forces a fresh install even though the version string is unchanged.
 COPY --chown=openhands:openhands vendor/openhands-sdk/openhands-sdk /agent-server/openhands-sdk-patched
 
-RUN /agent-server/.venv/bin/pip install \
+RUN /bin/uv pip install \
+      --python /agent-server/.venv/bin/python \
       --no-deps \
-      --force-reinstall \
-      --disable-pip-version-check \
+      --reinstall \
       /agent-server/openhands-sdk-patched \
  && /agent-server/.venv/bin/python -c "\
 from openhands.sdk.utils.models import DiscriminatedUnionMixin;\

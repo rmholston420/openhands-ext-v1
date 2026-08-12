@@ -819,3 +819,20 @@ Entry format:
 - **Files changed:** `adrs/ADR-0035-container-side-adr-0034-overlay-image.md`, `adrs/README.md`, `docker/agent-server-patched/Dockerfile`, `scripts/build-patched-agent-server-image.sh`, `bench/smoke-phase-3-item-3j/run.sh`, `PORTING_LEDGER.md`, `BUILD_LOG.md`.
 - **Related BUILD_LOG entry:** 2026-08-11 22:15 EDT.
 - **Related DEBUG_LOG search terms (for future):** `Incorrect API key provided: local`, `api.openai.com`, `LLMAuthenticationError`, `RemoteConversation`, `container-side deserialization`, `flatten to base LLM`.
+
+---
+
+## 2026-08-11 22:22 EDT — ADR-0035 overlay build FAILED: `/agent-server/.venv/bin/pip: No such file or directory`
+
+- **Symptom:** First run of `scripts/build-patched-agent-server-image.sh` on Colossus:
+  ```
+  #9 [3/3] RUN /agent-server/.venv/bin/pip install ...
+  #9 0.199 /bin/bash: line 1: /agent-server/.venv/bin/pip: No such file or directory
+  #9 ERROR: process ... exit code: 127
+  ```
+- **Affected stage / plugin / port:** Phase 3.j · docker/agent-server-patched · ADR-0035 overlay image
+- **Root cause:** Upstream `ghcr.io/openhands/agent-server:latest-python` is built with `uv sync --no-editable --managed-python` (per `openhands-agent-server/openhands/agent_server/docker/Dockerfile`, builder stage, lines ~50-60 at pin `ca46719d`). uv-managed venvs are **pip-less by design** — uv provides `uv pip install --python <venv-python>` as the pip equivalent, and `pip` is not installed into the venv. Our Dockerfile assumed a pip binary at `.venv/bin/pip`.
+- **Fix applied:** Switch the overlay `RUN` from `/agent-server/.venv/bin/pip install ...` to `/bin/uv pip install --python /agent-server/.venv/bin/python --no-deps --reinstall ...`. `uv` is present at `/bin/uv` in the base image (upstream Dockerfile: `COPY --from=ghcr.io/astral-sh/uv:0.11.6 /uv /uvx /bin/` in the `base-image-minimal` stage). `--reinstall` replaces `--force-reinstall` (uv spelling).
+- **Files changed:** `docker/agent-server-patched/Dockerfile`.
+- **Related BUILD_LOG entry:** 2026-08-11 22:22 EDT (to be appended in the same commit).
+- **Related DEBUG_LOG search terms (for future):** `/agent-server/.venv/bin/pip`, `No such file or directory`, `uv sync --no-editable`, `uv-managed venv pip-less`, `uv pip install --python`.

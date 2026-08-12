@@ -2032,3 +2032,14 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none (no new formal port; overlay is a same-package upgrade inside the existing DockerWorkspace surface, mirroring ADR-0034's decision on the SDK side).
 - **PORTING_LEDGER / ADR updated:** yes — PORTING_LEDGER Phase 3 section, ADR-0035 Proposed.
 - **Stop-condition status:** in-progress (3.j DoD unmet until smoke PASS with `has_finish_action=true` and no `events_mention_openai`).
+
+---
+
+## 2026-08-11 22:22 EDT — ADR-0035 Dockerfile fix: use uv instead of pip (base image is pip-less)
+
+- **Stage / plugin / port:** Phase 3.j · docker/agent-server-patched · ADR-0035 overlay image
+- **What changed:** First build attempt on Colossus failed with `/agent-server/.venv/bin/pip: No such file or directory` (see DEBUG_LOG 2026-08-11 22:22 EDT). Upstream builds the venv with `uv sync --managed-python` which produces a pip-less venv. Switched the overlay `RUN` to `/bin/uv pip install --python /agent-server/.venv/bin/python --no-deps --reinstall /agent-server/openhands-sdk-patched`. `uv` is present at `/bin/uv` per upstream Dockerfile's `base-image-minimal` stage.
+- **Files touched:** `docker/agent-server-patched/Dockerfile`, `DEBUG_LOG.md`.
+- **Ports / adapters affected:** none.
+- **PORTING_LEDGER / ADR updated:** no (ADR-0035 decision is unchanged; only the mechanism of overlay install changes from `pip` to `uv pip`, which the ADR permits as an implementation detail).
+- **Stop-condition status:** in-progress.
