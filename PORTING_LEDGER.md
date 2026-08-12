@@ -36,6 +36,21 @@ Both donors are owned by the same GitHub user (`rmholston420`) as this repo.
 - **ADR:** ADR-0034 (Proposed until 3.j smoke PASS ratifies).
 - **Logged:** 2026-08-11 21:45 EDT
 
+#### `openhands-sdk` (StuckDetector near-identical scenario patch) — VENDORED
+- **Source:** https://github.com/OpenHands/software-agent-sdk
+- **Commit / Version:** `ca46719d5e9a0b0af79f7de2da37067a5b94563c` (tag `v1.41.0`) — same pin as the ADR-0034 patch above; both patches are applied to the same vendor tree.
+- **License:** MIT (upstream `LICENSE`)
+- **Kosmos location:** `vendor/openhands-sdk/` (same regenerable tree; produced by `scripts/vendor-openhands-sdk.sh` which now applies both patches).
+- **Port(s):** extends upstream `StuckDetector` in place. No new formal port — the detector is already wired into `LocalConversation._check_stuck_or_nudge` upstream; ADR-0037 adds a sixth scenario and one threshold field to the existing types.
+- **Modifications:**
+  - `openhands-sdk/openhands/sdk/conversation/types.py`: add `near_identical: int = Field(default=3, ge=1, ...)` field to `StuckDetectionThresholds`.
+  - `openhands-sdk/openhands/sdk/conversation/stuck_detector.py`: add `import json, re`; add `_ADR0037_WHITESPACE_RE` + `_ADR0037_TRAILING_PUNCT_RE` module regexes; add `near_identical_threshold` property; add `_is_stuck_near_identical` method + `_adr0037_action_key` staticmethod; hook new branch into `is_stuck()` between scenarios 2 and 3; add module-level `_adr0037_canonicalize` helper.
+  - Delivery: idempotent Python transformer `scripts/apply-stuckdetector-patch.py` (string-anchored, sentinel-verified) rather than unified diff — two files, five hunks, string anchors are more robust than line offsets. See ADR-0037 alternative 4.
+  - Rationale: satisfies Phase 9 DoD ("3+ identical/near-identical tool calls flag repetition") by extending upstream's existing 5-scenario `StuckDetector`. Runs in host process, satisfying §1.1 invariant. Upstreamable as PR after smoke PASS.
+  - Regeneration: `scripts/vendor-openhands-sdk.sh` runs `apply-stuckdetector-patch.py` after the ADR-0034 patch step and verifies four sentinels: `# ADR-0037: near-identical...`, `near_identical: int = Field`, `# scenario 6 (ADR-0037): near-identical repetition`, `_is_stuck_near_identical`.
+- **ADR:** ADR-0037 (Proposed until Phase 9 smoke PASS ratifies).
+- **Logged:** 2026-08-11 23:07 EDT
+
 #### `ghcr.io/openhands/agent-server:latest-python` (overlay for ADR-0034 patch) — REJECTED by ADR-0036
 - **Source (base image):** `ghcr.io/openhands/agent-server` — the `latest-python` tag matching upstream `openhands-agent-server` at pin `ca46719d5e9a0b0af79f7de2da37067a5b94563c` (v1.41.0)
 - **License:** MIT (upstream `OpenHands/software-agent-sdk`)

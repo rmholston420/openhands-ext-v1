@@ -2089,3 +2089,22 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** ADR-0034 status amendment (2026-08-11 22:47 EDT).
 - **Stop-condition status:** met (LocalWorkspace scope). 3.k (container-side under DockerWorkspace with source-target agent-server image) deferred to Phase 3.5 / Phase 4.
+
+## 2026-08-11 23:07 EDT — Phase 9 Loop Guard: ADR-0037 near-identical StuckDetector extension
+
+- **Stage / plugin / port:** Phase 9 (Loop Guard) · vendored openhands-sdk extension · same tree as ADR-0034.
+- **What changed:** Filed ADR-0037. Added idempotent Python transformer `scripts/apply-stuckdetector-patch.py` (string-anchored, sentinel-verified) that extends the vendored openhands-sdk `StuckDetector` with a sixth scenario (`_is_stuck_near_identical`) + a `near_identical: int = Field(default=3)` threshold on `StuckDetectionThresholds`. Chose transformer script over unified diff because the change touches two files at five anchor points and line-anchored hunks are fragile (ADR-0037 alternative 4). Extended `scripts/vendor-openhands-sdk.sh` to run the transformer after the ADR-0034 patch and verify four ADR-0037 sentinels. Added deterministic in-process smoke `bench/smoke-phase-9-loop-guard/` (no LLM, no vLLM, no Docker — three near-identical `ActionEvent`s constructed inline, asserts `_is_stuck_near_identical → True`; also verifies 2-call and different-content negatives). Added contract test `tests/sdk_patch/test_stuckdetector_near_identical.py` (7 cases: field default, property, method presence, whitespace/quotes/casing/key-order normalization, exact-equal, below-threshold, different-tool, different-content, trailing-punctuation). Added Phase 9 row to verification-matrix.
+- **Files touched:**
+  - `adrs/ADR-0037-stuckdetector-near-identical-scenario.md` (new)
+  - `adrs/README.md` (row 0037 appended)
+  - `scripts/apply-stuckdetector-patch.py` (new, executable, idempotent)
+  - `scripts/vendor-openhands-sdk.sh` (invoke transformer + verify 4 sentinels)
+  - `tests/sdk_patch/test_stuckdetector_near_identical.py` (new)
+  - `tests/__init__.py`, `tests/sdk_patch/__init__.py` (package markers, if missing)
+  - `bench/smoke-phase-9-loop-guard/run.sh` (new, executable)
+  - `bench/smoke-phase-9-loop-guard/task.md` (new)
+  - `PORTING_LEDGER.md` (new entry for the ADR-0037 vendor extension)
+  - `docs/verification/verification-matrix.md` (Phase 9 row appended)
+- **Ports / adapters affected:** none new. Extends the same vendored openhands-sdk tree ADR-0034 already ports; the new scenario slots into existing `is_stuck()` control flow wired through `LocalConversation._check_stuck_or_nudge`.
+- **PORTING_LEDGER / ADR updated:** ADR-0037 filed (Proposed); PORTING_LEDGER new "StuckDetector near-identical scenario patch" entry.
+- **Stop-condition status:** in-progress. DoD ratifies on smoke PASS: user runs `bash scripts/vendor-openhands-sdk.sh && bash bench/smoke-phase-9-loop-guard/run.sh`, both exit 0, then ADR-0037 flips to Ratified and verification-matrix Phase 9 row flips to ✅.

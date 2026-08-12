@@ -104,6 +104,39 @@ fi
   echo "OK: patch applied (all 3 anchors verified)"
 
   echo ""
+  echo "--- apply ADR-0037 StuckDetector near-identical patch ---"
+  PATCH_SCRIPT_0037="$REPO_ROOT/scripts/apply-stuckdetector-patch.py"
+  if [ ! -x "$PATCH_SCRIPT_0037" ]; then
+    echo "FAIL: ADR-0037 patch script missing or not executable at $PATCH_SCRIPT_0037" >&2
+    exit 1
+  fi
+  "$VENV_PY" "$PATCH_SCRIPT_0037" "$VENDOR_DIR"
+
+  echo ""
+  echo "--- verify ADR-0037 patch applied (sentinels) ---"
+  if ! grep -q "# ADR-0037: near-identical repetition (Phase 9 Loop Guard)" \
+       "$VENDOR_DIR/openhands-sdk/openhands/sdk/conversation/types.py"; then
+    echo "FAIL: ADR-0037 types.py sentinel missing" >&2
+    exit 1
+  fi
+  if ! grep -q "near_identical: int = Field" \
+       "$VENDOR_DIR/openhands-sdk/openhands/sdk/conversation/types.py"; then
+    echo "FAIL: ADR-0037 near_identical field missing" >&2
+    exit 1
+  fi
+  if ! grep -q "# scenario 6 (ADR-0037): near-identical repetition" \
+       "$VENDOR_DIR/openhands-sdk/openhands/sdk/conversation/stuck_detector.py"; then
+    echo "FAIL: ADR-0037 stuck_detector.py scenario-6 sentinel missing" >&2
+    exit 1
+  fi
+  if ! grep -q "_is_stuck_near_identical" \
+       "$VENDOR_DIR/openhands-sdk/openhands/sdk/conversation/stuck_detector.py"; then
+    echo "FAIL: ADR-0037 _is_stuck_near_identical method missing" >&2
+    exit 1
+  fi
+  echo "OK: ADR-0037 patch applied (all 4 sentinels verified)"
+
+  echo ""
   echo "--- uninstall pip-installed openhands-sdk (avoid version conflict) ---"
   $VENV_PIP uninstall -y openhands-sdk || true
 
@@ -135,14 +168,17 @@ print('OK: LLM inherits DiscriminatedUnionMixin')
   METADATA_FILE="bench/results/vendor-oh-sdk-$(date -u +%Y%m%dT%H%M%SZ).json"
   cat > "$METADATA_FILE" <<JSON
 {
-  "phase": "3.j",
+  "phase": "3.j,9",
   "component": "openhands-sdk (vendored)",
-  "adr": "ADR-0034",
+  "adrs": ["ADR-0034", "ADR-0037"],
   "vendored_at_utc": "$(date -u -Iseconds)",
   "upstream_url": "$UPSTREAM_URL",
   "pin_tag": "$PIN_TAG",
   "pin_sha": "$PIN_SHA",
-  "patch_file": "patches/openhands-sdk-llm-discriminated-union.patch",
+  "patches": [
+    "patches/openhands-sdk-llm-discriminated-union.patch",
+    "scripts/apply-stuckdetector-patch.py"
+  ],
   "vendor_dir": "vendor/openhands-sdk",
   "install_mode": "pip install -e"
 }
