@@ -1911,3 +1911,13 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** openhands-sdk (vendor target — vendor pull + patch apply happen in next entry, not this one).
 - **PORTING_LEDGER / ADR updated:** ADR-0034 authored (Proposed). PORTING_LEDGER entry deferred to vendor-pull step.
 - **Stop-condition status:** ADR authored. Vendor pull + patch apply + 3.j smoke are separate BUILD_LOG entries per Kosmos append-only-per-step discipline.
+
+## 2026-08-11 21:40 EDT — ADR-0034 amended: alternatives analysis expanded (3 → 10 options)
+
+- **Stage / plugin / port:** Phase 3.j · SDK patch surface · ADR authoring
+- **What changed:** Amended ADR-0034 with a fuller alternatives analysis before implementation. Original Alternatives Considered section listed only three rejected options (monkeypatch bases, retype Agent.llm as Union, RemoteConversation.send_message override); expanded to ten options covering the full search space evaluated during a research pass. New options documented include: ext-side Agent subclass with validator (option 3), llm_module_qualnames mechanism analogous to tool_module_qualnames (option 4), SerializeAsAny on Agent.llm (option 5), custom model_dump on RouterLLM (option 6), RemoteConversation client-side interception (option 8), LocalConversation switch (option 9), wait-for-upstream (option 10). Also added core-constraint statement clarifying why ext-side and transport-layer fixes cannot work: server-side rebuild uses SDK's own type annotations inside the container, and no client-side subclass or serializer influences that. Evidence links added: `remote_conversation.py:832` payload construction, `local_conversation.py:165` local path, v1.42.0 tag inspection showing bug not fixed upstream, closed unmerged PRs #1801 and #311. Decision unchanged.
+- **Files touched:**
+  - `adrs/ADR-0034-llm-discriminated-union-vendored-sdk-patch.md` (status-amendment block + Alternatives section expansion; original decision text preserved per kosmos-adr-authoring §6)
+- **Ports / adapters affected:** none (ADR-only edit).
+- **PORTING_LEDGER / ADR updated:** ADR-0034 amended (still Proposed). Ratification still awaits 3.j smoke PASS.
+- **Stop-condition status:** ADR now has decision-quality alternatives coverage. Next: vendor pull + patch + PORTING_LEDGER entry + tests (separate BUILD_LOG entries).
