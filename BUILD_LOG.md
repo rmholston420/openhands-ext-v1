@@ -1877,3 +1877,20 @@ Evidence: `bench/results/smoke-fast-planner-qwen3-30b-a3b-thinking-2507-awq-vllm
 - **Ports / adapters affected:** none.
 - **PORTING_LEDGER / ADR updated:** —
 - **Stop-condition status:** 3.d remains ✅. This entry only records the path correction.
+
+## 2026-08-11 21:11 EDT — Phase 3.e + 3.f PASSED (Canvas UI event stream + confirmation, HTTP + live Playwright)
+
+- **Stage / plugin / port:** Phase 3 · Verification matrix items 3.e (event stream in Canvas) and 3.f (confirmation UI in Canvas). Both required a live conversation with an operator LLM configured in Canvas Settings — 3.d unblocked these on 2026-08-11 19:45 EDT.
+- **What changed:** Both items verified two ways.
+  - **HTTP side:** `curl` created a finished conversation (3.e evidence: `73792f58-1e59-4c33-8897-a94f4398519d`) and a blocked/resumed conversation (3.f evidence: `dce29b59-6df2-41e2-942c-98963111f639`) against `hosted_vllm/qwen3-coder-30b-a3b-instruct-awq-4bit` @ :8100. Both landed with `execution_status=finished`, events on disk under `~/.openhands/agent-canvas/dev_conversations/`.
+  - **Canvas UI live side:** Playwright 1.62.0 + chromium drove the Canvas Vite frontend at `:3002` end-to-end. Onboarding wizard (Advanced tab) → custom model + base_url + api_key text fields → skip. Then loaded both past conversations `/conversations/{id}` and confirmed `echo hello from smoke` string rendered in DOM. Then fresh live conversation: submitted a prompt in Canvas → routed to `/conversations/d49697e9-224e-4093-bbdb-0f3c0183fd67` → agent called `terminal` (`echo hello from playwright live`, exit 0) → called `finish` → `execution_status=finished` in ~3 s. Full LLM round-trip: 1 turn, 19053 prompt tokens, 60 completion tokens, 1.94 s latency.
+- **Files touched:**
+  - `bench/smoke-phase-3-item-3ef/README.md` (new — Phase 3.e/3.f smoke README with results matrix + findings)
+  - `docs/verification/verification-matrix.md` (3.e ✅, 3.f ✅, sign-off checklist row 3 flipped ✅ pass; remaining-work list updated — only 3.i and 3.j remain)
+- **Ports / adapters affected:** Canvas ingress :8000 · Vite :3002 · agent-server :18000 · vLLM coder :8100 (all read-only from the ext repo's perspective).
+- **PORTING_LEDGER / ADR updated:** — (no port work; verification only).
+- **Stop-condition status:** 3.e and 3.f both met per spec v16 §Phase 3 verification. Row 3 of the verification matrix now flipped to ✅ pass for the trivial-task subset. Remaining Phase 3 sign-off items: **3.i** (both endpoints during joint role-switch — currently ⚠️ partial: coder and planner verified independently, joint hand-off untested and hardware-blocked per ADR-0017 XOR co-residency) and **3.j** (`RouterLLM` / `CoderPlannerRouter` under `RemoteConversation` — ❌ `llms_for_routing` not in Pydantic field surface, dropped by `agent.model_dump(mode="json")`, container-side rebuild routes to `api.openai.com`).
+- **Follow-up learnings:**
+  - Canvas onboarding Advanced tab exposes plain-text inputs (`llm-custom-model-input`, `base-url-input`, `llm-api-key-input`) — bypasses the Basic-tab combobox click-hang trap for programmatic drivers.
+  - Canvas settings PATCH body must use diff field names (`agent_settings_diff`, `conversation_settings_diff`, `misc_settings_diff`), not the plain `agent_settings` field name (returns 400).
+  - `~/.openhands/settings.json` is Fernet-encrypted with the Canvas session API key; rotating that key (Canvas restart) makes the settings file unreadable and PATCH fails 500. Fix: `rm settings.json` and re-onboard or re-PATCH.

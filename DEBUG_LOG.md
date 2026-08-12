@@ -713,3 +713,37 @@ Entry format:
 - **Files changed:** none in the ext repo. Only `~/.openhands/automation/automations.db` on Colossus was moved aside.
 - **Related BUILD_LOG entry:** 2026-08-11 19:45 EDT (3.d PASSED)
 - **Follow-up (deferred):** If 3.e/3.f later require automation, re-restart Canvas after moving the stale DB — automation will initialize a fresh DB from its own baseline. The stale DB can be re-attached only against the release that authored it (>1.3.1); no plan to do so.
+
+## 2026-08-11 21:11 EDT — Canvas onboarding LLM basic-tab comboboxes hang Playwright synthetic clicks
+
+- **Symptom:** In Playwright driving Canvas onboarding step 2 (LLM setup, Basic tab), calling `page.locator('[data-testid=llm-provider-input]').click()` or `.focus()` blocks indefinitely and eventually raises `TimeoutError: Locator.focus: Timeout 30000ms exceeded`. Same for `llm-model-input`. Both inputs report `role=combobox` in the DOM with pre-filled values (`OpenAI`, `gpt-5.5`).
+- **Affected stage / plugin / port:** Phase 3.e/3.f verification · Canvas frontend onboarding wizard · programmatic UI driving.
+- **Root cause:** The Basic-tab LLM step renders comboboxes whose autocomplete-dropdown overlay intercepts Playwright's synthetic events; the click never reaches the underlying input, and the dropdown never resolves because keyboard input isn't being routed through the synthetic click path either. The Advanced-tab variant of the same step (accessible via `[data-testid=sdk-section-advanced-toggle]`) renders **plain `<input type=text>` fields** — no comboboxes, no autocomplete overlays: `llm-custom-model-input` (takes full litellm-style model prefix, e.g. `hosted_vllm/qwen3-coder-30b-a3b-instruct-awq-4bit`), `base-url-input`, `llm-api-key-input` (type=password). All fillable with plain `page.fill()`.
+- **Fix applied:** After clicking Next off step 1, click `[data-testid=sdk-section-advanced-toggle]` before touching any LLM field, then use `page.fill()` on the three text inputs. Confirmed working end-to-end: onboarding completes, `GET /api/settings` shows `agent_settings.llm.model="hosted_vllm/qwen3-coder-30b-a3b-instruct-awq-4bit"`, `agent_settings.llm.base_url="http://127.0.0.1:8100/v1"`, `llm_api_key_is_set=true`.
+- **Files changed:** none in the ext repo. Playwright driver `/tmp/oh-smoke-3ef/pw/flow_c.py` (off-repo scratch) was iterated from v3 → v6.
+- **Related BUILD_LOG entry:** 2026-08-11 21:11 EDT
+- **Follow-up:** If we ever need to script Canvas onboarding from the Basic tab, use `page.locator(...).press_sequentially(value, delay=15)` after `Escape` to dismiss the autocomplete first — but Advanced-tab is strictly simpler for smoke drivers.
+
+## 2026-08-11 21:11 EDT — Canvas `PATCH /api/settings` rejects `agent_settings` field; requires `agent_settings_diff`
+
+- **Symptom:** `PATCH /api/settings` with body `{"agent_settings": {"llm": {...}}}` returns 400 "At least one of agent_settings_diff, conversation_settings_diff, misc_settings_diff must be provided". Same rejection for `conversation_settings` and `misc_settings` (non-diff names).
+- **Affected stage / plugin / port:** Phase 3.e/3.f verification · Canvas outer `/api/settings` route · settings partial-update API.
+- **Root cause:** The Canvas settings API implements partial-update semantics via explicit `_diff` fields. The full-object field names (`agent_settings`, `conversation_settings`, `misc_settings`) exist only in the GET response payload and in the persisted settings file; the PATCH body validator rejects them and requires at least one `*_diff` field to be present.
+- **Fix applied:** Send `{"agent_settings_diff": {"llm": {"model": "...", "base_url": "...", "api_key": "EMPTY", "native_tool_calling": true, "temperature": 0.7, "top_p": 0.8, "max_output_tokens": 2048, "drop_params": true, "usage_id": "canvas-live"}}}`. Confirmed 200 response; subsequent GET shows the merged fields applied.
+- **Files changed:** none in the ext repo. Playwright driver `/tmp/oh-smoke-3ef/pw/flow_c.py` (off-repo scratch) uses the correct field name.
+- **Related BUILD_LOG entry:** 2026-08-11 21:11 EDT
+
+## 2026-08-11 21:11 EDT — Canvas `~/.openhands/settings.json` unreadable after session-API-key rotation ("Settings file is corrupted or encrypted with a different key")
+
+- **Symptom:** After restarting Canvas with a freshly generated session API key (Canvas prints `Session API key: <hex>` on boot), `GET /api/settings` returns 200 but with `agent_settings.llm.*` fields all `null`, and `PATCH /api/settings` returns 500 with body `"Settings file is corrupted or encrypted with a different key"`.
+- **Affected stage / plugin / port:** Phase 3.e/3.f verification · Canvas settings persistence layer · session-API-key coupling.
+- **Root cause:** `~/.openhands/settings.json` is Fernet-encrypted at rest with a key derived from the Canvas session API key. When Canvas is restarted with a new session key (either explicitly or because `~/.openhands/secrets.json` was regenerated), the on-disk settings file was written with the *previous* key and can no longer be decrypted. GET tolerates the decrypt failure and returns nulls; PATCH's read-modify-write path fails hard.
+- **Fix applied:** Back up and delete the stale settings file so the next PATCH (or UI onboarding) writes a fresh encrypted file with the current session key:
+  ```
+  cp ~/.openhands/settings.json /tmp/oh-smoke-3ef/backup/settings.json.pre-nuke
+  rm -f ~/.openhands/settings.json
+  ```
+  Confirmed: subsequent PATCH returns 200, GET shows applied fields, live conversation uses the configured LLM.
+- **Files changed:** none in the ext repo. Only `~/.openhands/settings.json` on Colossus (backup + delete).
+- **Related BUILD_LOG entry:** 2026-08-11 21:11 EDT
+- **Follow-up:** If we later persist Canvas across session-key rotations (e.g. pinning the session key in a deploy manifest), consider either exporting `OPENHANDS_SESSION_API_KEY=<stable-value>` before Canvas boot, or having the settings file re-encrypt itself on key rotation. Out of scope for 3.e/3.f.
